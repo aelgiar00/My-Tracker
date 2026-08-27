@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#0c0c0e"/>
+  <g fill="#c9bdd8">
+    <rect x="6" y="6" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="11.4" y="6" width="3.2" height="3.2" rx="0.6" opacity="0.35"/>
+    <rect x="16.8" y="6" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="22.2" y="6" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="6" y="11.4" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="11.4" y="11.4" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="16.8" y="11.4" width="3.2" height="3.2" rx="0.6" opacity="0.35"/>
+    <rect x="22.2" y="11.4" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="6" y="16.8" width="3.2" height="3.2" rx="0.6" opacity="0.35"/>
+    <rect x="11.4" y="16.8" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="16.8" y="16.8" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="22.2" y="16.8" width="3.2" height="3.2" rx="0.6" opacity="0.35"/>
+    <rect x="6" y="22.2" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="11.4" y="22.2" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="16.8" y="22.2" width="3.2" height="3.2" rx="0.6"/>
+    <rect x="22.2" y="22.2" width="3.2" height="3.2" rx="0.6"/>
+  </g>
+</svg>

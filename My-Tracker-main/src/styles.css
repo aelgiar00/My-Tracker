@@ -1,0 +1,244 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif:ital@0;1&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Instrument Serif", ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-bg: #0c0c0e;
+  --color-surface: #141416;
+  --color-surface-2: #1c1c20;
+  --color-fg: #f3f2ef;
+  --color-muted: #8e8c88;
+  --color-subtle: #6b6966;
+  --color-border: #2a2a2e;
+  --color-accent: #c9bdd8;
+  --color-accent-fg: #141218;
+  --color-miss: #8f849f;
+  --color-danger: #c17b7b;
+  --color-rest: #6b6966;
+  --color-score-1: #2a2830;
+  --color-score-2: #4a4258;
+  --color-score-3: #6d6280;
+  --color-score-4: #9486a8;
+  --color-score-5: #c9bdd8;
+  --color-ring: #c9bdd8;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+:root {
+  --shadow-border: 0 0 0 1px rgba(243, 242, 239, 0.08);
+  --shadow-border-hover: 0 0 0 1px rgba(243, 242, 239, 0.14);
+  --shadow-elevated: 0 0 0 1px rgba(243, 242, 239, 0.08), 0 24px 48px -24px rgba(0, 0, 0, 0.55);
+
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --motion-micro: 80ms;
+  --motion-quick: 150ms;
+  --motion-fast: 250ms;
+  --motion-slow: 400ms;
+  --motion-scale-modal: 0.96;
+  --motion-y-base: 8px;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  body {
+    min-height: 100dvh;
+    background:
+      radial-gradient(1200px 480px at 50% -10%, rgba(201, 189, 216, 0.06), transparent 55%),
+      var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--color-accent) 70%, white);
+    outline-offset: 2px;
+  }
+
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-y-base));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--motion-scale-modal));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.stagger-in > * {
+  animation: fade-rise var(--motion-slow) var(--ease-smooth-out) both;
+}
+.stagger-in > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger-in > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.stagger-in > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.stagger-in > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.stagger-in > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger-in > *:nth-child(6) {
+  animation-delay: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-in > *,
+  .animate-dialog-in,
+  .animate-overlay-in,
+  .animate-fade-rise {
+    animation: none !important;
+  }
+}
+
+.animate-dialog-in {
+  animation: dialog-in var(--motion-fast) var(--ease-smooth-out) both;
+}
+.animate-overlay-in {
+  animation: overlay-in var(--motion-fast) var(--ease-out) both;
+}
+.animate-fade-rise {
+  animation: fade-rise var(--motion-slow) var(--ease-smooth-out) both;
+}
+
+.matrix-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--color-fg) 18%, transparent) transparent;
+}
+.matrix-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.matrix-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--color-fg) 18%, transparent);
+  border-radius: 99px;
+}
+
+/* Color themes: default preserves the original palette. */
+:root[data-theme="ocean"] {
+  --color-accent: #9cc9e8;
+  --color-accent-fg: #0d1720;
+  --color-miss: #8f849f;
+  --color-danger: #c17b7b;
+  --color-score-1: #222d34;
+  --color-score-2: #3a5564;
+  --color-score-3: #547a90;
+  --color-score-4: #78a9c2;
+  --color-score-5: #9cc9e8;
+  --color-ring: #9cc9e8;
+}
+:root[data-theme="forest"] {
+  --color-accent: #a8c9a2;
+  --color-accent-fg: #101610;
+  --color-miss: #8f849f;
+  --color-danger: #c17b7b;
+  --color-score-1: #252e26;
+  --color-score-2: #3c5540;
+  --color-score-3: #55755a;
+  --color-score-4: #7fa482;
+  --color-score-5: #a8c9a2;
+  --color-ring: #a8c9a2;
+}
+:root[data-theme="amber"] {
+  --color-accent: #e0bc78;
+  --color-accent-fg: #1b160c;
+  --color-miss: #8f849f;
+  --color-danger: #c17b7b;
+  --color-score-1: #302a20;
+  --color-score-2: #5b4a30;
+  --color-score-3: #82683f;
+  --color-score-4: #b08b51;
+  --color-score-5: #e0bc78;
+  --color-ring: #e0bc78;
+}
+:root[data-theme="rose"] {
+  --color-accent: #d9a6b9;
+  --color-accent-fg: #1b1217;
+  --color-miss: #8f849f;
+  --color-danger: #c17b7b;
+  --color-score-1: #30252b;
+  --color-score-2: #59414c;
+  --color-score-3: #805d6c;
+  --color-score-4: #aa7d8f;
+  --color-score-5: #d9a6b9;
+  --color-ring: #d9a6b9;
+}
+
+
+/* Missed/pending outlines stay within the theme instead of using an alert-red color. */
+.analytics-expanded > .grid {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .analytics-expanded {
+    gap: 1.25rem;
+  }
+
+  .analytics-expanded > .grid > * {
+    min-width: 0;
+  }
+}
