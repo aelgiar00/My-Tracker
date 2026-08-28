@@ -10,7 +10,6 @@ import { nitro } from "nitro/vite";
 import { appEnvPlugin } from "./scripts/app-env-plugin.mjs";
 import { isMigrationFile } from "./scripts/migration-plan.mjs";
 
-/** The files `src/lib/db.ts` globs — same directory, same non-recursive scope. */
 function hasGlobbedMigrations(root: string): boolean {
   try {
     return readdirSync(join(root, "migrations")).some(isMigrationFile);
@@ -19,11 +18,6 @@ function hasGlobbedMigrations(root: string): boolean {
   }
 }
 
-/**
- * Finish PGLite bootstrap during dev-server setup (before traffic). Vite awaits
- * async `configureServer` hooks. Production: `src/lib/db` kicks `ensureDbReady`
- * on import.
- */
 function pgliteBootstrapPlugin(): Plugin {
   return {
     name: "app-builder:pglite-bootstrap",
@@ -45,9 +39,6 @@ function pgliteBootstrapPlugin(): Plugin {
   };
 }
 
-/**
- * Live-preview OAuth popup handler.
- */
 function authPopupPlugin(): Plugin {
   return {
     name: "app-builder:auth-popup",

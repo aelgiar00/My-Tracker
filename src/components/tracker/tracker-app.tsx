@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
+  LogOut,
   Plus,
   Settings,
   Undo2,
@@ -16,12 +17,14 @@ import { AuditPanel } from "@/components/tracker/audit-panel";
 import { BulkUpdatePanel, NewHabitDialog, SettingsDialog } from "@/components/tracker/habit-dialogs";
 import { HabitMatrix } from "@/components/tracker/habit-matrix";
 import { TodayPanel } from "@/components/tracker/today-panel";
+import { AuthDialog } from "@/components/tracker/auth-dialog";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/tracker/native-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isoDate } from "@/lib/tracker/schedule";
 import { computeStats, monthDays } from "@/lib/tracker/stats";
-import { useTrackerStore } from "@/store/tracker-store";
+import { useTrackerStore, exportSnapshot } from "@/store/tracker-store";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 const MONTHS = [
@@ -46,6 +49,8 @@ export function TrackerApp() {
   const [newOpen, setNewOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("today");
+  const [session, setSession] = useState<any>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   const habits = useTrackerStore((s) => s.habits);
   const completions = useTrackerStore((s) => s.completions);
@@ -59,6 +64,62 @@ export function TrackerApp() {
   const undo = useTrackerStore((s) => s.undo);
   const archiveHabit = useTrackerStore((s) => s.archiveHabit);
   const undoCount = useTrackerStore((s) => s.undoStack.length);
+  const importSnapshot = useTrackerStore((s) => s.importSnapshot);
+
+  // التحقق من الجلسة ومزامنة البيانات السحابية
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoadingAuth(false);
+      if (session) {
+        fetchCloudData(session.user.id);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchCloudData(session.user.id);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function fetchCloudData(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from("user_tracker_data")
+        .select("snapshot")
+        .eq("user_id", userId)
+        .single();
+
+      if (data && data.snapshot) {
+        importSnapshot(data.snapshot);
+      }
+    } catch {
+      // First time user
+    }
+  }
+
+  // مزامنة أي تغيير محلي مع السحابة فوراً
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const saveToCloud = async () => {
+      try {
+        const rawJson = JSON.parse(exportSnapshot());
+        await supabase.from("user_tracker_data").upsert({
+          user_id: session.user.id,
+          snapshot: rawJson,
+          updated_at: new Date().toISOString(),
+        });
+      } catch {
+        // Handle silently
+      }
+    };
+    const timer = setTimeout(saveToCloud, 1000);
+    return () => clearTimeout(timer);
+  }, [habits, completions, dailyTasks, session]);
 
   useEffect(() => {
     void useTrackerStore.persist.rehydrate();
@@ -67,30 +128,6 @@ export function TrackerApp() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const target = e.target as HTMLElement | null;
-      const typing =
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "SELECT" ||
-          target.isContentEditable);
-      if (typing) return;
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        if (undo()) toast("Undid last change.");
-        else toast("Nothing to undo.");
-      }
-      if (e.key.toLowerCase() === "n" && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        setNewOpen(true);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [undo]);
 
   const days = useMemo(
     () => monthDays(selectedYear, selectedMonth, trackingStart),
@@ -111,8 +148,27 @@ export function TrackerApp() {
 
   const years = Array.from({ length: 8 }, (_, i) => 2025 + i);
 
+  if (loadingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg text-muted">
+        Loading Tracker...
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto min-h-dvh max-w-[88rem] px-4 pt-8 pb-24 lg:pb-12">
+      {!session && (
+        <AuthDialog
+          onSuccess={() => {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+              setSession(session);
+              if (session) fetchCloudData(session.user.id);
+            });
+          }}
+        />
+      )}
+
       <header className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="animate-fade-rise">
           <p className="text-xs font-medium tracking-[0.18em] text-muted uppercase">
@@ -176,6 +232,19 @@ export function TrackerApp() {
             <Plus className="size-3.5" />
             Habit
           </Button>
+          {session && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setSession(null);
+              }}
+              title="تسجيل الخروج"
+            >
+              <LogOut className="size-4 text-rose-400" />
+            </Button>
+          )}
         </div>
       </header>
 
