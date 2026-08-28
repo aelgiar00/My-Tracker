@@ -161,7 +161,7 @@ vercel --prod
 
 **Ahmed Elgiar**
 
-* GitHub: [@aelgiar00](https://www.google.com/search?q=https://github.com/aelgiar00)
+* GitHub: https://github.com/aelgiar00
 
 ```
 
