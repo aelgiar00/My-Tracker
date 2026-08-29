@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { parseISO } from "date-fns";
 import type { Completion, DailyTask, Habit, Schedule, TrackerSnapshot } from "@/lib/tracker/types";
-import { createSeedSnapshot } from "@/lib/tracker/seed";
 import { completionKey, isDayExpected, isRestDay, monthKey, scheduleForMonth } from "@/lib/tracker/schedule";
 
 const UNDO_LIMIT = 30;
@@ -104,19 +103,26 @@ function parseImported(raw: unknown): TrackerSnapshot | null {
     habits,
     completions,
     dailyTasks,
-    trackingStart:
-      typeof raw.trackingStart === "string" ? raw.trackingStart : createSeedSnapshot().trackingStart,
+    trackingStart: typeof raw.trackingStart === "string" ? raw.trackingStart : new Date().toISOString().slice(0, 10),
     hidePast: Boolean(raw.hidePast),
     seeded: true,
   };
 }
 
-const seed = createSeedSnapshot();
+// كائن الحالة الابتدائية النظيف (بدون أي عادات افتراضية)
+const emptyInitialState: TrackerSnapshot = {
+  habits: [],
+  completions: {},
+  dailyTasks: {},
+  trackingStart: new Date().toISOString().slice(0, 10),
+  hidePast: false,
+  seeded: true,
+};
 
 export const useTrackerStore = create<TrackerState>()(
   persist(
     (set, get) => ({
-      ...seed,
+      ...emptyInitialState,
       undoStack: [],
       selectedYear: 2026,
       selectedMonth: 8,
@@ -389,15 +395,14 @@ export const useTrackerStore = create<TrackerState>()(
       },
 
       resetToSeed: () => {
-        const next = createSeedSnapshot();
         set((s) => ({
           ...pushUndo(s),
-          ...next,
+          ...emptyInitialState,
         }));
       },
     }),
     {
-      name: "performance-matrix-v1",
+      name: "performance-matrix-v2",
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
       merge: (persisted, current) => ({
