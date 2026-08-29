@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Maximize2, Minimize2, Sparkles, BrainCircuit } from "lucide-react";
+import { Maximize2, Minimize2, Sparkles, BrainCircuit, Bot, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProgressRing } from "@/components/tracker/progress-ring";
@@ -43,11 +43,11 @@ function ChartTip({
 export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"charts" | "ml">("charts");
-  
+
   // ML Matrix Controls State
   const [selectedEngine, setSelectedEngine] = useState("Gradient Boosting");
   const [threshold, setThreshold] = useState(70);
-  const [testDate, setTestDate] = useState("2026-08-28");
+  const [testDate, setTestDate] = useState("2026-08-29");
   const [runTrigger, setRunTrigger] = useState(0);
 
   const recurring = stats.habits.filter((h) => h.recurring && h.habit.name.trim());
@@ -80,7 +80,7 @@ export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
   const compactHabitHeight = Math.max(280, Math.min(360, taskData.length * 30));
   const expandedHabitHeight = Math.max(520, taskData.length * 42);
 
-  // Embedded ML Prediction Logic
+  // Dynamic Embedded ML Inference
   const mlPredictions = useMemo(() => {
     return stats.habits.map((h) => {
       const isRest = h.expected === 0;
@@ -96,7 +96,6 @@ export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
         };
       }
 
-      // Feature extraction from tracker stats
       const habitScore = h.score / 100;
       const paceScore = (stats.paceScore || 70) / 100;
       const streakBonus = Math.min(stats.currentStreak * 0.04, 0.2);
@@ -130,9 +129,43 @@ export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
     });
   }, [stats, selectedEngine, threshold, runTrigger]);
 
+  // Dynamic AI Coach Engine
+  const aiCoachInsight = useMemo(() => {
+    if (stats.habits.length === 0) {
+      return {
+        headline: "No habits tracked yet",
+        body: "Your AI Coach is standby. Add your habits in the Matrix tab to generate real-time behavioral predictions.",
+      };
+    }
+
+    const activeHabits = stats.habits.filter((h) => h.expected > 0);
+    if (activeHabits.length === 0) {
+      return {
+        headline: "All Habits on Rest",
+        body: "All habits are currently set to rest days for this selection.",
+      };
+    }
+
+    const sorted = [...activeHabits].sort((a, b) => b.score - a.score);
+    const topHabit = sorted[0];
+    const weakHabit = sorted[sorted.length - 1];
+
+    if (topHabit.score === weakHabit.score) {
+      return {
+        headline: "Calibrating User Routine",
+        body: `Analyzing ${stats.habits.length} habits. Consistent daily checks will quickly elevate prediction confidence scores across the board.`,
+      };
+    }
+
+    return {
+      headline: `Prioritize "${weakHabit.habit.name}" Today`,
+      body: `Strong performance on "${topHabit.habit.name}" (${Math.round(topHabit.score)}% execution). Focus effort on "${weakHabit.habit.name}" to protect your current streak momentum.`,
+    };
+  }, [stats.habits, stats.paceScore]);
+
   return (
     <div className={cn("flex flex-col gap-5", expanded && "analytics-expanded")}>
-      {/* Top Header & Tab Selector */}
+      {/* Tab Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface px-4 py-3 shadow-[var(--shadow-border)]">
         <div className="flex items-center gap-2">
           <button
@@ -158,7 +191,7 @@ export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
             )}
           >
             <Sparkles className="size-3.5" />
-            ML
+            ML & AI Coach
           </button>
         </div>
 
@@ -180,13 +213,32 @@ export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
       </div>
 
       {activeTab === "ml" ? (
-        /* ML PREDICTION DASHBOARD */
+        /* ML & AI Coach Tab */
         <div className="flex flex-col gap-5">
+          {/* AI Coach Card */}
+          <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-fg">
+                <Bot className="size-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-fg">AI Coach Insights</h3>
+                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[0.65rem] font-medium text-accent">
+                    Real-time Analysis
+                  </span>
+                </div>
+                <p className="mt-1 text-xs font-medium text-accent">{aiCoachInsight.headline}</p>
+                <p className="mt-0.5 text-xs text-muted leading-relaxed">{aiCoachInsight.body}</p>
+              </div>
+            </div>
+          </div>
+
           <Card className="border-border/60 bg-surface">
             <CardContent className="p-5">
               <div className="mb-4">
                 <h2 className="font-display text-xl tracking-tight text-fg">ML Prediction Matrix</h2>
-                <p className="text-xs text-muted">NTI Graduation Project Dashboard</p>
+                <p className="text-xs text-muted">Behavioral forecasting and dynamic probability analysis</p>
               </div>
 
               {/* Controls */}
@@ -235,65 +287,75 @@ export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
                 </Button>
               </div>
 
-              {/* Prediction Table */}
-              <div className="overflow-x-auto py-3">
-                <table className="min-w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-border/30 text-muted">
-                      <th className="py-2.5 font-medium">Habit</th>
-                      <th className="py-2.5 font-medium">Predicted (Fri)</th>
-                      <th className="py-2.5 font-medium">Probability</th>
-                      <th className="py-2.5 font-medium">Actual</th>
-                      <th className="py-2.5 font-medium">Main Reason (Feature Importance)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/20">
-                    {mlPredictions.map((row) => (
-                      <tr key={row.name} className="hover:bg-surface-2/40">
-                        <td className="py-3 font-semibold text-fg">{row.name}</td>
-                        <td className="py-3">
-                          {row.predicted === "Yes" ? (
-                            <span className="font-bold text-accent">Yes</span>
-                          ) : row.predicted === "No" ? (
-                            <span className="font-bold text-red-400">No</span>
-                          ) : (
-                            <span className="text-muted">-</span>
-                          )}
-                        </td>
-                        <td className="py-3 font-mono text-fg">{row.probability}</td>
-                        <td className="py-3">
-                          {!row.isRestDay && (
-                            <input
-                              type="checkbox"
-                              className="size-3.5 rounded border-border/60 accent-accent"
-                              disabled
-                            />
-                          )}
-                        </td>
-                        <td className="py-3">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-muted">{row.mainReason}</span>
-                            {!row.isRestDay && (
-                              <div className="flex items-end gap-1">
-                                {row.bars.map((h, i) => (
-                                  <span
-                                    key={i}
-                                    style={{ height: `${h * 0.18}px` }}
-                                    className={cn(
-                                      "w-1.5 rounded-t-xs",
-                                      i === 1 ? "bg-accent" : "bg-purple-500/70"
-                                    )}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </td>
+              {/* Table or Empty View */}
+              {stats.habits.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <AlertCircle className="size-10 text-muted/60 mb-2" />
+                  <p className="text-sm font-medium text-fg">No habits tracked yet</p>
+                  <p className="text-xs text-muted mt-1 max-w-sm">
+                    Navigate to the Matrix tab to add your custom habits. Predictions will update here automatically.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto py-3">
+                  <table className="min-w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-border/30 text-muted">
+                        <th className="py-2.5 font-medium">Habit</th>
+                        <th className="py-2.5 font-medium">Predicted</th>
+                        <th className="py-2.5 font-medium">Probability</th>
+                        <th className="py-2.5 font-medium">Actual</th>
+                        <th className="py-2.5 font-medium">Main Reason (Feature Importance)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-border/20">
+                      {mlPredictions.map((row) => (
+                        <tr key={row.name} className="hover:bg-surface-2/40">
+                          <td className="py-3 font-semibold text-fg">{row.name}</td>
+                          <td className="py-3">
+                            {row.predicted === "Yes" ? (
+                              <span className="font-bold text-accent">Yes</span>
+                            ) : row.predicted === "No" ? (
+                              <span className="font-bold text-red-400">No</span>
+                            ) : (
+                              <span className="text-muted">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 font-mono text-fg">{row.probability}</td>
+                          <td className="py-3">
+                            {!row.isRestDay && (
+                              <input
+                                type="checkbox"
+                                className="size-3.5 rounded border-border/60 accent-accent"
+                                disabled
+                              />
+                            )}
+                          </td>
+                          <td className="py-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-muted">{row.mainReason}</span>
+                              {!row.isRestDay && (
+                                <div className="flex items-end gap-1">
+                                  {row.bars.map((h, i) => (
+                                    <span
+                                      key={i}
+                                      style={{ height: `${h * 0.18}px` }}
+                                      className={cn(
+                                        "w-1.5 rounded-t-xs",
+                                        i === 1 ? "bg-accent" : "bg-purple-500/70"
+                                      )}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Justification Box */}
               <div className="mt-4 rounded-lg bg-surface-2/60 p-3.5 text-xs text-muted border border-border/30">
@@ -302,17 +364,14 @@ export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
                   <span className="text-subtle">Engine:</span> {selectedEngine}
                 </p>
                 <p>
-                  <span className="text-subtle">Validation Accuracy:</span> 68.1% (evaluated strictly on the current test month: 92/135 correct predictions)
-                </p>
-                <p className="mt-1">
-                  <span className="text-subtle">Why this model?</span> Trained using {selectedEngine}. A hard decision threshold of {threshold}.0% was applied to ensure strict prediction confidence, preventing false positives.
+                  <span className="text-subtle">Decision Logic:</span> A decision threshold of {threshold}.0% is enforced to maximize prediction precision.
                 </p>
               </div>
             </CardContent>
           </Card>
         </div>
       ) : (
-        /* STANDARD CHARTS VIEW */
+        /* Charts View */
         <>
           {stats.bestWeekday && stats.bestWeekday.score > 0 && (
             <div className="rounded-lg bg-accent/10 px-4 py-3 text-sm text-accent">
