@@ -65,6 +65,7 @@ export function TrackerApp() {
   const archiveHabit = useTrackerStore((s) => s.archiveHabit);
   const undoCount = useTrackerStore((s) => s.undoStack.length);
   const importSnapshot = useTrackerStore((s) => s.importSnapshot);
+  const resetToSeed = useTrackerStore((s) => s.resetToSeed);
 
   // التحقق من الجلسة ومزامنة البيانات السحابية
   useEffect(() => {
@@ -73,6 +74,8 @@ export function TrackerApp() {
       setLoadingAuth(false);
       if (session) {
         fetchCloudData(session.user.id);
+      } else {
+        resetToSeed();
       }
     });
 
@@ -80,7 +83,11 @@ export function TrackerApp() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchCloudData(session.user.id);
+      if (session) {
+        fetchCloudData(session.user.id);
+      } else {
+        resetToSeed();
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -92,13 +99,22 @@ export function TrackerApp() {
         .from("user_tracker_data")
         .select("snapshot")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (data && data.snapshot) {
         importSnapshot(data.snapshot);
+      } else {
+        // مستخدم جديد تماماً: تصفير كل البيانات لتبدأ فارغة 100%
+        resetToSeed();
+        const rawJson = JSON.parse(exportSnapshot());
+        await supabase.from("user_tracker_data").upsert({
+          user_id: userId,
+          snapshot: rawJson,
+          updated_at: new Date().toISOString(),
+        });
       }
     } catch {
-      // First time user
+      resetToSeed();
     }
   }
 
@@ -238,7 +254,9 @@ export function TrackerApp() {
               size="icon-sm"
               onClick={async () => {
                 await supabase.auth.signOut();
+                resetToSeed();
                 setSession(null);
+                toast("تم تسجيل الخروج");
               }}
               title="تسجيل الخروج"
             >
