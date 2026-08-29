@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import type { Habit, Stats } from "@/lib/tracker/types";
+import type { Habit, MonthStats } from "@/lib/tracker/types";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
+import { isDayExpected, scheduleForMonth } from "@/lib/tracker/schedule";
 
 function EmbeddedAICoach({ habits, todayDate }: { habits: Habit[]; todayDate: Date }) {
   const dateKey = format(todayDate, "yyyy-MM-dd");
-  const dayOfWeek = todayDate.getDay(); // 0 = Sun, 2 = Tue, 5 = Fri, ...
 
   const [sleepHours, setSleepHours] = useState<number>(7);
   const [collegeHours, setCollegeHours] = useState<number>(4);
@@ -49,19 +49,11 @@ function EmbeddedAICoach({ habits, todayDate }: { habits: Habit[]; todayDate: Da
     const fatiguePenalty = collegeHours * 4.5 + workHours * 5;
     const readiness = Math.max(15, Math.min(100, Math.round(100 - sleepPenalty - fatiguePenalty)));
 
-    const myHabitsList = [
-      { id: "1", name: "Pray", type: "daily", isCore: true },
-      { id: "2", name: "Touch Typing", type: "daily", isCore: false },
-      { id: "3", name: "Technical Depi 1", type: "weekly", scheduledDay: 2, isCore: true },
-      { id: "4", name: "Technical Depi", type: "weekly", scheduledDay: 5, isCore: true },
-      { id: "5", name: "Nti Notebooks", type: "daily", isCore: false },
-      { id: "6", name: "Ml Learning", type: "daily", isCore: false },
-    ];
+    const activeHabits = (habits || []).filter((h) => !h.archived);
 
-    const habitForecasts = myHabitsList.map((h) => {
-      const isScheduledToday = h.type === "daily" || h.scheduledDay === dayOfWeek;
-      let prob = readiness;
-      let note = "مجدولة اليوم";
+    const habitForecasts = activeHabits.map((h) => {
+      const sched = scheduleForMonth(h, todayDate.getFullYear(), todayDate.getMonth() + 1);
+      const isScheduledToday = sched ? isDayExpected(sched, todayDate) : false;
 
       if (!isScheduledToday) {
         return {
@@ -69,46 +61,36 @@ function EmbeddedAICoach({ habits, todayDate }: { habits: Habit[]; todayDate: Da
           probability: 0,
           status: "يوم راحة / غير مجدولة",
           isScheduledToday: false,
-          isCore: h.isCore,
+          isCore: false,
           note: "راحة",
         };
       }
 
-      if (h.name === "Pray") {
-        prob = sleepHours >= 5 ? 98 : 88;
-        note = "واجب أساسي";
-      } else if (h.name.includes("Depi")) {
-        prob = Math.max(20, Math.min(96, Math.round(readiness * 0.95 + (freeHours >= 4 ? 8 : -15))));
-        note = "جلسة تقنية هامة";
-      } else if (h.name.includes("Ml") || h.name.includes("Nti")) {
-        prob = Math.max(15, Math.min(92, Math.round(readiness * 0.88 + (sleepHours >= 6 ? 10 : -18))));
-        note = "مذاكرة وتطبيق";
-      } else if (h.name === "Touch Typing") {
-        prob = Math.max(35, Math.min(98, Math.round(readiness * 0.75 + 30)));
-        note = "تمرين سريع";
-      }
+      // حساب احتمالية ديناميكية بناءً على طاقة اليوم
+      const prob = Math.max(25, Math.min(99, Math.round(readiness * 0.9 + (freeHours >= 4 ? 6 : -12))));
 
       return {
         name: h.name,
         probability: prob,
         status: prob >= 70 ? "آمن" : prob >= 45 ? "متوسط" : "معرض للتعثر",
         isScheduledToday: true,
-        isCore: h.isCore,
-        note,
+        isCore: prob >= 75,
+        note: prob >= 75 ? "أولوية قصوى" : "مجدولة اليوم",
       };
     });
 
     const todaysActiveHabits = habitForecasts.filter((h) => h.isScheduledToday);
-    const nonNegotiables = todaysActiveHabits.filter((h) => h.isCore || h.probability >= 60);
+    const nonNegotiables = todaysActiveHabits.filter((h) => h.isCore || h.probability >= 70);
 
     return {
       readiness,
       freeHours,
       habitForecasts,
       nonNegotiables,
+      hasHabits: activeHabits.length > 0,
       isHighPressure: readiness < 50 || freeHours < 4,
     };
-  }, [sleepHours, collegeHours, workHours, dayOfWeek]);
+  }, [sleepHours, collegeHours, workHours, habits, todayDate]);
 
   return (
     <div className="mb-6 rounded-2xl border-2 border-blue-500/30 bg-zinc-950 p-4 text-white shadow-xl">
@@ -179,51 +161,61 @@ function EmbeddedAICoach({ habits, todayDate }: { habits: Habit[]; todayDate: Da
 
       {showResult && (
         <div className="space-y-3 pt-2 border-t border-zinc-800 text-xs">
-          <div className="rounded-xl bg-blue-950/30 border border-blue-800/40 p-2.5">
-            <p className="text-[11px] font-semibold text-blue-300 mb-1">
-              🎯 الحد الأدنى المطلوب اليوم (Non-Negotiable):
-            </p>
-            <ul className="list-disc list-inside space-y-0.5 text-zinc-300 text-[11px]">
-              {analysis.nonNegotiables.map((item, i) => (
-                <li key={i}>
-                  <strong className="text-white">{item.name}</strong> ({item.note})
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
-            {analysis.habitForecasts.map((habit, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between bg-zinc-900/90 p-2 rounded-lg border border-zinc-800 text-[11px]"
-              >
-                <div className="flex flex-col">
-                  <span className="text-zinc-200 font-medium">{habit.name}</span>
-                  <span className="text-[10px] text-zinc-500">{habit.status}</span>
+          {!analysis.hasHabits ? (
+            <div className="text-center py-4 text-zinc-400 text-xs">
+              لا توجد عادات مسجلة بعد. اضغط على زر <strong>+ Habit</strong> بالأعلى لإضافة عاداتك وسيقوم الـ AI بتحليلها فوراً.
+            </div>
+          ) : (
+            <>
+              {analysis.nonNegotiables.length > 0 && (
+                <div className="rounded-xl bg-blue-950/30 border border-blue-800/40 p-2.5">
+                  <p className="text-[11px] font-semibold text-blue-300 mb-1">
+                    🎯 الحد الأدنى المطلوب اليوم (Non-Negotiable):
+                  </p>
+                  <ul className="list-disc list-inside space-y-0.5 text-zinc-300 text-[11px]">
+                    {analysis.nonNegotiables.map((item, i) => (
+                      <li key={i}>
+                        <strong className="text-white">{item.name}</strong> ({item.note})
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <span
-                  className={`font-mono font-bold ${
-                    !habit.isScheduledToday
-                      ? "text-zinc-600"
-                      : habit.probability >= 70
-                      ? "text-emerald-400"
-                      : habit.probability >= 45
-                      ? "text-amber-400"
-                      : "text-rose-400"
-                  }`}
-                >
-                  {habit.isScheduledToday ? `${habit.probability}%` : "—"}
-                </span>
-              </div>
-            ))}
-          </div>
+              )}
 
-          <div className="text-[11px] bg-zinc-900 p-2.5 rounded-lg border border-zinc-800 text-zinc-300">
-            {analysis.isHighPressure
-              ? "⚡ يوم مضغوط: أنجز Pray والحد الأدنى من DEPI/NTI ولا تضغط نفسك في المهام الجانبية."
-              : "🚀 يوم مثالي: طاقتك كافية لإكمال NTI Notebooks و ML ومتابعة جلسات DEPI بالكامل."}
-          </div>
+              <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                {analysis.habitForecasts.map((habit, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between bg-zinc-900/90 p-2 rounded-lg border border-zinc-800 text-[11px]"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-zinc-200 font-medium">{habit.name}</span>
+                      <span className="text-[10px] text-zinc-500">{habit.status}</span>
+                    </div>
+                    <span
+                      className={`font-mono font-bold ${
+                        !habit.isScheduledToday
+                          ? "text-zinc-600"
+                          : habit.probability >= 70
+                          ? "text-emerald-400"
+                          : habit.probability >= 45
+                          ? "text-amber-400"
+                          : "text-rose-400"
+                      }`}
+                    >
+                      {habit.isScheduledToday ? `${habit.probability}%` : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="text-[11px] bg-zinc-900 p-2.5 rounded-lg border border-zinc-800 text-zinc-300">
+                {analysis.isHighPressure
+                  ? "⚡ يوم مضغوط: ركّز على العادات الأساسية فقط ونظم طاقتك بدون إجهاد إضافي."
+                  : "🚀 يوم مثالي: طاقتك والوقت المتاح كافيان لإنجاز جدول عاداتك بالكامل بكفاءة عالية."}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -232,7 +224,7 @@ function EmbeddedAICoach({ habits, todayDate }: { habits: Habit[]; todayDate: Da
 
 interface TodayPanelProps {
   habits: Habit[];
-  stats: Stats;
+  stats: MonthStats;
   todayDate: Date;
 }
 
