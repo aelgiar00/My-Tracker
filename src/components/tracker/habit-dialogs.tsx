@@ -47,7 +47,6 @@ export function NewHabitDialog({
   selectedYear: number;
   selectedMonth: number;
 }) {
-  const addHabit = useTrackerStore((s) => s.addHabit);
   const addHabits = useTrackerStore((s) => s.addHabits);
   const habits = useTrackerStore((s) => s.habits);
   const setScheduleForMonth = useTrackerStore((s) => s.setScheduleForMonth);
@@ -56,7 +55,7 @@ export function NewHabitDialog({
   const [customDays, setCustomDays] = useState<Weekday[]>([0, 1, 2, 3, 4]);
   const [onlyDay, setOnlyDay] = useState(1);
   const [bulkNames, setBulkNames] = useState("");
-  const [monthlyOnly, setMonthlyOnly] = useState(true);
+  const [monthlyOnly, setMonthlyOnly] = useState(false);
 
   function reset() {
     setName("");
@@ -64,7 +63,7 @@ export function NewHabitDialog({
     setCustomDays([0, 1, 2, 3, 4]);
     setOnlyDay(1);
     setBulkNames("");
-    setMonthlyOnly(true);
+    setMonthlyOnly(false);
   }
 
   function submit() {
@@ -90,7 +89,7 @@ export function NewHabitDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New habit</DialogTitle>
-          <DialogDescription>Stable IDs keep history if you rename later.</DialogDescription>
+          <DialogDescription>Add recurring or scheduled habits to your performance matrix.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -99,7 +98,7 @@ export function NewHabitDialog({
               id="habit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Evening review"
+              placeholder="e.g. Deep Work / Training"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") submit();
@@ -112,13 +111,18 @@ export function NewHabitDialog({
               id="habit-bulk"
               value={bulkNames}
               onChange={(e) => setBulkNames(e.target.value)}
-              placeholder={"One habit per line\nRead 20 pages\nPractice C++\nWorkout"}
+              placeholder={"One habit per line\nDeep Learning practice\nMorning Workout\nReading research papers"}
               className="min-h-24"
             />
             <p className="text-xs text-subtle">Paste multiple habit names at once. Blank lines are ignored.</p>
           </div>
           <label className="flex items-center gap-2 text-xs text-muted">
-            <input type="checkbox" checked={monthlyOnly} onChange={(e) => setMonthlyOnly(e.target.checked)} className="size-4 accent-[var(--color-accent)]" />
+            <input
+              type="checkbox"
+              checked={monthlyOnly}
+              onChange={(e) => setMonthlyOnly(e.target.checked)}
+              className="size-4 accent-[var(--color-accent)]"
+            />
             Add to this month only
           </label>
           <div className="flex flex-col gap-1.5">
@@ -178,24 +182,26 @@ export function NewHabitDialog({
               </NativeSelect>
             </div>
           )}
-          <div>
-            <p className="mb-2 text-xs font-medium tracking-wide text-muted">Add existing habit to this month</p>
-            <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
-              {habits.filter((h) => !h.archived && !scheduleForMonth(h, selectedYear, selectedMonth)).map((habit) => (
-                <button
-                  key={habit.id}
-                  type="button"
-                  className="rounded-md bg-surface-2 px-2.5 py-1.5 text-xs text-muted hover:text-fg"
-                  onClick={() => {
-                    setScheduleForMonth(habit.id, selectedYear, selectedMonth, habit.schedule);
-                    toast(`Added ${habit.name} to this month.`);
-                  }}
-                >
-                  {habit.name}
-                </button>
-              ))}
+          {habits.some((h) => !h.archived && !scheduleForMonth(h, selectedYear, selectedMonth)) && (
+            <div>
+              <p className="mb-2 text-xs font-medium tracking-wide text-muted">Add existing habit to this month</p>
+              <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+                {habits.filter((h) => !h.archived && !scheduleForMonth(h, selectedYear, selectedMonth)).map((habit) => (
+                  <button
+                    key={habit.id}
+                    type="button"
+                    className="rounded-md bg-surface-2 px-2.5 py-1.5 text-xs text-muted hover:text-fg"
+                    onClick={() => {
+                      setScheduleForMonth(habit.id, selectedYear, selectedMonth, habit.schedule);
+                      toast(`Added ${habit.name} to this month.`);
+                    }}
+                  >
+                    {habit.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <p className="mb-2 text-xs font-medium tracking-wide text-muted">Quick packs</p>
             <div className="flex flex-col gap-2">
@@ -205,7 +211,7 @@ export function NewHabitDialog({
                   type="button"
                   className="flex items-start justify-between gap-3 rounded-md bg-surface-2 px-3 py-2.5 text-left shadow-[var(--shadow-border)] transition-colors hover:bg-surface-2/80"
                   onClick={() => {
-                    const n = addHabits(pack.names, { type: "preset", id: "daily" }, { monthKey: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`, monthlyOnly: true });
+                    const n = addHabits(pack.names, { type: "preset", id: "daily" }, { monthKey: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`, monthlyOnly: false });
                     toast(n ? `Added ${n} from ${pack.label}.` : "Those habits are already in the matrix.");
                     onOpenChange(false);
                   }}
@@ -261,7 +267,7 @@ export function SettingsDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Tracking window, backup, and sample data.</DialogDescription>
+          <DialogDescription>Tracking window, backup, and environment management.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
@@ -321,10 +327,10 @@ export function SettingsDialog({
             variant="outline"
             onClick={() => {
               resetToSeed();
-              toast("Sample matrix restored.");
+              toast("Matrix cleared. Ready for new habits.");
             }}
           >
-            Restore sample data
+            Clear all data (Reset to blank)
           </Button>
         </div>
       </DialogContent>
