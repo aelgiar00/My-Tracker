@@ -1,6 +1,4 @@
-إليك ملف **`README.md`** شامل واحترافي يغطي كل جوانب المشروع التقنية، المعمارية، ونماذج تعلم الآلة بالتفصيل:
 
-```markdown
 # 🚀 My-Tracker: AI-Powered Intelligent Habit Tracking System
 
 > **A high-performance, full-stack habit tracking and behavior analytics dashboard integrated with an Embedded Machine Learning Engine for habit completion forecasting and behavioral pattern recognition.**
