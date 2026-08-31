@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { useTrackerStore } from "@/store/tracker-store";
 import { isDayExpected, completionKey, scheduleForMonth } from "@/lib/tracker/schedule";
 import { monthDays } from "@/lib/tracker/stats";
@@ -15,13 +15,11 @@ export function AnalyticsPanel() {
   const selectedMonth = useTrackerStore((s) => s.selectedMonth);
   const trackingStart = useTrackerStore((s) => s.trackingStart);
 
-  // حساب أيام الشهر الحالي
   const allMonthDays = useMemo(
     () => monthDays(selectedYear, selectedMonth, trackingStart),
     [selectedYear, selectedMonth, trackingStart]
   );
 
-  // حساب نسب إنجاز كل عادة
   const habitsBreakdown = useMemo(() => {
     return habits.map((habit) => {
       let expected = 0;
@@ -41,7 +39,6 @@ export function AnalyticsPanel() {
     });
   }, [habits, completions, allMonthDays, selectedYear, selectedMonth]);
 
-  // حساب إحصاءات الأيام الـ 30 للهيتماب والشارت
   const daysBreakdown = useMemo(() => {
     return allMonthDays.map((date) => {
       const iso = format(date, "yyyy-MM-dd");
@@ -60,12 +57,10 @@ export function AnalyticsPanel() {
     });
   }, [allMonthDays, habits, completions, selectedYear, selectedMonth]);
 
-  // إجمالي الإنجاز والـ Pace
   const totalCompleted = habitsBreakdown.reduce((sum, h) => sum + h.completed, 0);
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  // نقاط الرادار السداسي
   const radarPoints = useMemo(() => {
     const total = Math.max(3, habitsBreakdown.length);
     const radius = 55;
@@ -85,7 +80,6 @@ export function AnalyticsPanel() {
 
   return (
     <div className={cn("space-y-6 transition-all", fullScreen && "fixed inset-4 z-50 overflow-y-auto rounded-3xl bg-[var(--bg)] p-6 shadow-2xl border border-[var(--border)]")}>
-      {/* Controls Bar */}
       <div className="flex items-center justify-between rounded-2xl bg-[var(--surface)] p-4 border border-[var(--border)]">
         <div>
           <h3 className="text-xs font-semibold text-[var(--fg)]">Chart view</h3>
@@ -141,29 +135,64 @@ export function AnalyticsPanel() {
         </div>
       </div>
 
-      {/* Visual Charts Grid */}
+      {/* Visual Charts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Daily Execution Bar Chart */}
+        {/* 1. Daily Execution Bar Chart With Fully Labeled Y-Axis & X-Axis */}
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
           <h3 className="text-xs font-semibold text-[var(--fg)]">Daily execution</h3>
-          <div className="mt-6 flex h-48 items-end justify-between gap-1 border-b border-[var(--border)] pb-2">
-            {daysBreakdown.slice(-14).map((d) => {
-              const pct = d.expected > 0 ? (d.completed / d.expected) * 100 : 0;
-              return (
-                <div key={d.iso} className="flex flex-1 flex-col items-center gap-1.5 h-full justify-end">
-                  <div
-                    className="w-full max-w-[12px] rounded-t bg-[#cbb592] transition-all"
-                    style={{ height: `${Math.max(6, pct * 0.9)}%` }}
-                    title={`${d.iso}: ${Math.round(pct)}%`}
-                  />
-                  <span className="text-[9px] text-[var(--muted)]">{d.iso.slice(8)}</span>
-                </div>
-              );
-            })}
+          
+          <div className="mt-6 flex h-48 gap-2">
+            {/* Y-Axis Labels */}
+            <div className="flex flex-col justify-between text-[9px] font-mono text-[var(--muted)] pr-1 select-none text-right">
+              <span>100%</span>
+              <span>80%</span>
+              <span>60%</span>
+              <span>40%</span>
+              <span>20%</span>
+              <span>0%</span>
+            </div>
+
+            {/* Bars Area with X-Axis */}
+            <div className="relative flex flex-1 flex-col justify-between">
+              {/* Background Grid Lines */}
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10">
+                <div className="border-b border-white w-full"></div>
+                <div className="border-b border-white w-full"></div>
+                <div className="border-b border-white w-full"></div>
+                <div className="border-b border-white w-full"></div>
+                <div className="border-b border-white w-full"></div>
+                <div className="border-b border-white w-full"></div>
+              </div>
+
+              {/* Bar Columns */}
+              <div className="flex h-40 items-end justify-between gap-1 z-10 border-b border-[var(--border)] pb-0.5">
+                {daysBreakdown.slice(-14).map((d) => {
+                  const pct = d.expected > 0 ? (d.completed / d.expected) * 100 : 0;
+                  return (
+                    <div key={d.iso} className="flex flex-1 flex-col items-center justify-end h-full">
+                      <div
+                        className="w-full max-w-[12px] rounded-t bg-[#cbb592] transition-all hover:opacity-80 cursor-pointer"
+                        style={{ height: `${Math.max(4, pct)}%` }}
+                        title={`${d.iso}: ${Math.round(pct)}% (${d.completed}/${d.expected})`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* X-Axis Day Numbers */}
+              <div className="flex justify-between gap-1 pt-1 z-10">
+                {daysBreakdown.slice(-14).map((d) => (
+                  <span key={d.iso} className="flex-1 text-center text-[9px] font-mono text-[var(--muted)]">
+                    {d.iso.slice(8)}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Habit Completion Progress Bars */}
+        {/* 2. Habit Completion Bars */}
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
           <h3 className="text-xs font-semibold text-[var(--fg)]">Habit completion</h3>
           <div className="mt-5 space-y-3 max-h-48 overflow-y-auto pr-1">
@@ -184,7 +213,7 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* Mastery Radar */}
+        {/* 3. Mastery Radar */}
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
           <h3 className="text-xs font-semibold text-[var(--fg)]">Mastery radar</h3>
           <div className="relative my-auto flex items-center justify-center">
