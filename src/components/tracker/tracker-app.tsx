@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
+import { format, startOfWeek, addDays } from "date-fns";
 import {
   BarChart3,
   CalendarDays,
@@ -10,6 +10,8 @@ import {
   Plus,
   Settings,
   Undo2,
+  CalendarRange,
+  Palette,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AnalyticsPanel } from "@/components/tracker/analytics-panel";
@@ -23,7 +25,7 @@ import { NativeSelect } from "@/components/tracker/native-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isoDate } from "@/lib/tracker/schedule";
 import { computeStats, monthDays } from "@/lib/tracker/stats";
-import { useTrackerStore, exportSnapshot } from "@/store/tracker-store";
+import { useTrackerStore, exportSnapshot, ThemeMode } from "@/store/tracker-store";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +44,17 @@ const MONTHS = [
   "December",
 ];
 
+const THEMES: { id: ThemeMode; label: string }[] = [
+  { id: "dark", label: "Studio Dark" },
+  { id: "oled", label: "OLED Pitch Black" },
+  { id: "midnight", label: "Midnight Blue" },
+  { id: "nord", label: "Nordic Frost" },
+  { id: "emerald", label: "Emerald Matrix" },
+  { id: "cyberpunk", label: "Cyber Neon" },
+  { id: "sunset", label: "Sunset Amber" },
+  { id: "light", label: "Minimal Light" },
+];
+
 type MobileTab = "today" | "matrix" | "stats";
 
 export function TrackerApp() {
@@ -51,6 +64,7 @@ export function TrackerApp() {
   const [mobileTab, setMobileTab] = useState<MobileTab>("today");
   const [session, setSession] = useState<any>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [viewMode, setViewMode] = useState<"month" | "week">("month");
 
   const habits = useTrackerStore((s) => s.habits);
   const completions = useTrackerStore((s) => s.completions);
@@ -58,6 +72,7 @@ export function TrackerApp() {
   const trackingStart = useTrackerStore((s) => s.trackingStart);
   const hidePast = useTrackerStore((s) => s.hidePast);
   const theme = useTrackerStore((s) => s.theme);
+  const setTheme = useTrackerStore((s) => s.setTheme);
   const selectedYear = useTrackerStore((s) => s.selectedYear);
   const selectedMonth = useTrackerStore((s) => s.selectedMonth);
   const setMonth = useTrackerStore((s) => s.setMonth);
@@ -67,7 +82,7 @@ export function TrackerApp() {
   const importSnapshot = useTrackerStore((s) => s.importSnapshot);
   const resetToSeed = useTrackerStore((s) => s.resetToSeed);
 
-  // التحقق من الجلسة ومزامنة البيانات السحابية
+  // تحقق الجلسة والمزامنة السحابية
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -95,7 +110,7 @@ export function TrackerApp() {
 
   async function fetchCloudData(userId: string) {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("user_tracker_data")
         .select("snapshot")
         .eq("user_id", userId)
@@ -104,7 +119,6 @@ export function TrackerApp() {
       if (data && data.snapshot) {
         importSnapshot(data.snapshot);
       } else {
-        // مستخدم جديد تماماً: تصفير كل البيانات لتبدأ فارغة 100%
         resetToSeed();
         const rawJson = JSON.parse(exportSnapshot());
         await supabase.from("user_tracker_data").upsert({
@@ -118,7 +132,7 @@ export function TrackerApp() {
     }
   }
 
-  // مزامنة أي تغيير محلي مع السحابة فوراً
+  // مزامنة التغييرات المحلية
   useEffect(() => {
     if (!session?.user?.id) return;
     const saveToCloud = async () => {
@@ -145,14 +159,23 @@ export function TrackerApp() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  const days = useMemo(
+  // حساب الأيام لشهر كامل أو أسبوع محدد
+  const monthDaysList = useMemo(
     () => monthDays(selectedYear, selectedMonth, trackingStart),
     [selectedYear, selectedMonth, trackingStart],
   );
+
+  const weekDaysList = useMemo(() => {
+    const start = startOfWeek(today, { weekStartsOn: 6 }); // يبدأ من السبت
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  }, [today]);
+
+  const activeDays = viewMode === "month" ? monthDaysList : weekDaysList;
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+
   const stats = useMemo(
-    () => computeStats(habits, completions, days, today, dailyTasks),
-    [habits, completions, days, today, dailyTasks],
+    () => computeStats(habits, completions, monthDaysList, today, dailyTasks),
+    [habits, completions, monthDaysList, today, dailyTasks],
   );
 
   const archived = habits.filter((h) => h.archived);
@@ -185,12 +208,18 @@ export function TrackerApp() {
         />
       )}
 
+      {/* Header Bar */}
       <header className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="animate-fade-rise">
-          <p className="text-xs font-medium tracking-[0.18em] text-muted uppercase">
-            Execution log
-          </p>
-          <h1 className="font-display text-4xl tracking-tight text-fg sm:text-5xl">
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-semibold tracking-[0.2em] text-muted uppercase">
+              Execution Log
+            </p>
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary uppercase">
+              {viewMode} View
+            </span>
+          </div>
+          <h1 className="mt-1 font-display text-4xl tracking-tight text-fg sm:text-5xl">
             {MONTHS[selectedMonth - 1]} {selectedYear}
           </h1>
           <p className="mt-2 max-w-xl text-sm text-muted">
@@ -198,7 +227,40 @@ export function TrackerApp() {
             {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
           </p>
         </div>
+
+        {/* Action Controls & Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Week / Month Toggle */}
+          <div className="flex items-center rounded-lg bg-surface p-1 shadow-[var(--shadow-border)]">
+            <button
+              type="button"
+              onClick={() => setViewMode("month")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                viewMode === "month"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted hover:text-fg",
+              )}
+            >
+              <CalendarRange className="size-3.5" />
+              Month
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("week")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                viewMode === "week"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted hover:text-fg",
+              )}
+            >
+              <CalendarDays className="size-3.5" />
+              Week
+            </button>
+          </div>
+
+          {/* Month / Year Selector */}
           <div className="flex items-center gap-1 rounded-lg bg-surface p-1 shadow-[var(--shadow-border)]">
             <Button variant="ghost" size="icon-sm" onClick={() => shiftMonth(-1)} aria-label="Previous month">
               <ChevronLeft className="size-4" />
@@ -229,6 +291,23 @@ export function TrackerApp() {
               <ChevronRight className="size-4" />
             </Button>
           </div>
+
+          {/* Theme Selector */}
+          <div className="flex items-center rounded-lg bg-surface px-2 shadow-[var(--shadow-border)]">
+            <Palette className="mr-1.5 size-3.5 text-muted" />
+            <NativeSelect
+              className="h-8 w-[7.5rem] border-0 bg-transparent text-xs shadow-none"
+              value={theme}
+              onChange={(e) => setTheme(e.target.value as ThemeMode)}
+            >
+              {THEMES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+
           <Button
             variant="secondary"
             size="sm"
@@ -244,7 +323,7 @@ export function TrackerApp() {
           <Button variant="secondary" size="icon-sm" onClick={() => setSettingsOpen(true)} aria-label="Settings">
             <Settings className="size-4" />
           </Button>
-          <Button size="sm" onClick={() => setNewOpen(true)}>
+          <Button size="sm" onClick={() => setNewOpen(true)} className="bg-primary hover:bg-primary/90">
             <Plus className="size-3.5" />
             Habit
           </Button>
@@ -266,6 +345,7 @@ export function TrackerApp() {
         </div>
       </header>
 
+      {/* Main Grid: Today Panel + Matrix */}
       <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
         <section className={cn("min-w-0", mobileTab !== "today" && "max-lg:hidden")}>
           <TodayPanel habits={habits} stats={stats} todayDate={today} />
@@ -273,7 +353,7 @@ export function TrackerApp() {
         <section className={cn("min-w-0", mobileTab !== "matrix" && "max-lg:hidden")}>
           <HabitMatrix
             habits={habits}
-            days={days}
+            days={activeDays}
             todayIso={isoDate(today)}
             hidePast={hidePast}
             daysInMonth={daysInMonth}
@@ -283,10 +363,11 @@ export function TrackerApp() {
         </section>
       </div>
 
+      {/* Analytics, Audit, & Management Tabs */}
       <div className={cn("mt-8", mobileTab !== "stats" && "max-lg:hidden")}>
         <Tabs defaultValue="analytics">
           <TabsList>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics & ML</TabsTrigger>
             <TabsTrigger value="audit">Audit</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
           </TabsList>
@@ -299,7 +380,7 @@ export function TrackerApp() {
           <TabsContent value="manage">
             <div className="flex flex-col gap-5">
               <BulkUpdatePanel
-                days={days.map((d) => ({ iso: isoDate(d), label: format(d, "EEE d") }))}
+                days={activeDays.map((d) => ({ iso: isoDate(d), label: format(d, "EEE d") }))}
                 todayIso={isoDate(today)}
               />
               <div className="rounded-xl bg-surface p-4 shadow-[var(--shadow-border)]">
@@ -324,7 +405,8 @@ export function TrackerApp() {
         </Tabs>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden backdrop-blur-md">
         <div className="mx-auto grid max-w-md grid-cols-3">
           {(
             [
@@ -338,8 +420,8 @@ export function TrackerApp() {
               type="button"
               onClick={() => setMobileTab(id)}
               className={cn(
-                "flex min-h-12 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-medium",
-                mobileTab === id ? "text-fg" : "text-muted",
+                "flex min-h-12 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-medium transition-colors",
+                mobileTab === id ? "text-primary" : "text-muted",
               )}
             >
               <Icon className="size-4" />
@@ -349,7 +431,13 @@ export function TrackerApp() {
         </div>
       </nav>
 
-      <NewHabitDialog open={newOpen} onOpenChange={setNewOpen} daysInMonth={daysInMonth} selectedYear={selectedYear} selectedMonth={selectedMonth} />
+      <NewHabitDialog
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        daysInMonth={daysInMonth}
+        selectedYear={selectedYear}
+        selectedMonth={selectedMonth}
+      />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
