@@ -5,7 +5,6 @@ import { Habit, Schedule } from "@/lib/tracker/types";
 import { isDayExpected, isRestDay, completionKey, scheduleForMonth } from "@/lib/tracker/schedule";
 import { useTrackerStore } from "@/store/tracker-store";
 import { NativeSelect } from "@/components/tracker/native-select";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +18,6 @@ interface HabitMatrixProps {
   selectedMonth: number;
 }
 
-// قائمة شاملة لكل أنواع الجدولة بما فيها الأيام الفردية
 const SCHEDULE_OPTIONS = [
   { id: "daily", label: "Daily" },
   { id: "weekdays", label: "Weekdays" },
@@ -65,7 +63,6 @@ export function HabitMatrix({
     return days.filter((d) => !isFuture(d) || format(d, "yyyy-MM-dd") >= todayIso);
   }, [days, hidePast, todayIso]);
 
-  // تحويل القيمة المختارة إلى Schedule Object متوافق
   const handleScheduleChange = (habitId: string, value: string) => {
     let newSchedule: Schedule;
     const dayMap: Record<string, number> = {
@@ -79,13 +76,12 @@ export function HabitMatrix({
     }
 
     setSchedule(habitId, newSchedule);
-    toast.success("Updated schedule");
+    toast.success("Schedule updated");
   };
 
-  // استخراج القيمة الحالية للـ Select
   const getSelectedScheduleValue = (schedule: Schedule) => {
     if (schedule.type === "preset") return schedule.id;
-    if (schedule.type === "weekly" && schedule.days.length === 1) {
+    if (schedule.type === "weekly" && schedule.days && schedule.days.length === 1) {
       const revMap: Record<number, string> = {
         1: "mon", 2: "tue", 3: "wed", 4: "thu", 5: "fri", 6: "sat", 0: "sun",
       };
@@ -96,7 +92,7 @@ export function HabitMatrix({
 
   return (
     <div className="w-full">
-      {/* Matrix Header & Controls */}
+      {/* Header & Controls */}
       <div className="mb-6">
         <h2 className="font-serif-title text-2xl font-normal tracking-tight text-[var(--fg)]">Matrix</h2>
         <p className="mt-1 text-xs text-[var(--muted)]">
@@ -153,7 +149,7 @@ export function HabitMatrix({
         </div>
       </div>
 
-      {/* Grid Table */}
+      {/* Matrix Table */}
       <div className="overflow-x-auto pb-4">
         <table className="w-full min-w-max border-separate border-spacing-y-2.5">
           <thead>
@@ -187,17 +183,14 @@ export function HabitMatrix({
 
                 return (
                   <tr key={habit.id} className="group hover:bg-[var(--surface-elevated)]/20 transition-colors">
-                    {/* Drag Handle */}
                     <td className="px-1 text-[var(--muted)] opacity-30 group-hover:opacity-100">
                       <GripVertical className="size-4 cursor-grab" />
                     </td>
 
-                    {/* Habit Name */}
                     <td className="px-3">
                       <span className="text-sm font-medium text-[var(--fg)]">{habit.name}</span>
                     </td>
 
-                    {/* Schedule Selector */}
                     <td className="px-3">
                       <NativeSelect
                         className="h-8 w-32 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
@@ -212,7 +205,7 @@ export function HabitMatrix({
                       </NativeSelect>
                     </td>
 
-                    {/* Matrix Cells */}
+                    {/* Matrix Day Cells */}
                     {visibleDays.map((date) => {
                       const iso = format(date, "yyyy-MM-dd");
                       const key = completionKey(habit.id, iso);
@@ -222,25 +215,14 @@ export function HabitMatrix({
                       const isPast = iso < todayIso;
                       const isCurrentToday = iso === todayIso;
 
-                      if (isRest) {
+                      // إذا كان يوم راحة أو غير مجدول أصلاً (مثل الإثنين لعادة Fridays) -> نعرض شرطة فقط
+                      if (isRest || !expected) {
                         return (
                           <td key={iso} className="px-1 text-center">
-                            <button
-                              type="button"
-                              onClick={() => setRestDay(habit.id, iso, false)}
-                              title="Rest day (Click to cancel)"
-                              className="flex size-7 items-center justify-center rounded-lg text-xs text-[var(--muted)] hover:bg-[var(--surface-elevated)]"
+                            <div
+                              title={isRest ? "Rest day" : "Not scheduled on this day"}
+                              className="flex size-7 items-center justify-center text-xs text-[var(--muted)]/40 select-none"
                             >
-                              —
-                            </button>
-                          </td>
-                        );
-                      }
-
-                      if (!expected) {
-                        return (
-                          <td key={iso} className="px-1 text-center">
-                            <div className="flex size-7 items-center justify-center text-xs text-[var(--muted)]/40">
                               —
                             </div>
                           </td>
@@ -272,7 +254,6 @@ export function HabitMatrix({
                       );
                     })}
 
-                    {/* Direct Action Buttons: Rest / Archive / Delete */}
                     <td className="px-2 text-center">
                       <div className="flex items-center justify-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
                         <button
@@ -282,7 +263,7 @@ export function HabitMatrix({
                             toast.info(`Set rest for "${habit.name}" today`);
                           }}
                           title="Rest Today"
-                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] transition-colors"
+                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)]"
                         >
                           <CalendarOff className="size-3.5" />
                         </button>
@@ -293,7 +274,7 @@ export function HabitMatrix({
                             toast.success(`Archived "${habit.name}"`);
                           }}
                           title="Archive Habit"
-                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] transition-colors"
+                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)]"
                         >
                           <Archive className="size-3.5" />
                         </button>
@@ -304,7 +285,7 @@ export function HabitMatrix({
                             toast.error(`Deleted "${habit.name}"`);
                           }}
                           title="Delete Habit"
-                          className="flex size-7 items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors"
+                          className="flex size-7 items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
