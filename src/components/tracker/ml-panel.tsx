@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { Check } from "lucide-react";
 import { Habit, Completion } from "@/lib/tracker/types";
+import { isDayExpected, scheduleForMonth } from "@/lib/tracker/schedule";
 import { NativeSelect } from "@/components/tracker/native-select";
 import { Button } from "@/components/ui/button";
 import { useTrackerStore } from "@/store/tracker-store";
@@ -16,53 +17,88 @@ interface MlPanelProps {
 export function MlPanel({ habits, completions }: MlPanelProps) {
   const [testDate, setTestDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [engine, setEngine] = useState("Gradient Boosting");
-  const [threshold, setThreshold] = useState("70");
+  const [threshold, setThreshold] = useState("60");
   const [running, setRunning] = useState(false);
 
   const toggleCompletion = useTrackerStore((s) => s.toggleCompletion);
   const activeHabits = habits.filter((h) => !h.archived);
 
-  // حساب احتمالية تنبؤية سلوكية حقيقية
+  // حساب دقيق يعتمد على جدول كل عادة على حدة (Schedule-Aware Behavioral Forecasting)
   const predictions = useMemo(() => {
-    const threshNum = Number(threshold) || 70;
+    const threshNum = Number(threshold) || 60;
     const testDateObj = parseISO(testDate);
+    const testYear = testDateObj.getFullYear();
+    const testMonth = testDateObj.getMonth() + 1;
 
     return activeHabits.map((habit) => {
-      // 1. حساب أداء آخر 7 أيام (Recent Momentum)
-      let recentDone = 0;
-      for (let i = 1; i <= 7; i++) {
-        const d = new Date(testDateObj);
-        d.setDate(d.getDate() - i);
-        const iso = format(d, "yyyy-MM-dd");
-        if (completions[`${habit.id}|${iso}`]) recentDone++;
+      const schedule = scheduleForMonth(habit, testYear, testMonth) || habit.schedule;
+      const isExpectedOnTestDate = isDayExpected(schedule, testDateObj);
+
+      // 1. حساب الإنجاز في الأيام السابقة المجدولة فقط (وليس كل الأيام)
+      let scheduledOccurrences = 0;
+      let completedOccurrences = 0;
+      let recentStreak = 0;
+      let streakBroken = false;
+
+      // فحص نافذة الـ 30 يوماً السابقة
+      for (let i = 1; i <= 30; i++) {
+        const pastDate = new Date(testDateObj);
+        pastDate.setDate(pastDate.getDate() - i);
+        const pastIso = format(pastDate, "yyyy-MM-dd");
+        const pastSched = scheduleForMonth(habit, pastDate.getFullYear(), pastDate.getMonth() + 1) || habit.schedule;
+
+        if (isDayExpected(pastSched, pastDate)) {
+          scheduledOccurrences++;
+          const isDone = Boolean(completions[`${habit.id}|${pastIso}`]);
+          if (isDone) {
+            completedOccurrences++;
+            if (!streakBroken) recentStreak++;
+          } else {
+            streakBroken = true;
+          }
+        }
       }
 
-      // 2. حساب إجمالي التاريخ
-      let totalDone = 0;
-      for (const key of Object.keys(completions)) {
-        if (key.startsWith(`${habit.id}|`) && completions[key]) totalDone++;
+      // 2. حساب نسبة الإنجاز المجدول الدقيقة (Schedule Adherence Rate)
+      let probability = 0;
+      let driverReason = "";
+
+      if (scheduledOccurrences === 0) {
+        // حالة العادة التي لم يسبق لها أي يوم مجدول (مثل الثلاثاء الذي لم يأتِ بعد)
+        probability = 0;
+        driverReason = "New schedule / No prior target occurrences recorded";
+      } else {
+        const hitRate = (completedOccurrences / scheduledOccurrences) * 100;
+
+        // إذا كانت العادة مجدولة أسبوعياً ويوم الاختبار ليس ضمن جدولها
+        if (!isExpectedOnTestDate) {
+          probability = 0;
+          driverReason = "Unscheduled rest day for this habit";
+        } else if (hitRate === 100) {
+          // التزام كامل في كل الأيام المجدولة (مثل الجمعة 1 من 1، أو الصلاة 6 من 6)
+          probability = Math.min(98, Math.max(90, 92 + Math.min(6, recentStreak)));
+          driverReason = `Flawless consistency (${completedOccurrences}/${scheduledOccurrences} scheduled occurrences completed)`;
+        } else if (hitRate >= 75) {
+          probability = Math.min(88, Math.max(70, Math.round(hitRate * 0.85 + recentStreak * 3)));
+          driverReason = `Strong adherence pattern (${completedOccurrences}/${scheduledOccurrences} completed)`;
+        } else if (hitRate >= 40) {
+          probability = Math.min(65, Math.max(45, Math.round(hitRate * 0.9)));
+          driverReason = `Moderate execution momentum (${completedOccurrences}/${scheduledOccurrences} completed)`;
+        } else {
+          probability = Math.max(15, Math.round(hitRate * 0.8));
+          driverReason = `Low execution frequency (${completedOccurrences}/${scheduledOccurrences} completed)`;
+        }
       }
 
-      // حساب الـ Probability الحقيقية: استمرارية عالية = نسبة مرتفعة حتماً
-      const recentWeight = (recentDone / 7) * 55; // 0 -> 55%
-      const consistencyBase = totalDone > 0 ? Math.min(35, totalDone * 5) : 15;
-      const baseProb = Math.min(97, Math.max(25, Math.round(recentWeight + consistencyBase + 10)));
-
-      const isYes = baseProb >= threshNum;
+      const isYes = probability >= threshNum;
       const actualKey = `${habit.id}|${testDate}`;
       const isActualDone = Boolean(completions[actualKey]);
-
-      const driverReason = recentDone >= 5
-        ? "Strong multi-day streak consistency"
-        : recentDone >= 2
-        ? "Moderate weekly momentum"
-        : "Low recent execution frequency";
 
       return {
         habit,
         predicted: isYes ? "Yes" : "No",
-        probability: `${baseProb}%`,
-        probValue: baseProb,
+        probability: `${probability}%`,
+        probValue: probability,
         actual: isActualDone,
         reason: `${isYes ? "High" : "Low"} confidence. Main driver: ${driverReason}`,
       };
@@ -73,8 +109,8 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
     setRunning(true);
     setTimeout(() => {
       setRunning(false);
-      toast.success("ML Engine inference refreshed!");
-    }, 400);
+      toast.success("ML Engine inference refreshed with schedule-aware weights!");
+    }, 350);
   };
 
   return (
@@ -182,8 +218,14 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                     <div className="flex items-center gap-3">
                       <span>{p.reason}</span>
                       <div className="flex items-end gap-0.5 opacity-70">
-                        <div className="w-1.5 rounded-xs bg-[var(--primary)]/40" style={{ height: `${Math.max(4, p.probValue * 0.12)}px` }} />
-                        <div className="w-1.5 rounded-xs bg-[var(--primary)]" style={{ height: `${Math.max(6, p.probValue * 0.22)}px` }} />
+                        <div
+                          className="w-1.5 rounded-xs bg-[var(--primary)]/40"
+                          style={{ height: `${Math.max(3, p.probValue * 0.12)}px` }}
+                        />
+                        <div
+                          className="w-1.5 rounded-xs bg-[var(--primary)]"
+                          style={{ height: `${Math.max(4, p.probValue * 0.22)}px` }}
+                        />
                       </div>
                     </div>
                   </td>
