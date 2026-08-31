@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { format, startOfWeek, addDays } from "date-fns";
+import { format, startOfWeek, addDays, parseISO } from "date-fns";
 import {
   CalendarDays,
   ChevronLeft,
@@ -8,6 +8,8 @@ import {
   Plus,
   Settings,
   Undo2,
+  Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AnalyticsPanel } from "@/components/tracker/analytics-panel";
@@ -19,7 +21,7 @@ import { MlPanel } from "@/components/tracker/ml-panel";
 import { AuthDialog } from "@/components/tracker/auth-dialog";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/tracker/native-select";
-import { isoDate } from "@/lib/tracker/schedule";
+import { isoDate, completionKey, isDayExpected, scheduleForMonth } from "@/lib/tracker/schedule";
 import { computeStats, monthDays } from "@/lib/tracker/stats";
 import { useTrackerStore, exportSnapshot } from "@/store/tracker-store";
 import { supabase } from "@/lib/supabase";
@@ -42,6 +44,10 @@ export function TrackerApp() {
   const [session, setSession] = useState<any>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
+  // اختيار اليوم المراد تفقده في الكارت السفلي (الافتراضي هو اليوم)
+  const [selectedInspectDate, setSelectedInspectDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [newCustomTask, setNewCustomTask] = useState("");
+
   const habits = useTrackerStore((s) => s.habits);
   const completions = useTrackerStore((s) => s.completions);
   const dailyTasks = useTrackerStore((s) => s.dailyTasks);
@@ -55,6 +61,11 @@ export function TrackerApp() {
   const undo = useTrackerStore((s) => s.undo);
   const archiveHabit = useTrackerStore((s) => s.archiveHabit);
   const undoCount = useTrackerStore((s) => s.undoStack.length);
+  const toggleCompletion = useTrackerStore((s) => s.toggleCompletion);
+  const addTask = useTrackerStore((s) => s.addTask);
+  const toggleTask = useTrackerStore((s) => s.toggleTask);
+  const deleteTask = useTrackerStore((s) => s.deleteTask);
+  const markAllToday = useTrackerStore((s) => s.markAllToday);
   const importSnapshot = useTrackerStore((s) => s.importSnapshot);
   const resetToSeed = useTrackerStore((s) => s.resetToSeed);
 
@@ -147,6 +158,27 @@ export function TrackerApp() {
 
   const years = Array.from({ length: 8 }, (_, i) => 2025 + i);
 
+  // حساب مهام وعادات اليوم المختار للكارت السفلي
+  const inspectDateObj = parseISO(selectedInspectDate);
+  const activeHabitsForDay = useMemo(() => {
+    return habits
+      .filter((h) => !h.archived)
+      .filter((h) => {
+        const sched = scheduleForMonth(h, inspectDateObj.getFullYear(), inspectDateObj.getMonth() + 1) || h.schedule;
+        return isDayExpected(sched, inspectDateObj);
+      });
+  }, [habits, inspectDateObj]);
+
+  const inspectDayDoneCount = activeHabitsForDay.filter(
+    (h) => Boolean(completions[completionKey(h.id, selectedInspectDate)])
+  ).length;
+
+  const inspectDayScore = activeHabitsForDay.length > 0
+    ? Math.round((inspectDayDoneCount / activeHabitsForDay.length) * 100)
+    : 0;
+
+  const currentDayTasks = dailyTasks[selectedInspectDate] || [];
+
   if (loadingAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--muted)]">
@@ -183,7 +215,7 @@ export function TrackerApp() {
           </p>
         </div>
 
-        {/* Actions Controls Bar */}
+        {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
             <Button
@@ -229,7 +261,10 @@ export function TrackerApp() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setMonth(today.getFullYear(), today.getMonth() + 1)}
+            onClick={() => {
+              setMonth(today.getFullYear(), today.getMonth() + 1);
+              setSelectedInspectDate(format(today, "yyyy-MM-dd"));
+            }}
             className="h-10 rounded-xl border border-[var(--primary)]/30 bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[var(--primary)]"
           >
             <CalendarDays className="mr-1.5 size-3.5 text-[var(--primary)]" />
@@ -282,7 +317,7 @@ export function TrackerApp() {
         </div>
       </header>
 
-      {/* Top Single Main Switcher (Daily / Matrix / Stats) */}
+      {/* Main Single Switcher Tab */}
       <div className="mb-6">
         <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
           {(["daily", "matrix", "stats"] as const).map((tab) => (
@@ -303,34 +338,206 @@ export function TrackerApp() {
         </div>
       </div>
 
-      {/* Views */}
-      <main>
-        {/* Daily View: Side-by-Side (AI Coach on Left, Habit Matrix on Right) */}
+      {/* Main Views */}
+      <main className="space-y-6">
         {mainTab === "daily" && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
-            <section className="min-w-0">
-              <div className="rounded-3xl border border-blue-500/25 bg-[var(--surface)] p-5 shadow-xl">
-                <TodayPanel habits={habits} stats={stats} todayDate={today} />
-              </div>
-            </section>
+          <div className="space-y-6">
+            {/* 1. Top Section: AI Coach on Left + Matrix on Right */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
+              <section className="min-w-0">
+                <div className="rounded-3xl border border-blue-500/25 bg-[var(--surface)] p-5 shadow-xl">
+                  <TodayPanel habits={habits} stats={stats} todayDate={today} />
+                </div>
+              </section>
 
-            <section className="min-w-0">
-              <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl">
-                <HabitMatrix
-                  habits={habits}
-                  days={activeDays}
-                  todayIso={isoDate(today)}
-                  hidePast={hidePast}
-                  daysInMonth={daysInMonth}
-                  selectedYear={selectedYear}
-                  selectedMonth={selectedMonth}
-                />
+              <section className="min-w-0">
+                <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl">
+                  <HabitMatrix
+                    habits={habits}
+                    days={activeDays}
+                    todayIso={isoDate(today)}
+                    hidePast={hidePast}
+                    daysInMonth={daysInMonth}
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                  />
+                </div>
+              </section>
+            </div>
+
+            {/* 2. Bottom Blank Space Filled: Daily Interactive Checklist & Tasks */}
+            <section className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl">
+              {/* Day Selector Pills Header */}
+              <div className="grid grid-cols-7 gap-2 pb-6 border-b border-[var(--border)]">
+                {weekDaysList.map((d) => {
+                  const dIso = format(d, "yyyy-MM-dd");
+                  const isSelected = dIso === selectedInspectDate;
+                  return (
+                    <button
+                      key={dIso}
+                      type="button"
+                      onClick={() => setSelectedInspectDate(dIso)}
+                      className={cn(
+                        "flex flex-col items-center justify-center rounded-2xl py-2.5 border transition-all cursor-pointer",
+                        isSelected
+                          ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--fg)] shadow-xs"
+                          : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)]"
+                      )}
+                    >
+                      <span className="text-[10px] uppercase">{format(d, "EEE")}</span>
+                      <span className="text-sm font-bold mt-0.5">{format(d, "d")}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Day Status & Radial Score */}
+              <div className="flex items-center justify-between py-6 border-b border-[var(--border)]">
+                <div>
+                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">
+                    {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
+                  </span>
+                  <h3 className="font-serif-title text-2xl font-bold text-[var(--fg)] mt-0.5">
+                    {format(inspectDateObj, "d EEE")}
+                  </h3>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    {inspectDayDoneCount === activeHabitsForDay.length && activeHabitsForDay.length > 0
+                      ? "All scheduled habits completed for this day!"
+                      : `${activeHabitsForDay.length - inspectDayDoneCount} habits remaining to check off.`}
+                  </p>
+                </div>
+
+                <div className="flex size-16 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary-muted)] text-center">
+                  <div>
+                    <span className="text-base font-bold text-[var(--fg)] font-serif-title block leading-none">
+                      {inspectDayScore}%
+                    </span>
+                    <span className="text-[9px] text-[var(--muted)] uppercase font-semibold">DAILY</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scheduled Habits Check List */}
+              <div className="py-4 space-y-2.5">
+                {activeHabitsForDay.length === 0 ? (
+                  <p className="text-xs text-[var(--muted)] py-3">No habits scheduled on this day.</p>
+                ) : (
+                  activeHabitsForDay.map((h) => {
+                    const isDone = Boolean(completions[completionKey(h.id, selectedInspectDate)]);
+                    return (
+                      <div
+                        key={h.id}
+                        onClick={() => toggleCompletion(h.id, selectedInspectDate)}
+                        className={cn(
+                          "flex items-center justify-between rounded-2xl p-4 border transition-all cursor-pointer",
+                          isDone
+                            ? "border-[var(--primary)]/40 bg-[var(--primary-muted)]/20"
+                            : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              "flex size-5 items-center justify-center rounded-lg border transition-colors",
+                              isDone
+                                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                                : "border-[var(--border)] bg-transparent"
+                            )}
+                          >
+                            {isDone && <Check className="size-3.5 stroke-[3]" />}
+                          </div>
+                          <div>
+                            <p className={cn("text-xs font-semibold", isDone && "line-through opacity-70")}>{h.name}</p>
+                            <span className="text-[10px] text-[var(--muted)] capitalize">{h.schedule.type}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* One-off Tasks Section */}
+              <div className="pt-4 border-t border-[var(--border)] space-y-3">
+                <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
+                  ONE-OFF TASKS
+                </span>
+
+                {currentDayTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)]"
+                  >
+                    <div
+                      onClick={() => toggleTask(selectedInspectDate, task.id)}
+                      className="flex items-center gap-3 cursor-pointer flex-1"
+                    >
+                      <div
+                        className={cn(
+                          "flex size-4 items-center justify-center rounded-md border",
+                          task.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-[var(--border)]"
+                        )}
+                      >
+                        {task.done && <Check className="size-3 stroke-[3]" />}
+                      </div>
+                      <span className={cn("text-xs text-[var(--fg)]", task.done && "line-through text-[var(--muted)]")}>
+                        {task.name}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => deleteTask(selectedInspectDate, task.id)}
+                      className="text-[var(--muted)] hover:text-rose-400 p-1"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Add task input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add a task for this day..."
+                    value={newCustomTask}
+                    onChange={(e) => setNewCustomTask(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newCustomTask.trim()) {
+                        addTask(selectedInspectDate, newCustomTask.trim());
+                        setNewCustomTask("");
+                      }
+                    }}
+                    className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (newCustomTask.trim()) {
+                        addTask(selectedInspectDate, newCustomTask.trim());
+                        setNewCustomTask("");
+                      }
+                    }}
+                    className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)]"
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => {
+                    markAllToday(selectedInspectDate, true);
+                    toast.success("Completed all habits for this day!");
+                  }}
+                  className="mt-4 h-11 w-full rounded-2xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90"
+                >
+                  Complete this day
+                </Button>
               </div>
             </section>
           </div>
         )}
 
-        {/* Matrix View */}
         {mainTab === "matrix" && (
           <div className="rounded-3xl bg-[var(--surface)] p-6 sm:p-8 border border-[var(--border)] shadow-xl">
             <HabitMatrix
@@ -345,7 +552,6 @@ export function TrackerApp() {
           </div>
         )}
 
-        {/* Stats View */}
         {mainTab === "stats" && (
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-2">
@@ -373,7 +579,7 @@ export function TrackerApp() {
               ))}
             </div>
 
-            {statsSubTab === "analytics" && <AnalyticsPanel stats={stats} />}
+            {statsSubTab === "analytics" && <AnalyticsPanel />}
             {statsSubTab === "audit" && <AuditPanel habits={habits} stats={stats} />}
             {statsSubTab === "ml" && <MlPanel habits={habits} completions={completions} />}
             {statsSubTab === "manage" && (
