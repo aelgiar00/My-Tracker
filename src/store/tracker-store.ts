@@ -8,22 +8,18 @@ const UNDO_LIMIT = 30;
 
 export type ThemeId =
   | "default"
-  | "dark"
-  | "light"
-  | "midnight"
-  | "cyberpunk"
-  | "emerald"
-  | "nord"
-  | "sunset"
-  | "oled"
   | "ocean"
   | "forest"
   | "amber"
-  | "rose";
+  | "rose"
+  | "cyberpunk"
+  | "emerald"
+  | "sunset"
+  | "oled"
+  | "midnight"
+  | "nord";
 
-export type ThemeMode = ThemeId;
 export type MatrixViewMode = "month" | "week";
-
 type UndoSnap = Pick<TrackerSnapshot, "habits" | "completions" | "dailyTasks">;
 
 type TrackerState = TrackerSnapshot & {
@@ -139,7 +135,7 @@ function parseImported(raw: unknown): TrackerSnapshot | null {
   };
 }
 
-// كائن الحالة الابتدائية النظيف (بدون أي عادات افتراضية)
+// حالة ابتدائية نظيفة بدون أي عادات افتراضية تفرض على المستخدم
 const emptyInitialState: TrackerSnapshot = {
   habits: [],
   completions: {},
@@ -157,7 +153,7 @@ export const useTrackerStore = create<TrackerState>()(
       selectedYear: new Date().getFullYear(),
       selectedMonth: new Date().getMonth() + 1,
       inspectIso: null,
-      theme: "dark",
+      theme: "default",
       matrixView: "month",
 
       setMatrixView: (matrixView) => set({ matrixView }),
@@ -172,7 +168,12 @@ export const useTrackerStore = create<TrackerState>()(
       setHidePast: (value) => set({ hidePast: value }),
       setTrackingStart: (iso) => set({ trackingStart: iso }),
       setInspectIso: (iso) => set({ inspectIso: iso }),
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => {
+        if (typeof document !== "undefined") {
+          document.documentElement.dataset.theme = theme;
+        }
+        set({ theme });
+      },
 
       addHabit: (name, schedule, options) => {
         const id = newId();
