@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 @layer base {
   :root,
@@ -10,7 +10,7 @@
     --surface: #12141c;
     --fg: #f3f4f6;
     --muted: #9ca3af;
-    --border: #1f2430;
+    --border: rgba(255, 255, 255, 0.08);
     --primary: #3b82f6;
     --primary-foreground: #ffffff;
     --shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -93,9 +93,30 @@
     --shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.08);
   }
 
+  * {
+    border-color: var(--border);
+  }
+
   body {
     background-color: var(--bg);
     color: var(--fg);
-    font-family: inherit;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+}
+
+/* تنسيقات إضافية للكروت والأزرار التفاعلية */
+.bg-surface {
+  background-color: var(--surface) !important;
+}
+
+.text-fg {
+  color: var(--fg) !important;
+}
+
+.text-muted {
+  color: var(--muted) !important;
+}
+
+.border-border {
+  border-color: var(--border) !important;
 }
