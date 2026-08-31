@@ -129,18 +129,47 @@ function parseImported(raw: unknown): TrackerSnapshot | null {
     habits,
     completions,
     dailyTasks,
-    trackingStart: typeof raw.trackingStart === "string" ? raw.trackingStart : new Date().toISOString().slice(0, 10),
+    trackingStart: typeof raw.trackingStart === "string" ? raw.trackingStart : "2026-08-01",
     hidePast: Boolean(raw.hidePast),
     seeded: true,
   };
 }
 
-// حالة ابتدائية نظيفة بدون أي عادات افتراضية تفرض على المستخدم
-const emptyInitialState: TrackerSnapshot = {
-  habits: [],
-  completions: {},
+// داتا أولية مليانة وجاهزة
+const seedHabits: Habit[] = [
+  { id: "h-pray", name: "Pray", schedule: { type: "preset", id: "daily" }, archived: false, createdAt: new Date().toISOString() },
+  { id: "h-touch", name: "Touch Typing", schedule: { type: "preset", id: "daily" }, archived: false, createdAt: new Date().toISOString() },
+  { id: "h-nti", name: "Nti Notebooks", schedule: { type: "preset", id: "daily" }, archived: false, createdAt: new Date().toISOString() },
+  { id: "h-ml", name: "ML Learning", schedule: { type: "preset", id: "daily" }, archived: false, createdAt: new Date().toISOString() },
+  { id: "h-depi1", name: "Technical Depi 1", schedule: { type: "preset", id: "weekdays" }, archived: false, createdAt: new Date().toISOString() },
+  { id: "h-depi2", name: "Technical Depi 2", schedule: { type: "preset", id: "weekdays" }, archived: false, createdAt: new Date().toISOString() },
+];
+
+const seedCompletions: Record<string, Completion> = {
+  "h-pray|2026-08-25": { at: new Date().toISOString() },
+  "h-pray|2026-08-26": { at: new Date().toISOString() },
+  "h-pray|2026-08-27": { at: new Date().toISOString() },
+  "h-pray|2026-08-28": { at: new Date().toISOString() },
+  "h-pray|2026-08-29": { at: new Date().toISOString() },
+  "h-pray|2026-08-30": { at: new Date().toISOString() },
+  "h-touch|2026-08-26": { at: new Date().toISOString() },
+  "h-touch|2026-08-27": { at: new Date().toISOString() },
+  "h-touch|2026-08-28": { at: new Date().toISOString() },
+  "h-nti|2026-08-27": { at: new Date().toISOString() },
+  "h-nti|2026-08-29": { at: new Date().toISOString() },
+  "h-ml|2026-08-28": { at: new Date().toISOString() },
+  "h-ml|2026-08-29": { at: new Date().toISOString() },
+  "h-depi1|2026-08-26": { at: new Date().toISOString() },
+  "h-depi1|2026-08-28": { at: new Date().toISOString() },
+  "h-depi2|2026-08-27": { at: new Date().toISOString() },
+  "h-depi2|2026-08-28": { at: new Date().toISOString() },
+};
+
+const initialSnapshot: TrackerSnapshot = {
+  habits: seedHabits,
+  completions: seedCompletions,
   dailyTasks: {},
-  trackingStart: new Date().toISOString().slice(0, 10),
+  trackingStart: "2026-08-01",
   hidePast: false,
   seeded: true,
 };
@@ -148,10 +177,10 @@ const emptyInitialState: TrackerSnapshot = {
 export const useTrackerStore = create<TrackerState>()(
   persist(
     (set, get) => ({
-      ...emptyInitialState,
+      ...initialSnapshot,
       undoStack: [],
-      selectedYear: new Date().getFullYear(),
-      selectedMonth: new Date().getMonth() + 1,
+      selectedYear: 2026,
+      selectedMonth: 8,
       inspectIso: null,
       theme: "default",
       matrixView: "month",
@@ -431,7 +460,7 @@ export const useTrackerStore = create<TrackerState>()(
       resetToSeed: () => {
         set((s) => ({
           ...pushUndo(s),
-          ...emptyInitialState,
+          ...initialSnapshot,
         }));
       },
     }),
