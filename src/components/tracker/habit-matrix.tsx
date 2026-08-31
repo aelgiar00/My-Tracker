@@ -1,6 +1,15 @@
 import { useState, useMemo } from "react";
 import { format, isFuture } from "date-fns";
-import { Check, X, GripVertical, Trash2, Archive, CalendarOff } from "lucide-react";
+import {
+  Check,
+  X,
+  GripVertical,
+  Trash2,
+  Archive,
+  CalendarOff,
+  PauseCircle,
+  PlayCircle,
+} from "lucide-react";
 import { Habit, Schedule } from "@/lib/tracker/types";
 import { isDayExpected, isRestDay, completionKey, scheduleForMonth } from "@/lib/tracker/schedule";
 import { useTrackerStore } from "@/store/tracker-store";
@@ -31,6 +40,7 @@ const SCHEDULE_OPTIONS = [
   { id: "fri", label: "Fridays" },
   { id: "sat", label: "Saturdays" },
   { id: "sun", label: "Sundays" },
+  { id: "paused", label: "⏸️ Paused (This Month)" },
 ];
 
 export function HabitMatrix({
@@ -45,7 +55,7 @@ export function HabitMatrix({
   const completions = useTrackerStore((s) => s.completions);
   const toggleCompletion = useTrackerStore((s) => s.toggleCompletion);
   const setRestDay = useTrackerStore((s) => s.setRestDay);
-  const setSchedule = useTrackerStore((s) => s.setSchedule);
+  const setScheduleForMonth = useTrackerStore((s) => s.setScheduleForMonth);
   const archiveHabit = useTrackerStore((s) => s.archiveHabit);
   const deleteHabit = useTrackerStore((s) => s.deleteHabit);
   const matrixView = useTrackerStore((s) => s.matrixView);
@@ -63,7 +73,14 @@ export function HabitMatrix({
     return days.filter((d) => !isFuture(d) || format(d, "yyyy-MM-dd") >= todayIso);
   }, [days, hidePast, todayIso]);
 
-  const handleScheduleChange = (habitId: string, value: string) => {
+  // تعديل الجدول أو تجميده للشهر الحالي فقط
+  const handleScheduleChange = (habit: Habit, value: string) => {
+    if (value === "paused") {
+      setScheduleForMonth(habit.id, selectedYear, selectedMonth, null);
+      toast.info(`Paused "${habit.name}" for this month`);
+      return;
+    }
+
     let newSchedule: Schedule;
     const dayMap: Record<string, number> = {
       mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 0,
@@ -75,11 +92,12 @@ export function HabitMatrix({
       newSchedule = { type: "preset", id: value as any };
     }
 
-    setSchedule(habitId, newSchedule);
-    toast.success("Schedule updated");
+    setScheduleForMonth(habit.id, selectedYear, selectedMonth, newSchedule);
+    toast.success("Schedule updated for this month");
   };
 
-  const getSelectedScheduleValue = (schedule: Schedule) => {
+  const getSelectedScheduleValue = (schedule: Schedule | null) => {
+    if (schedule === null) return "paused";
     if (schedule.type === "preset") return schedule.id;
     if (schedule.type === "weekly" && schedule.days && schedule.days.length === 1) {
       const revMap: Record<number, string> = {
@@ -96,7 +114,7 @@ export function HabitMatrix({
       <div className="mb-6">
         <h2 className="font-serif-title text-2xl font-normal tracking-tight text-[var(--fg)]">Matrix</h2>
         <p className="mt-1 text-xs text-[var(--muted)]">
-          Dashes are rest days. Past empty cells are misses. Today stays pending until you check it.
+          Dashes are rest days. Use the pause button to skip a habit for the current month without deleting it.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -105,7 +123,7 @@ export function HabitMatrix({
               type="button"
               onClick={() => setMatrixView("week")}
               className={cn(
-                "rounded-lg px-3 py-1 text-xs font-medium transition-all",
+                "rounded-lg px-3 py-1 text-xs font-medium transition-all cursor-pointer",
                 matrixView === "week"
                   ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold"
                   : "text-[var(--muted)] hover:text-[var(--fg)]"
@@ -117,7 +135,7 @@ export function HabitMatrix({
               type="button"
               onClick={() => setMatrixView("month")}
               className={cn(
-                "rounded-lg px-3 py-1 text-xs font-medium transition-all",
+                "rounded-lg px-3 py-1 text-xs font-medium transition-all cursor-pointer",
                 matrixView === "month"
                   ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold"
                   : "text-[var(--muted)] hover:text-[var(--fg)]"
@@ -156,7 +174,7 @@ export function HabitMatrix({
             <tr className="text-left text-[11px] font-medium text-[var(--muted)]">
               <th className="w-8 px-1"></th>
               <th className="min-w-[150px] px-3 font-normal">Habit</th>
-              <th className="min-w-[120px] px-3 font-normal">Schedule</th>
+              <th className="min-w-[140px] px-3 font-normal">Schedule</th>
               {visibleDays.map((date) => (
                 <th key={date.toISOString()} className="px-1 text-center font-normal">
                   <div className="flex flex-col items-center justify-center">
@@ -165,7 +183,7 @@ export function HabitMatrix({
                   </div>
                 </th>
               ))}
-              <th className="min-w-[80px] px-2 text-center font-normal">Actions</th>
+              <th className="min-w-[100px] px-2 text-center font-normal">Actions</th>
             </tr>
           </thead>
 
@@ -178,24 +196,43 @@ export function HabitMatrix({
               </tr>
             ) : (
               activeHabits.map((habit) => {
-                const schedule = scheduleForMonth(habit, selectedYear, selectedMonth) || habit.schedule;
+                const schedule = scheduleForMonth(habit, selectedYear, selectedMonth);
+                const isPausedThisMonth = schedule === null;
                 const currentScheduleValue = getSelectedScheduleValue(schedule);
 
                 return (
-                  <tr key={habit.id} className="group hover:bg-[var(--surface-elevated)]/20 transition-colors">
+                  <tr
+                    key={habit.id}
+                    className={cn(
+                      "group transition-colors",
+                      isPausedThisMonth ? "opacity-50 hover:opacity-75" : "hover:bg-[var(--surface-elevated)]/20"
+                    )}
+                  >
                     <td className="px-1 text-[var(--muted)] opacity-30 group-hover:opacity-100">
                       <GripVertical className="size-4 cursor-grab" />
                     </td>
 
                     <td className="px-3">
-                      <span className="text-sm font-medium text-[var(--fg)]">{habit.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={cn("text-sm font-medium", isPausedThisMonth ? "text-[var(--muted)] line-through" : "text-[var(--fg)]")}>
+                          {habit.name}
+                        </span>
+                        {isPausedThisMonth && (
+                          <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-mono">
+                            Paused
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-3">
                       <NativeSelect
-                        className="h-8 w-32 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
+                        className={cn(
+                          "h-8 w-36 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]",
+                          isPausedThisMonth && "border-amber-500/40 text-amber-300"
+                        )}
                         value={currentScheduleValue}
-                        onChange={(e) => handleScheduleChange(habit.id, e.target.value)}
+                        onChange={(e) => handleScheduleChange(habit, e.target.value)}
                       >
                         {SCHEDULE_OPTIONS.map((p) => (
                           <option key={p.id} value={p.id}>
@@ -211,17 +248,17 @@ export function HabitMatrix({
                       const key = completionKey(habit.id, iso);
                       const isDone = Boolean(completions[key]);
                       const isRest = isRestDay(habit, iso);
-                      const expected = isDayExpected(schedule, date);
+                      const expected = schedule ? isDayExpected(schedule, date) : false;
                       const isPast = iso < todayIso;
                       const isCurrentToday = iso === todayIso;
 
-                      // إذا كان يوم راحة أو غير مجدول أصلاً (مثل الإثنين لعادة Fridays) -> نعرض شرطة فقط
-                      if (isRest || !expected) {
+                      // إذا كانت العادة مجمدة للشهر الحالي أو يوم غير مجدول
+                      if (isPausedThisMonth || isRest || !expected) {
                         return (
                           <td key={iso} className="px-1 text-center">
                             <div
-                              title={isRest ? "Rest day" : "Not scheduled on this day"}
-                              className="flex size-7 items-center justify-center text-xs text-[var(--muted)]/40 select-none"
+                              title={isPausedThisMonth ? "Paused for this month" : isRest ? "Rest day" : "Not scheduled on this day"}
+                              className="flex size-7 items-center justify-center text-xs text-[var(--muted)]/30 select-none"
                             >
                               —
                             </div>
@@ -254,8 +291,32 @@ export function HabitMatrix({
                       );
                     })}
 
+                    {/* Actions Column */}
                     <td className="px-2 text-center">
                       <div className="flex items-center justify-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                        {/* Pause/Resume for this month toggle */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isPausedThisMonth) {
+                              setScheduleForMonth(habit.id, selectedYear, selectedMonth, habit.schedule);
+                              toast.success(`Resumed "${habit.name}" for this month`);
+                            } else {
+                              setScheduleForMonth(habit.id, selectedYear, selectedMonth, null);
+                              toast.info(`Paused "${habit.name}" for this month`);
+                            }
+                          }}
+                          title={isPausedThisMonth ? "Resume this month" : "Pause for this month"}
+                          className={cn(
+                            "flex size-7 items-center justify-center rounded-lg transition-colors cursor-pointer",
+                            isPausedThisMonth
+                              ? "text-amber-400 bg-amber-400/10 hover:bg-amber-400/20"
+                              : "text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)]"
+                          )}
+                        >
+                          {isPausedThisMonth ? <PlayCircle className="size-3.5" /> : <PauseCircle className="size-3.5" />}
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -263,10 +324,11 @@ export function HabitMatrix({
                             toast.info(`Set rest for "${habit.name}" today`);
                           }}
                           title="Rest Today"
-                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)]"
+                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] cursor-pointer"
                         >
                           <CalendarOff className="size-3.5" />
                         </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -274,10 +336,11 @@ export function HabitMatrix({
                             toast.success(`Archived "${habit.name}"`);
                           }}
                           title="Archive Habit"
-                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)]"
+                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] cursor-pointer"
                         >
                           <Archive className="size-3.5" />
                         </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -285,7 +348,7 @@ export function HabitMatrix({
                             toast.error(`Deleted "${habit.name}"`);
                           }}
                           title="Delete Habit"
-                          className="flex size-7 items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10"
+                          className="flex size-7 items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10 cursor-pointer"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
