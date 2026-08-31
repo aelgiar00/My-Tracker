@@ -1,246 +1,232 @@
-import { useState, useMemo, useEffect } from "react";
-import type { Habit, MonthStats } from "@/lib/tracker/types";
-import { Card } from "@/components/ui/card";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
-import { isDayExpected, scheduleForMonth } from "@/lib/tracker/schedule";
+import { Habit } from "@/lib/tracker/types";
+import { isDayExpected, completionKey } from "@/lib/tracker/schedule";
+import { useTrackerStore } from "@/store/tracker-store";
+import { cn } from "@/lib/utils";
+import { Sparkles } from "lucide-react";
 
-function EmbeddedAICoach({ habits, todayDate }: { habits: Habit[]; todayDate: Date }) {
-  const dateKey = format(todayDate, "yyyy-MM-dd");
+interface TodayPanelProps {
+  habits: Habit[];
+  stats: any;
+  todayDate: Date;
+}
 
-  const [sleepHours, setSleepHours] = useState<number>(7);
-  const [collegeHours, setCollegeHours] = useState<number>(4);
-  const [workHours, setWorkHours] = useState<number>(3);
-  const [showResult, setShowResult] = useState<boolean>(true);
-  const [isMounted, setIsMounted] = useState<boolean>(false);
+// تقدير الأوقات الافتراضية والأولويات لكل عادة بحسب الاسم
+function getHabitMetadata(name: string) {
+  const lower = name.toLowerCase();
+  if (lower.includes("pray") || lower.includes("صلاة")) {
+    return { durationHours: 0.35, priority: 1, priorityLabel: "أولوية قصوى" };
+  }
+  if (lower.includes("touch") || lower.includes("typing")) {
+    return { durationHours: 0.5, priority: 2, priorityLabel: "أولوية متوسطة" };
+  }
+  if (lower.includes("nti") || lower.includes("notebook")) {
+    return { durationHours: 2.0, priority: 1, priorityLabel: "أولوية قصوى" };
+  }
+  if (lower.includes("ml") || lower.includes("machine") || lower.includes("learning")) {
+    return { durationHours: 2.5, priority: 1, priorityLabel: "أولوية قصوى" };
+  }
+  if (lower.includes("depi")) {
+    return { durationHours: 2.0, priority: 1, priorityLabel: "أولوية قصوى" };
+  }
+  if (lower.includes("deep work") || lower.includes("عمل")) {
+    return { durationHours: 1.5, priority: 1, priorityLabel: "أولوية قصوى" };
+  }
+  return { durationHours: 1.0, priority: 3, priorityLabel: "عادي" };
+}
 
-  // استرجاع الساعات المخزنة بأمان بعد تحميل المتصفح فقط
-  useEffect(() => {
-    setIsMounted(true);
-    try {
-      const savedSleep = localStorage.getItem(`tracker_sleep_${dateKey}`);
-      const savedCollege = localStorage.getItem(`tracker_college_${dateKey}`);
-      const savedWork = localStorage.getItem(`tracker_work_${dateKey}`);
+export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
+  const [sleepHours, setSleepHours] = useState(8);
+  const [collegeHours, setCollegeHours] = useState(4);
+  const [workHours, setWorkHours] = useState(0);
+  const [showDetails, setShowDetails] = useState(true);
 
-      if (savedSleep) setSleepHours(Number(savedSleep));
-      if (savedCollege) setCollegeHours(Number(savedCollege));
-      if (savedWork) setWorkHours(Number(savedWork));
-    } catch {
-      // Ignore SSR errors
-    }
-  }, [dateKey]);
+  const completions = useTrackerStore((s) => s.completions);
+  const todayIso = format(todayDate, "yyyy-MM-dd");
 
-  // حفظ التعديلات في المتصفح
-  useEffect(() => {
-    if (!isMounted) return;
-    try {
-      localStorage.setItem(`tracker_sleep_${dateKey}`, String(sleepHours));
-      localStorage.setItem(`tracker_college_${dateKey}`, String(collegeHours));
-      localStorage.setItem(`tracker_work_${dateKey}`, String(workHours));
-    } catch {
-      // Ignore
-    }
-  }, [sleepHours, collegeHours, workHours, dateKey, isMounted]);
+  // حساب الوقت المتاح الصافي
+  const totalOccupied = sleepHours + collegeHours + workHours;
+  const availableHours = Math.max(0, 24 - totalOccupied);
 
-  const analysis = useMemo(() => {
-    const totalCommitted = sleepHours + collegeHours + workHours;
-    const freeHours = Math.max(0, 24 - totalCommitted);
+  // حساب نسبة الجاهزية الكلية لليوم
+  const readinessScore = useMemo(() => {
+    if (sleepHours < 6) return Math.max(40, Math.round((availableHours / 16) * 70));
+    return Math.min(100, Math.round((availableHours / 14) * 100));
+  }, [availableHours, sleepHours]);
 
-    const sleepPenalty = Math.max(0, 7 - sleepHours) * 14;
-    const fatiguePenalty = collegeHours * 4.5 + workHours * 5;
-    const readiness = Math.max(15, Math.min(100, Math.round(100 - sleepPenalty - fatiguePenalty)));
+  // العادات المجدولة لليوم
+  const todayHabits = useMemo(() => {
+    return habits
+      .filter((h) => !h.archived)
+      .filter((h) => isDayExpected(h.schedule, todayDate));
+  }, [habits, todayDate]);
 
-    const activeHabits = (habits || []).filter((h) => !h.archived);
+  // منطق توزيع الوقت الذكي بالـ Priorities
+  const analyzedHabits = useMemo(() => {
+    let remainingBudget = availableHours;
 
-    const habitForecasts = activeHabits.map((h) => {
-      const sched = scheduleForMonth(h, todayDate.getFullYear(), todayDate.getMonth() + 1);
-      const isScheduledToday = sched ? isDayExpected(sched, todayDate) : false;
+    // فرز العادات بالأولوية ثم الوقت الأقل
+    const sorted = [...todayHabits].map((h) => ({
+      habit: h,
+      meta: getHabitMetadata(h.name),
+      isDone: Boolean(completions[completionKey(h.id, todayIso)]),
+    })).sort((a, b) => a.meta.priority - b.meta.priority || a.meta.durationHours - b.meta.durationHours);
 
-      if (!isScheduledToday) {
-        return {
-          name: h.name,
-          probability: 0,
-          status: "يوم راحة / غير مجدولة",
-          isScheduledToday: false,
-          isCore: false,
-          note: "راحة",
-        };
+    return sorted.map((item) => {
+      let feasible = false;
+      let chance = 0;
+
+      if (item.isDone) {
+        feasible = true;
+        chance = 100;
+      } else if (remainingBudget >= item.meta.durationHours) {
+        feasible = true;
+        remainingBudget -= item.meta.durationHours;
+        chance = Math.min(96, Math.max(70, Math.round(readinessScore * 0.95)));
+      } else if (remainingBudget > 0) {
+        feasible = false;
+        chance = Math.round((remainingBudget / item.meta.durationHours) * 60);
+        remainingBudget = 0;
+      } else {
+        feasible = false;
+        chance = 25;
       }
 
-      // حساب احتمالية ديناميكية بناءً على طاقة اليوم
-      const prob = Math.max(25, Math.min(99, Math.round(readiness * 0.9 + (freeHours >= 4 ? 6 : -12))));
-
       return {
-        name: h.name,
-        probability: prob,
-        status: prob >= 70 ? "آمن" : prob >= 45 ? "متوسط" : "معرض للتعثر",
-        isScheduledToday: true,
-        isCore: prob >= 75,
-        note: prob >= 75 ? "أولوية قصوى" : "مجدولة اليوم",
+        ...item,
+        feasible,
+        chance,
       };
     });
+  }, [todayHabits, availableHours, completions, todayIso, readinessScore]);
 
-    const todaysActiveHabits = habitForecasts.filter((h) => h.isScheduledToday);
-    const nonNegotiables = todaysActiveHabits.filter((h) => h.isCore || h.probability >= 70);
-
-    return {
-      readiness,
-      freeHours,
-      habitForecasts,
-      nonNegotiables,
-      hasHabits: activeHabits.length > 0,
-      isHighPressure: readiness < 50 || freeHours < 4,
-    };
-  }, [sleepHours, collegeHours, workHours, habits, todayDate]);
+  const nonNegotiables = analyzedHabits.filter((h) => h.meta.priority === 1);
 
   return (
-    <div className="mb-6 rounded-2xl border-2 border-blue-500/30 bg-zinc-950 p-4 text-white shadow-xl">
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-3">
+    <div className="flex flex-col gap-5 text-right font-sans" dir="rtl">
+      {/* Header Info */}
+      <div className="flex items-center justify-between border-b border-[var(--border)] pb-4" dir="ltr">
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse" />
-          <h3 className="font-bold text-sm text-blue-400">Personal AI Execution Coach</h3>
+          <span className="size-2 rounded-full bg-blue-500 animate-pulse"></span>
+          <h2 className="text-sm font-semibold tracking-wide text-blue-400">
+            Personal AI <br />
+            <span className="text-[11px] text-[var(--muted)]">Execution Coach</span>
+          </h2>
         </div>
-        <span className="text-xs bg-blue-900/40 text-blue-300 px-2.5 py-0.5 rounded-full border border-blue-600/40 font-mono">
-          جاهزية اليوم: {analysis.readiness}%
-        </span>
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-center">
+          <span className="text-[10px] text-blue-300 block">جاهزية اليوم:</span>
+          <span className="text-base font-bold text-blue-400 font-serif-title">{readinessScore}%</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
-        <div className="bg-zinc-900/90 p-2 rounded-lg border border-zinc-800">
-          <label className="text-zinc-400 block mb-1">
-            نوم: <span className="text-white font-bold">{sleepHours}س</span>
-          </label>
+      {/* Sliders Area */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)]">
+          <div className="flex justify-between text-xs text-[var(--fg)] font-medium mb-1.5">
+            <span>نوم:</span>
+            <span>{sleepHours}س</span>
+          </div>
           <input
             type="range"
-            min="3"
-            max="11"
+            min="4"
+            max="12"
             value={sleepHours}
             onChange={(e) => setSleepHours(Number(e.target.value))}
-            className="w-full accent-blue-500 cursor-pointer"
+            className="h-1.5 w-full appearance-none rounded-lg bg-white/10 accent-blue-500"
           />
         </div>
-        <div className="bg-zinc-900/90 p-2 rounded-lg border border-zinc-800">
-          <label className="text-zinc-400 block mb-1">
-            كلية: <span className="text-white font-bold">{collegeHours}س</span>
-          </label>
+
+        <div className="rounded-xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)]">
+          <div className="flex justify-between text-xs text-[var(--fg)] font-medium mb-1.5">
+            <span>كلية:</span>
+            <span>{collegeHours}س</span>
+          </div>
           <input
             type="range"
             min="0"
             max="10"
             value={collegeHours}
             onChange={(e) => setCollegeHours(Number(e.target.value))}
-            className="w-full accent-blue-500 cursor-pointer"
+            className="h-1.5 w-full appearance-none rounded-lg bg-white/10 accent-blue-500"
           />
         </div>
-        <div className="bg-zinc-900/90 p-2 rounded-lg border border-zinc-800">
-          <label className="text-zinc-400 block mb-1">
-            شغل: <span className="text-white font-bold">{workHours}س</span>
-          </label>
+
+        <div className="rounded-xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)]">
+          <div className="flex justify-between text-xs text-[var(--fg)] font-medium mb-1.5">
+            <span>شغل:</span>
+            <span>{workHours}س</span>
+          </div>
           <input
             type="range"
             min="0"
-            max="10"
+            max="12"
             value={workHours}
             onChange={(e) => setWorkHours(Number(e.target.value))}
-            className="w-full accent-blue-500 cursor-pointer"
+            className="h-1.5 w-full appearance-none rounded-lg bg-white/10 accent-blue-500"
           />
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-3 px-1">
-        <span>
-          الوقت المتاح الصافي: <strong className="text-white">{analysis.freeHours} ساعات</strong>
-        </span>
+      {/* Summary Stat */}
+      <div className="flex items-center justify-between text-xs text-[var(--muted)] px-1">
+        <span>الوقت المتاح الصافي: <strong className="text-[var(--fg)]">{availableHours} ساعات</strong></span>
         <button
           type="button"
-          onClick={() => setShowResult(!showResult)}
-          className="text-blue-400 hover:underline cursor-pointer"
+          onClick={() => setShowDetails(!showDetails)}
+          className="text-[11px] text-blue-400 hover:underline"
         >
-          {showResult ? "إخفاء التفاصيل" : "عرض خطة اليوم"}
+          {showDetails ? "إخفاء التفاصيل" : "عرض التفاصيل"}
         </button>
       </div>
 
-      {showResult && (
-        <div className="space-y-3 pt-2 border-t border-zinc-800 text-xs">
-          {!analysis.hasHabits ? (
-            <div className="text-center py-4 text-zinc-400 text-xs">
-              لا توجد عادات مسجلة بعد. اضغط على زر <strong>+ Habit</strong> بالأعلى لإضافة عاداتك وسيقوم الـ AI بتحليلها فوراً.
-            </div>
-          ) : (
-            <>
-              {analysis.nonNegotiables.length > 0 && (
-                <div className="rounded-xl bg-blue-950/30 border border-blue-800/40 p-2.5">
-                  <p className="text-[11px] font-semibold text-blue-300 mb-1">
-                    🎯 الحد الأدنى المطلوب اليوم (Non-Negotiable):
-                  </p>
-                  <ul className="list-disc list-inside space-y-0.5 text-zinc-300 text-[11px]">
-                    {analysis.nonNegotiables.map((item, i) => (
-                      <li key={i}>
-                        <strong className="text-white">{item.name}</strong> ({item.note})
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
-                {analysis.habitForecasts.map((habit, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between bg-zinc-900/90 p-2 rounded-lg border border-zinc-800 text-[11px]"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-zinc-200 font-medium">{habit.name}</span>
-                      <span className="text-[10px] text-zinc-500">{habit.status}</span>
-                    </div>
-                    <span
-                      className={`font-mono font-bold ${
-                        !habit.isScheduledToday
-                          ? "text-zinc-600"
-                          : habit.probability >= 70
-                          ? "text-emerald-400"
-                          : habit.probability >= 45
-                          ? "text-amber-400"
-                          : "text-rose-400"
-                      }`}
-                    >
-                      {habit.isScheduledToday ? `${habit.probability}%` : "—"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="text-[11px] bg-zinc-900 p-2.5 rounded-lg border border-zinc-800 text-zinc-300">
-                {analysis.isHighPressure
-                  ? "⚡ يوم مضغوط: ركّز على العادات الأساسية فقط ونظم طاقتك بدون إجهاد إضافي."
-                  : "🚀 يوم مثالي: طاقتك والوقت المتاح كافيان لإنجاز جدول عاداتك بالكامل بكفاءة عالية."}
-              </div>
-            </>
-          )}
+      {/* Non-Negotiable Today List */}
+      {showDetails && (
+        <div className="rounded-xl bg-[var(--surface-elevated)]/60 p-3.5 border border-[var(--border)] text-xs">
+          <p className="font-semibold text-rose-400 mb-2 flex items-center gap-1.5">
+            🎯 الحد الأدنى المطلوب اليوم (Non-Negotiables):
+          </p>
+          <ul className="space-y-1.5 text-[11px] text-[var(--fg)]">
+            {nonNegotiables.map(({ habit, meta }) => (
+              <li key={habit.id} className="flex justify-between items-center pr-2">
+                <span>• {habit.name}</span>
+                <span className="text-[10px] text-amber-300/80 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                  {meta.durationHours}س ({meta.priorityLabel})
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
+
+      {/* Habit Predict Cards */}
+      <div className="space-y-2 max-h-[300px] overflow-y-auto pl-1">
+        {analyzedHabits.map(({ habit, chance, isDone, feasible }) => (
+          <div
+            key={habit.id}
+            className={cn(
+              "flex items-center justify-between rounded-xl p-3 border transition-all",
+              isDone
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                : feasible
+                ? "bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--fg)]"
+                : "bg-rose-500/5 border-rose-500/20 text-[var(--muted)]"
+            )}
+          >
+            <div>
+              <p className="text-xs font-medium">{habit.name}</p>
+              <span className="text-[10px] opacity-70">
+                {isDone ? "تم الإنجاز" : feasible ? "الوقت متاح للإنهاء" : "مزاحم في الوقت"}
+              </span>
+            </div>
+            <div className="text-left font-serif-title text-xs font-semibold">
+              {isDone ? "✓" : `${chance}%`}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-interface TodayPanelProps {
-  habits: Habit[];
-  stats: MonthStats;
-  todayDate: Date;
-}
-
-export function TodayPanel({ habits, stats, todayDate }: TodayPanelProps) {
-  return (
-    <div className="flex flex-col gap-4">
-      <EmbeddedAICoach habits={habits} todayDate={todayDate} />
-
-      <Card className="p-4 bg-surface shadow-[var(--shadow-border)]">
-        <h2 className="font-display text-lg font-semibold tracking-tight">
-          Today · {format(todayDate, "EEE, MMM d")}
-        </h2>
-        <p className="text-xs text-muted mt-1">
-          {stats.completedThroughToday} of {stats.expectedThroughToday} habits completed today
-        </p>
-      </Card>
-    </div>
-  );
-}
+export default TodayPanel;
