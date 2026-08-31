@@ -274,7 +274,7 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
 }
 
 /* =========================================================================
-   3. SettingsDialog
+   3. SettingsDialog (Strict 6 Themes Palette)
    ========================================================================= */
 export interface SettingsDialogProps {
   open: boolean;
@@ -332,7 +332,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         </DialogHeader>
 
         <div className="mt-4 space-y-4">
-          {/* Color theme selector with the full luxury palette */}
+          {/* Color theme selector - The 6 Pure Themes Only */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-[var(--muted)]">Color theme</label>
             <NativeSelect
@@ -341,13 +341,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
             >
               <option value="default">✨ Obsidian Gold (Default)</option>
-              <option value="cyberpunk">⚡ Cyberpunk Neon</option>
-              <option value="emerald">🌲 Emerald Matrix</option>
-              <option value="sunset">🌅 Sunset Mirage</option>
-              <option value="rose">🌸 Rose Nebula</option>
-              <option value="midnight">🌌 Midnight Indigo</option>
-              <option value="nord">❄️ Nordic Frost</option>
-              <option value="oled">🖤 OLED Pure Black</option>
+              <option value="ink">Ink</option>
+              <option value="paper">Paper</option>
+              <option value="slate">Slate</option>
+              <option value="forest">Forest</option>
+              <option value="lavender">Lavender</option>
             </NativeSelect>
           </div>
 
