@@ -183,7 +183,7 @@ export function TrackerApp() {
           </p>
         </div>
 
-        {/* Action Controls Bar */}
+        {/* Actions Controls Bar */}
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
             <Button
@@ -282,7 +282,7 @@ export function TrackerApp() {
         </div>
       </header>
 
-      {/* Main Switcher Tabs */}
+      {/* Top Single Main Switcher (Daily / Matrix / Stats) */}
       <div className="mb-6">
         <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
           {(["daily", "matrix", "stats"] as const).map((tab) => (
@@ -291,7 +291,7 @@ export function TrackerApp() {
               type="button"
               onClick={() => setMainTab(tab)}
               className={cn(
-                "flex items-center justify-center rounded-xl py-2.5 text-xs font-medium capitalize transition-all duration-200",
+                "flex items-center justify-center rounded-xl py-2.5 text-xs font-medium capitalize transition-all duration-200 cursor-pointer",
                 mainTab === tab
                   ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold shadow-sm"
                   : "text-[var(--muted)] hover:text-[var(--fg)]"
@@ -303,9 +303,9 @@ export function TrackerApp() {
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Views */}
       <main>
-        {/* Daily View: Side-by-Side (AI Coach on Left, Matrix on Right) */}
+        {/* Daily View: Side-by-Side (AI Coach on Left, Habit Matrix on Right) */}
         {mainTab === "daily" && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
             <section className="min-w-0">
@@ -330,7 +330,7 @@ export function TrackerApp() {
           </div>
         )}
 
-        {/* Matrix Only View */}
+        {/* Matrix View */}
         {mainTab === "matrix" && (
           <div className="rounded-3xl bg-[var(--surface)] p-6 sm:p-8 border border-[var(--border)] shadow-xl">
             <HabitMatrix
@@ -345,7 +345,7 @@ export function TrackerApp() {
           </div>
         )}
 
-        {/* Stats View with 4 Sub-Tabs */}
+        {/* Stats View */}
         {mainTab === "stats" && (
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-2">
@@ -362,7 +362,7 @@ export function TrackerApp() {
                   type="button"
                   onClick={() => setStatsSubTab(id)}
                   className={cn(
-                    "rounded-xl px-4 py-2 text-xs font-medium transition-all duration-150 border",
+                    "rounded-xl px-4 py-2 text-xs font-medium transition-all duration-150 border cursor-pointer",
                     statsSubTab === id
                       ? "border-[var(--primary)] bg-[var(--surface)] text-[var(--fg)] shadow-sm font-semibold ring-1 ring-[var(--primary)]/30"
                       : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--fg)]"
@@ -404,27 +404,6 @@ export function TrackerApp() {
           </div>
         )}
       </main>
-
-      {/* Bottom Switcher Nav */}
-      <footer className="mt-12 mb-4">
-        <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
-          {(["daily", "matrix", "stats"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setMainTab(tab)}
-              className={cn(
-                "flex items-center justify-center rounded-xl py-2.5 text-xs font-medium capitalize transition-all duration-200",
-                mainTab === tab
-                  ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold shadow-sm"
-                  : "text-[var(--muted)] hover:text-[var(--fg)]"
-              )}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </footer>
 
       <NewHabitDialog
         open={newOpen}
