@@ -3,9 +3,33 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { useTrackerStore } from "@/store/tracker-store";
+import "../styles.css";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "My Tracker";
+
+function RootComponent() {
+  const theme = useTrackerStore((s) => s.theme);
+
+  return (
+    <html lang="en" data-theme={theme || "dark"} className="antialiased" suppressHydrationWarning>
+      <head>
+        <HeadContent />
+      </head>
+      <body className="min-h-screen bg-bg text-fg selection:bg-primary/20 selection:text-primary">
+        <PreviewHostBridge />
+        <AuthProvider>
+          <TooltipProvider delayDuration={200}>
+            <Outlet />
+            <Toaster />
+          </TooltipProvider>
+        </AuthProvider>
+        <Scripts />
+      </body>
+    </html>
+  );
+}
 
 export const Route = createRootRoute({
   head: () => ({
@@ -30,21 +54,5 @@ export const Route = createRootRoute({
       { rel: "apple-touch-icon", href: "/icon.svg" },
     ],
   }),
-  component: () => (
-    <html lang="en" className="antialiased" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-      </head>
-      <body className="bg-bg text-fg">
-        <PreviewHostBridge />
-        <AuthProvider>
-          <TooltipProvider delayDuration={200}>
-            <Outlet />
-            <Toaster />
-          </TooltipProvider>
-        </AuthProvider>
-        <Scripts />
-      </body>
-    </html>
-  ),
+  component: RootComponent,
 });
