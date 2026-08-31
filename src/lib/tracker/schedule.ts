@@ -1,6 +1,8 @@
 import { format, parseISO } from "date-fns";
 import type { Habit, Schedule } from "./types";
 
+export const WEEKDAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 export function isoDate(d: Date): string {
   return format(d, "yyyy-MM-dd");
 }
