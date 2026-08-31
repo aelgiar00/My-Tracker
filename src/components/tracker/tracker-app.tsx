@@ -6,7 +6,17 @@ import { completionKey, isDayExpected, isRestDay, monthKey, scheduleForMonth } f
 
 const UNDO_LIMIT = 30;
 
-export type ThemeId = "default" | "ocean" | "forest" | "amber" | "rose";
+export type ThemeId =
+  | "default"
+  | "ocean"
+  | "forest"
+  | "amber"
+  | "rose"
+  | "oled"
+  | "midnight"
+  | "nord";
+
+export type MatrixViewMode = "month" | "week";
 type UndoSnap = Pick<TrackerSnapshot, "habits" | "completions" | "dailyTasks">;
 
 type TrackerState = TrackerSnapshot & {
@@ -15,6 +25,8 @@ type TrackerState = TrackerSnapshot & {
   selectedMonth: number;
   inspectIso: string | null;
   theme: ThemeId;
+  matrixView: MatrixViewMode;
+  setMatrixView: (view: MatrixViewMode) => void;
   setTheme: (theme: ThemeId) => void;
   hydrateDefaults: (today: Date) => void;
   setMonth: (year: number, month: number) => void;
@@ -53,7 +65,9 @@ function pushUndo(state: TrackerState): Partial<TrackerState> {
   const snap: UndoSnap = {
     habits: state.habits.map((h) => ({ ...h })),
     completions: { ...state.completions },
-    dailyTasks: Object.fromEntries(Object.entries(state.dailyTasks).map(([iso, tasks]) => [iso, tasks.map((task) => ({ ...task }))])),
+    dailyTasks: Object.fromEntries(
+      Object.entries(state.dailyTasks).map(([iso, tasks]) => [iso, tasks.map((task) => ({ ...task }))]),
+    ),
   };
   return { undoStack: [...state.undoStack, snap].slice(-UNDO_LIMIT) };
 }
@@ -78,7 +92,9 @@ function parseImported(raw: unknown): TrackerSnapshot | null {
       createdAt: typeof item.createdAt === "string" ? item.createdAt : new Date().toISOString(),
       monthOverrides: isRecord(item.monthOverrides) ? (item.monthOverrides as Record<string, Schedule | null>) : undefined,
       monthlyOnly: Boolean(item.monthlyOnly),
-      restDays: isRecord(item.restDays) ? Object.fromEntries(Object.entries(item.restDays).filter(([, value]) => value === true).map(([iso]) => [iso, true])) : undefined,
+      restDays: isRecord(item.restDays)
+        ? Object.fromEntries(Object.entries(item.restDays).filter(([, value]) => value === true).map(([iso]) => [iso, true]))
+        : undefined,
     });
   }
   const completions: Record<string, Completion> = {};
@@ -95,7 +111,14 @@ function parseImported(raw: unknown): TrackerSnapshot | null {
       if (!Array.isArray(rawTasks)) continue;
       dailyTasks[iso] = rawTasks.flatMap((task) => {
         if (!isRecord(task) || typeof task.id !== "string" || typeof task.name !== "string") return [];
-        return [{ id: task.id, name: task.name, done: Boolean(task.done), createdAt: typeof task.createdAt === "string" ? task.createdAt : new Date().toISOString() }];
+        return [
+          {
+            id: task.id,
+            name: task.name,
+            done: Boolean(task.done),
+            createdAt: typeof task.createdAt === "string" ? task.createdAt : new Date().toISOString(),
+          },
+        ];
       });
     }
   }
@@ -109,7 +132,6 @@ function parseImported(raw: unknown): TrackerSnapshot | null {
   };
 }
 
-// كائن الحالة الابتدائية النظيف (بدون أي عادات افتراضية)
 const emptyInitialState: TrackerSnapshot = {
   habits: [],
   completions: {},
@@ -124,10 +146,13 @@ export const useTrackerStore = create<TrackerState>()(
     (set, get) => ({
       ...emptyInitialState,
       undoStack: [],
-      selectedYear: 2026,
-      selectedMonth: 8,
+      selectedYear: new Date().getFullYear(),
+      selectedMonth: new Date().getMonth() + 1,
       inspectIso: null,
       theme: "default",
+      matrixView: "month",
+
+      setMatrixView: (matrixView) => set({ matrixView }),
 
       hydrateDefaults: (today) => {
         const state = get();
@@ -139,7 +164,10 @@ export const useTrackerStore = create<TrackerState>()(
       setHidePast: (value) => set({ hidePast: value }),
       setTrackingStart: (iso) => set({ trackingStart: iso }),
       setInspectIso: (iso) => set({ inspectIso: iso }),
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => {
+        document.documentElement.dataset.theme = theme;
+        set({ theme });
+      },
 
       addHabit: (name, schedule, options) => {
         const id = newId();
@@ -245,7 +273,7 @@ export const useTrackerStore = create<TrackerState>()(
           ...pushUndo(s),
           dailyTasks: {
             ...s.dailyTasks,
-            [iso]: (s.dailyTasks[iso] ?? []).map((task) => task.id === taskId ? { ...task, done: !task.done } : task),
+            [iso]: (s.dailyTasks[iso] ?? []).map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)),
           },
         }));
       },
@@ -420,6 +448,7 @@ export const useTrackerStore = create<TrackerState>()(
         selectedYear: s.selectedYear,
         selectedMonth: s.selectedMonth,
         theme: s.theme,
+        matrixView: s.matrixView,
       }),
     },
   ),
