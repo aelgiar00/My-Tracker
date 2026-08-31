@@ -1,35 +1,47 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/tracker/native-select";
 import { useTrackerStore, exportSnapshot, ThemeId } from "@/store/tracker-store";
 import { Schedule } from "@/lib/tracker/types";
 import { toast } from "sonner";
-import { Download, Upload, RotateCcw, Plus, Check } from "lucide-react";
+import { Download, Upload, RotateCcw, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* =========================================================================
    1. NewHabitDialog
    ========================================================================= */
-interface NewHabitDialogProps {
+export interface NewHabitDialogProps {
   open: boolean;
-  onOpenChange: (o: boolean) => void;
+  onOpenChange: (open: boolean) => void;
   daysInMonth: number;
   selectedYear: number;
   selectedMonth: number;
 }
 
-const PRESET_OPTIONS: { id: "daily" | "weekdays" | "weekends" | "mwf" | "tuth"; label: string }[] = [
+const PRESET_OPTIONS: {
+  id: "daily" | "weekdays" | "weekends" | "mwf" | "tuth";
+  label: string;
+}[] = [
   { id: "daily", label: "Daily (Every day)" },
-  { id: "weekdays", label: "Weekdays (Mon-Fri)" },
-  { id: "weekends", label: "Weekends (Sat-Sun)" },
+  { id: "weekdays", label: "Weekdays (Mon - Fri)" },
+  { id: "weekends", label: "Weekends (Sat - Sun)" },
   { id: "mwf", label: "Mon / Wed / Fri" },
   { id: "tuth", label: "Tue / Thu" },
 ];
 
 export function NewHabitDialog({ open, onOpenChange }: NewHabitDialogProps) {
   const [name, setName] = useState("");
-  const [scheduleType, setScheduleType] = useState<"daily" | "weekdays" | "weekends" | "mwf" | "tuth">("daily");
+  const [scheduleType, setScheduleType] = useState<
+    "daily" | "weekdays" | "weekends" | "mwf" | "tuth"
+  >("daily");
   const addHabit = useTrackerStore((s) => s.addHabit);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -53,7 +65,7 @@ export function NewHabitDialog({ open, onOpenChange }: NewHabitDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-3xl border border-[var(--border)] bg-[#111215] p-6 text-[var(--fg)] shadow-2xl">
+      <DialogContent className="max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--fg)] shadow-2xl">
         <DialogHeader>
           <DialogTitle className="font-serif-title text-2xl">Create New Habit</DialogTitle>
           <DialogDescription className="text-xs text-[var(--muted)]">
@@ -66,11 +78,11 @@ export function NewHabitDialog({ open, onOpenChange }: NewHabitDialogProps) {
             <label className="text-xs font-medium text-[var(--muted)]">Habit Name</label>
             <input
               type="text"
-              placeholder="e.g., Read 20 pages, Deep work 90m..."
+              placeholder="e.g., Deep work 90m, Pray, ML Learning..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
-              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3.5 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
             />
           </div>
 
@@ -79,7 +91,7 @@ export function NewHabitDialog({ open, onOpenChange }: NewHabitDialogProps) {
             <NativeSelect
               value={scheduleType}
               onChange={(e) => setScheduleType(e.target.value as any)}
-              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] shadow-none"
+              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
             >
               {PRESET_OPTIONS.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -92,7 +104,7 @@ export function NewHabitDialog({ open, onOpenChange }: NewHabitDialogProps) {
           <DialogFooter className="pt-2">
             <Button
               type="submit"
-              className="h-10 w-full rounded-xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90"
+              className="h-10 w-full rounded-xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
             >
               <Plus className="mr-1.5 size-4" />
               Add Habit
@@ -107,7 +119,7 @@ export function NewHabitDialog({ open, onOpenChange }: NewHabitDialogProps) {
 /* =========================================================================
    2. BulkUpdatePanel
    ========================================================================= */
-interface BulkUpdatePanelProps {
+export interface BulkUpdatePanelProps {
   days: { iso: string; label: string }[];
   todayIso: string;
 }
@@ -146,7 +158,6 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
       return;
     }
 
-    // تجميع التواريخ في النطاق المحدد
     const rangeIsos: string[] = [];
     const curr = new Date(fromDate);
     const end = new Date(toDate);
@@ -167,15 +178,15 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
         Apply a range without touching unscheduled cells. Unscheduled days stay empty.
       </p>
 
-      {/* Habit Selection Chips */}
-      <div className="mt-4 space-y-2">
+      {/* Habit Chips Selection */}
+      <div className="mt-5 space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium text-[var(--muted)]">Habits</label>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleSelectAll}
-              className="text-[11px] text-[var(--primary)] hover:underline"
+              className="text-[11px] font-medium text-[var(--primary)] hover:underline"
             >
               Select all
             </button>
@@ -183,7 +194,7 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
             <button
               type="button"
               onClick={handleClearAll}
-              className="text-[11px] text-[var(--muted)] hover:underline"
+              className="text-[11px] font-medium text-[var(--muted)] hover:underline"
             >
               Clear
             </button>
@@ -191,55 +202,59 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
         </div>
 
         <div className="flex flex-wrap gap-2 pt-1">
-          {habits.map((habit) => {
-            const isSelected = selectedHabitIds.includes(habit.id);
-            return (
-              <button
-                key={habit.id}
-                type="button"
-                onClick={() => toggleHabitSelect(habit.id)}
-                className={cn(
-                  "rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all duration-150 border",
-                  isSelected
-                    ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--fg)]"
-                    : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)]"
-                )}
-              >
-                {habit.name}
-              </button>
-            );
-          })}
+          {habits.length === 0 ? (
+            <p className="text-xs text-[var(--muted)]">No active habits available.</p>
+          ) : (
+            habits.map((habit) => {
+              const isSelected = selectedHabitIds.includes(habit.id);
+              return (
+                <button
+                  key={habit.id}
+                  type="button"
+                  onClick={() => toggleHabitSelect(habit.id)}
+                  className={cn(
+                    "rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all duration-150 border",
+                    isSelected
+                      ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--fg)] shadow-xs"
+                      : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
+                  )}
+                >
+                  {habit.name}
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 
-      {/* Controls Bar: From - To - Action - Apply */}
-      <div className="mt-5 flex flex-wrap items-end gap-3 pt-2">
+      {/* Action Controls */}
+      <div className="mt-6 flex flex-wrap items-end gap-3 pt-1">
         <div className="space-y-1">
-          <label className="text-[11px] text-[var(--muted)]">From</label>
+          <label className="text-[11px] font-medium text-[var(--muted)]">From</label>
           <input
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className="h-9 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+            className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-[11px] text-[var(--muted)]">To</label>
+          <label className="text-[11px] font-medium text-[var(--muted)]">To</label>
           <input
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className="h-9 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+            className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-[11px] text-[var(--muted)]">Action</label>
+          <label className="text-[11px] font-medium text-[var(--muted)]">Action</label>
           <NativeSelect
             value={actionDone}
             onChange={(e) => setActionDone(e.target.value as any)}
-            className="h-9 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)]"
+            className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
           >
             <option value="done">Set done</option>
             <option value="undone">Set undone</option>
@@ -249,7 +264,7 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
         <Button
           type="button"
           onClick={handleApply}
-          className="h-9 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs font-medium text-[var(--fg)] hover:border-[var(--primary)]/50"
+          className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-5 text-xs font-medium text-[var(--fg)] hover:border-[var(--primary)]/60 transition-colors"
         >
           Apply
         </Button>
@@ -261,7 +276,12 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
 /* =========================================================================
    3. SettingsDialog
    ========================================================================= */
-export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export interface SettingsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const theme = useTrackerStore((s) => s.theme);
   const setTheme = useTrackerStore((s) => s.setTheme);
   const trackingStart = useTrackerStore((s) => s.trackingStart);
@@ -281,7 +301,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     a.download = `tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast("Backup exported successfully.");
+    toast.success("Backup exported successfully.");
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,7 +313,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
         const raw = JSON.parse(event.target?.result as string);
         const err = importSnapshot(raw);
         if (err) toast.error(err);
-        else toast("Backup imported successfully.");
+        else toast.success("Backup imported successfully.");
       } catch {
         toast.error("Invalid JSON file.");
       }
@@ -312,22 +332,22 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
         </DialogHeader>
 
         <div className="mt-4 space-y-4">
-          {/* Color theme selector */}
+          {/* Color theme selector with the full luxury palette */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-[var(--muted)]">Color theme</label>
             <NativeSelect
               value={theme}
               onChange={(e) => setTheme(e.target.value as ThemeId)}
-              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] shadow-none"
+              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
             >
-              <option value="default">Default · Lavender</option>
-              <option value="ocean">Ocean · Blue</option>
-              <option value="forest">Forest · Green</option>
-              <option value="amber">Amber · Gold</option>
-              <option value="rose">Rose · Pink</option>
-              <option value="oled">OLED · Pure Black</option>
-              <option value="midnight">Midnight · Indigo</option>
-              <option value="nord">Nord · Arctic</option>
+              <option value="default">✨ Obsidian Gold (Default)</option>
+              <option value="cyberpunk">⚡ Cyberpunk Neon</option>
+              <option value="emerald">🌲 Emerald Matrix</option>
+              <option value="sunset">🌅 Sunset Mirage</option>
+              <option value="rose">🌸 Rose Nebula</option>
+              <option value="midnight">🌌 Midnight Indigo</option>
+              <option value="nord">❄️ Nordic Frost</option>
+              <option value="oled">🖤 OLED Pure Black</option>
             </NativeSelect>
           </div>
 
@@ -340,17 +360,19 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               onChange={(e) => setTrackingStart(e.target.value)}
               className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
             />
-            <p className="text-[10px] text-[var(--muted)]">Days before this date are hidden from every month grid.</p>
+            <p className="text-[10px] text-[var(--muted)]">
+              Days before this date are hidden from every month grid.
+            </p>
           </div>
 
           {/* ML Option */}
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2 pt-1">
             <label className="flex items-center gap-2 text-xs text-[var(--fg)] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={enableMl}
                 onChange={(e) => setEnableMl(e.target.checked)}
-                className="size-4 rounded border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--primary)]"
+                className="size-4 rounded border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--primary)] focus:ring-0"
               />
               Enable ML insights
             </label>
@@ -373,12 +395,12 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               type="button"
               variant="outline"
               onClick={handleExport}
-              className="h-10 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] text-xs text-[var(--fg)]"
+              className="h-10 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] text-xs text-[var(--fg)] hover:bg-[var(--surface-pill)]"
             >
               <Download className="mr-1.5 size-3.5" />
               Export JSON
             </Button>
-            <label className="flex h-10 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] text-xs font-medium text-[var(--fg)] hover:bg-[var(--surface-pill)]">
+            <label className="flex h-10 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] text-xs font-medium text-[var(--fg)] hover:bg-[var(--surface-pill)] transition-colors">
               <Upload className="mr-1.5 size-3.5" />
               Import JSON
               <input type="file" accept=".json" onChange={handleImport} className="hidden" />
@@ -390,10 +412,10 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             type="button"
             onClick={() => {
               resetToSeed();
-              toast("Sample data restored.");
+              toast.success("Sample data restored.");
               onOpenChange(false);
             }}
-            className="mt-2 h-11 w-full rounded-xl bg-[#cbb592] text-xs font-semibold text-[#111215] hover:bg-[#cbb592]/90"
+            className="mt-2 h-11 w-full rounded-xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
           >
             <RotateCcw className="mr-1.5 size-3.5" />
             Restore sample data
