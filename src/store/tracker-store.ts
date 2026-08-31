@@ -8,16 +8,12 @@ const UNDO_LIMIT = 30;
 
 export type ThemeId =
   | "default"
-  | "ocean"
+  | "obsidian"
+  | "ink"
+  | "paper"
+  | "slate"
   | "forest"
-  | "amber"
-  | "rose"
-  | "cyberpunk"
-  | "emerald"
-  | "sunset"
-  | "oled"
-  | "midnight"
-  | "nord";
+  | "lavender";
 
 export type MatrixViewMode = "month" | "week";
 type UndoSnap = Pick<TrackerSnapshot, "habits" | "completions" | "dailyTasks">;
