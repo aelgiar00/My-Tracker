@@ -61,22 +61,56 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  const radarPoints = useMemo(() => {
-    const total = Math.max(3, habitsBreakdown.length);
-    const radius = 55;
-    const center = 80;
+  // حساب إحداثيات الرادار مع الـ Labels الخارجية
+  const radarData = useMemo(() => {
+    const list = habitsBreakdown.slice(0, 6);
+    const total = Math.max(3, list.length);
+    const center = 110;
+    const maxRadius = 60;
+    const labelRadius = 85;
 
-    return habitsBreakdown.slice(0, 6).map((item, i) => {
+    const points = list.map((item, i) => {
       const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
-      const score = Math.max(0.15, (item.rate || 10) / 100);
-      const r = radius * score;
+      const score = Math.max(0.15, Math.min(1, (item.rate || 10) / 100));
+      
+      const r = maxRadius * score;
       const x = center + r * Math.cos(angle);
       const y = center + r * Math.sin(angle);
-      return { x, y, name: item.habit.name };
-    });
-  }, [habitsBreakdown]);
 
-  const radarPolygonPath = radarPoints.map((p) => `${p.x},${p.y}`).join(" ");
+      const labelX = center + labelRadius * Math.cos(angle);
+      const labelY = center + labelRadius * Math.sin(angle);
+
+      // تحديد محاذاة النص حسب مكانه حول المركز
+      let textAnchor = "middle";
+      if (Math.cos(angle) > 0.3) textAnchor = "start";
+      else if (Math.cos(angle) < -0.3) textAnchor = "end";
+
+      return {
+        x,
+        y,
+        labelX,
+        labelY,
+        textAnchor,
+        name: item.habit.name,
+        rate: Math.round(item.rate),
+      };
+    });
+
+    const webLevels = [0.33, 0.66, 1].map((level) => {
+      return Array.from({ length: total }, (_, i) => {
+        const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+        const r = maxRadius * level;
+        return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+      }).join(" ");
+    });
+
+    return {
+      points,
+      polygonPath: points.map((p) => `${p.x},${p.y}`).join(" "),
+      webLevels,
+      center,
+    };
+  }, [habitsBreakdown]);
 
   return (
     <div className={cn("space-y-6 transition-all", fullScreen && "fixed inset-4 z-50 overflow-y-auto rounded-3xl bg-[var(--bg)] p-6 shadow-2xl border border-[var(--border)]")}>
@@ -135,14 +169,13 @@ export function AnalyticsPanel() {
         </div>
       </div>
 
-      {/* Visual Charts */}
+      {/* Visual Charts Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* 1. Daily Execution Bar Chart With Fully Labeled Y-Axis & X-Axis */}
+        {/* 1. Daily Execution Bar Chart */}
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
           <h3 className="text-xs font-semibold text-[var(--fg)]">Daily execution</h3>
           
           <div className="mt-6 flex h-48 gap-2">
-            {/* Y-Axis Labels */}
             <div className="flex flex-col justify-between text-[9px] font-mono text-[var(--muted)] pr-1 select-none text-right">
               <span>100%</span>
               <span>80%</span>
@@ -152,9 +185,7 @@ export function AnalyticsPanel() {
               <span>0%</span>
             </div>
 
-            {/* Bars Area with X-Axis */}
             <div className="relative flex flex-1 flex-col justify-between">
-              {/* Background Grid Lines */}
               <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10">
                 <div className="border-b border-white w-full"></div>
                 <div className="border-b border-white w-full"></div>
@@ -164,7 +195,6 @@ export function AnalyticsPanel() {
                 <div className="border-b border-white w-full"></div>
               </div>
 
-              {/* Bar Columns */}
               <div className="flex h-40 items-end justify-between gap-1 z-10 border-b border-[var(--border)] pb-0.5">
                 {daysBreakdown.slice(-14).map((d) => {
                   const pct = d.expected > 0 ? (d.completed / d.expected) * 100 : 0;
@@ -180,7 +210,6 @@ export function AnalyticsPanel() {
                 })}
               </div>
 
-              {/* X-Axis Day Numbers */}
               <div className="flex justify-between gap-1 pt-1 z-10">
                 {daysBreakdown.slice(-14).map((d) => (
                   <span key={d.iso} className="flex-1 text-center text-[9px] font-mono text-[var(--muted)]">
@@ -213,21 +242,74 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 3. Mastery Radar */}
+        {/* 3. Mastery Radar With Clear Edge Labels */}
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
-          <h3 className="text-xs font-semibold text-[var(--fg)]">Mastery radar</h3>
-          <div className="relative my-auto flex items-center justify-center">
-            <svg viewBox="0 0 160 160" className="size-40 overflow-visible">
-              <polygon points="80,20 132,50 132,110 80,140 28,110 28,50" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-              <polygon points="80,45 110,62 110,98 80,115 50,98 50,62" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-              {radarPoints.length >= 3 && (
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-[var(--fg)]">Mastery radar</h3>
+            <span className="text-[10px] text-[var(--muted)]">Coverage</span>
+          </div>
+
+          <div className="relative my-auto flex items-center justify-center py-2">
+            <svg viewBox="0 0 220 220" className="size-52 overflow-visible">
+              {/* Background Concentric Radar Polygons */}
+              {radarData.webLevels.map((poly, idx) => (
                 <polygon
-                  points={radarPolygonPath}
-                  fill="rgba(203, 181, 146, 0.25)"
+                  key={idx}
+                  points={poly}
+                  fill="none"
+                  stroke="rgba(255, 255, 255, 0.08)"
+                  strokeWidth="1"
+                />
+              ))}
+
+              {/* Axis lines from center to outer points */}
+              {radarData.points.map((p, idx) => (
+                <line
+                  key={idx}
+                  x1={radarData.center}
+                  y1={radarData.center}
+                  x2={p.x}
+                  y2={p.y}
+                  stroke="rgba(255, 255, 255, 0.05)"
+                  strokeWidth="1"
+                />
+              ))}
+
+              {/* Filled Radar Area */}
+              {radarData.points.length >= 3 && (
+                <polygon
+                  points={radarData.polygonPath}
+                  fill="rgba(203, 181, 146, 0.22)"
                   stroke="#cbb592"
-                  strokeWidth="1.5"
+                  strokeWidth="1.8"
                 />
               )}
+
+              {/* Point Dots */}
+              {radarData.points.map((p, idx) => (
+                <circle
+                  key={idx}
+                  cx={p.x}
+                  cy={p.y}
+                  r="3"
+                  fill="#cbb592"
+                  className="transition-all hover:r-4"
+                />
+              ))}
+
+              {/* Outer Text Labels with Habit Names & % */}
+              {radarData.points.map((p, idx) => (
+                <text
+                  key={idx}
+                  x={p.labelX}
+                  y={p.labelY}
+                  textAnchor={p.textAnchor}
+                  dominantBaseline="central"
+                  className="fill-[var(--fg)] text-[9.5px] font-medium select-none"
+                >
+                  {p.name.length > 11 ? `${p.name.slice(0, 10)}..` : p.name}
+                </text>
+              ))}
             </svg>
           </div>
         </div>
