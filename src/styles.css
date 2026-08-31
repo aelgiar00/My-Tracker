@@ -1,6 +1,4 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
 
 @layer base {
   :root,
@@ -104,7 +102,6 @@
   }
 }
 
-/* تنسيقات إضافية للكروت والأزرار التفاعلية */
 .bg-surface {
   background-color: var(--surface) !important;
 }
