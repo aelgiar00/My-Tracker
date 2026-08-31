@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { format, isFuture } from "date-fns";
-import { Check, X, GripVertical, MoreHorizontal, Trash2, Archive, CalendarOff } from "lucide-react";
-import { Habit } from "@/lib/tracker/types";
+import { Check, X, GripVertical, Trash2, Archive, CalendarOff } from "lucide-react";
+import { Habit, Schedule } from "@/lib/tracker/types";
 import { isDayExpected, isRestDay, completionKey, scheduleForMonth } from "@/lib/tracker/schedule";
 import { useTrackerStore } from "@/store/tracker-store";
 import { NativeSelect } from "@/components/tracker/native-select";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface HabitMatrixProps {
@@ -19,12 +19,20 @@ interface HabitMatrixProps {
   selectedMonth: number;
 }
 
-const SCHEDULE_PRESETS = [
+// قائمة شاملة لكل أنواع الجدولة بما فيها الأيام الفردية
+const SCHEDULE_OPTIONS = [
   { id: "daily", label: "Daily" },
   { id: "weekdays", label: "Weekdays" },
   { id: "weekends", label: "Weekends" },
   { id: "mwf", label: "Mon/Wed/Fri" },
   { id: "tuth", label: "Tue/Thu" },
+  { id: "mon", label: "Mondays" },
+  { id: "tue", label: "Tuesdays" },
+  { id: "wed", label: "Wednesdays" },
+  { id: "thu", label: "Thursdays" },
+  { id: "fri", label: "Fridays" },
+  { id: "sat", label: "Saturdays" },
+  { id: "sun", label: "Sundays" },
 ];
 
 export function HabitMatrix({
@@ -57,16 +65,44 @@ export function HabitMatrix({
     return days.filter((d) => !isFuture(d) || format(d, "yyyy-MM-dd") >= todayIso);
   }, [days, hidePast, todayIso]);
 
+  // تحويل القيمة المختارة إلى Schedule Object متوافق
+  const handleScheduleChange = (habitId: string, value: string) => {
+    let newSchedule: Schedule;
+    const dayMap: Record<string, number> = {
+      mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 0,
+    };
+
+    if (dayMap[value] !== undefined) {
+      newSchedule = { type: "weekly", days: [dayMap[value]] };
+    } else {
+      newSchedule = { type: "preset", id: value as any };
+    }
+
+    setSchedule(habitId, newSchedule);
+    toast.success("Updated schedule");
+  };
+
+  // استخراج القيمة الحالية للـ Select
+  const getSelectedScheduleValue = (schedule: Schedule) => {
+    if (schedule.type === "preset") return schedule.id;
+    if (schedule.type === "weekly" && schedule.days.length === 1) {
+      const revMap: Record<number, string> = {
+        1: "mon", 2: "tue", 3: "wed", 4: "thu", 5: "fri", 6: "sat", 0: "sun",
+      };
+      return revMap[schedule.days[0]] || "daily";
+    }
+    return "daily";
+  };
+
   return (
     <div className="w-full">
-      {/* Matrix Header */}
+      {/* Matrix Header & Controls */}
       <div className="mb-6">
         <h2 className="font-serif-title text-2xl font-normal tracking-tight text-[var(--fg)]">Matrix</h2>
         <p className="mt-1 text-xs text-[var(--muted)]">
           Dashes are rest days. Past empty cells are misses. Today stays pending until you check it.
         </p>
 
-        {/* Toolbar: Week/Month switcher + Hide past days + Filter */}
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <div className="flex h-9 items-center rounded-xl bg-[var(--surface-elevated)] p-1 border border-[var(--border)]">
             <button
@@ -124,7 +160,7 @@ export function HabitMatrix({
             <tr className="text-left text-[11px] font-medium text-[var(--muted)]">
               <th className="w-8 px-1"></th>
               <th className="min-w-[150px] px-3 font-normal">Habit</th>
-              <th className="min-w-[110px] px-3 font-normal">Schedule</th>
+              <th className="min-w-[120px] px-3 font-normal">Schedule</th>
               {visibleDays.map((date) => (
                 <th key={date.toISOString()} className="px-1 text-center font-normal">
                   <div className="flex flex-col items-center justify-center">
@@ -133,7 +169,7 @@ export function HabitMatrix({
                   </div>
                 </th>
               ))}
-              <th className="w-10 px-1"></th>
+              <th className="min-w-[80px] px-2 text-center font-normal">Actions</th>
             </tr>
           </thead>
 
@@ -141,15 +177,16 @@ export function HabitMatrix({
             {activeHabits.length === 0 ? (
               <tr>
                 <td colSpan={visibleDays.length + 4} className="py-12 text-center text-xs text-[var(--muted)]">
-                  No habits found.
+                  No habits found. Click "+ Habit" above to create one.
                 </td>
               </tr>
             ) : (
               activeHabits.map((habit) => {
                 const schedule = scheduleForMonth(habit, selectedYear, selectedMonth) || habit.schedule;
+                const currentScheduleValue = getSelectedScheduleValue(schedule);
 
                 return (
-                  <tr key={habit.id} className="group">
+                  <tr key={habit.id} className="group hover:bg-[var(--surface-elevated)]/20 transition-colors">
                     {/* Drag Handle */}
                     <td className="px-1 text-[var(--muted)] opacity-30 group-hover:opacity-100">
                       <GripVertical className="size-4 cursor-grab" />
@@ -163,14 +200,11 @@ export function HabitMatrix({
                     {/* Schedule Selector */}
                     <td className="px-3">
                       <NativeSelect
-                        className="h-8 w-28 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none"
-                        value={schedule.type === "preset" ? schedule.id : "custom"}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setSchedule(habit.id, { type: "preset", id: val as any });
-                        }}
+                        className="h-8 w-32 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
+                        value={currentScheduleValue}
+                        onChange={(e) => handleScheduleChange(habit.id, e.target.value)}
                       >
-                        {SCHEDULE_PRESETS.map((p) => (
+                        {SCHEDULE_OPTIONS.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.label}
                           </option>
@@ -194,7 +228,7 @@ export function HabitMatrix({
                             <button
                               type="button"
                               onClick={() => setRestDay(habit.id, iso, false)}
-                              title="Rest day"
+                              title="Rest day (Click to cancel)"
                               className="flex size-7 items-center justify-center rounded-lg text-xs text-[var(--muted)] hover:bg-[var(--surface-elevated)]"
                             >
                               —
@@ -219,9 +253,9 @@ export function HabitMatrix({
                             type="button"
                             onClick={() => toggleCompletion(habit.id, iso)}
                             className={cn(
-                              "flex size-7 items-center justify-center rounded-lg border transition-all duration-150",
+                              "flex size-7 items-center justify-center rounded-lg border transition-all duration-150 cursor-pointer",
                               isDone
-                                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm font-bold scale-100"
+                                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs font-bold scale-100"
                                 : isPast
                                 ? "border-[var(--border)] bg-[var(--surface-elevated)]/30 text-[var(--muted)] hover:border-[var(--muted)]"
                                 : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]",
@@ -238,38 +272,43 @@ export function HabitMatrix({
                       );
                     })}
 
-                    {/* Actions Menu */}
-                    <td className="px-1 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm" className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)]">
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] p-1 text-[var(--fg)] shadow-xl">
-                          <DropdownMenuItem
-                            onClick={() => setRestDay(habit.id, todayIso, true)}
-                            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--fg)] cursor-pointer"
-                          >
-                            <CalendarOff className="size-3.5" />
-                            Rest Today
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => archiveHabit(habit.id, true)}
-                            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--fg)] cursor-pointer"
-                          >
-                            <Archive className="size-3.5" />
-                            Archive
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => deleteHabit(habit.id)}
-                            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 cursor-pointer"
-                          >
-                            <Trash2 className="size-3.5" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    {/* Direct Action Buttons: Rest / Archive / Delete */}
+                    <td className="px-2 text-center">
+                      <div className="flex items-center justify-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRestDay(habit.id, todayIso, true);
+                            toast.info(`Set rest for "${habit.name}" today`);
+                          }}
+                          title="Rest Today"
+                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] transition-colors"
+                        >
+                          <CalendarOff className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            archiveHabit(habit.id, true);
+                            toast.success(`Archived "${habit.name}"`);
+                          }}
+                          title="Archive Habit"
+                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] transition-colors"
+                        >
+                          <Archive className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            deleteHabit(habit.id);
+                            toast.error(`Deleted "${habit.name}"`);
+                          }}
+                          title="Delete Habit"
+                          className="flex size-7 items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -281,3 +320,5 @@ export function HabitMatrix({
     </div>
   );
 }
+
+export default HabitMatrix;
