@@ -13,6 +13,25 @@ export function completionKey(habitId: string, iso: string): string {
   return `${habitId}|${iso}`;
 }
 
+export function dayLabel(d: Date): string {
+  return format(d, "EEE d");
+}
+
+export function mondayIndex(d: Date): number {
+  const day = d.getDay(); // 0 is Sun, 1 is Mon, ...
+  return (day + 6) % 7; // 0 for Mon, 6 for Sun
+}
+
+export function isSingleDay(schedule: Schedule): boolean {
+  if (schedule.type === "weekly") {
+    return schedule.days.length === 1;
+  }
+  if (schedule.type === "preset") {
+    return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].includes(schedule.id);
+  }
+  return false;
+}
+
 export function scheduleForMonth(habit: Habit, year: number, month: number): Schedule | null {
   const key = monthKey(year, month);
   if (habit.monthOverrides && habit.monthOverrides[key] !== undefined) {
