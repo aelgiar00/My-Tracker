@@ -1,94 +1,127 @@
 @import "tailwindcss";
 
 @layer base {
+  /* 1. Default (Warm Ink / Lavender Accent) */
   :root,
+  :root[data-theme="default"],
   :root[data-theme="dark"],
-  :root[data-theme="default"] {
-    --bg: #090a0f;
-    --surface: #12141c;
-    --fg: #f3f4f6;
-    --muted: #9ca3af;
+  :root[data-theme="ink"] {
+    --bg: #0e0e10;
+    --surface: #16161a;
+    --surface-elevated: #1f1f24;
+    --fg: #f4ede2;
+    --muted: #8b8882;
     --border: rgba(255, 255, 255, 0.08);
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
+    --primary: #cbb592;
+    --primary-foreground: #121214;
+    --accent: #d8c3a5;
+    --ring: #cbb592;
     --shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 
+  /* 2. Ocean (Deep Blue) */
+  :root[data-theme="ocean"] {
+    --bg: #080e18;
+    --surface: #0f1929;
+    --surface-elevated: #16243b;
+    --fg: #e2f1ff;
+    --muted: #6f8ba4;
+    --border: rgba(56, 189, 248, 0.12);
+    --primary: #38bdf8;
+    --primary-foreground: #041320;
+    --accent: #7dd3fc;
+    --ring: #38bdf8;
+    --shadow-border: 0 0 0 1px rgba(56, 189, 248, 0.15);
+  }
+
+  /* 3. Forest (Deep Emerald / Sage) */
+  :root[data-theme="forest"] {
+    --bg: #06110c;
+    --surface: #0d1e16;
+    --surface-elevated: #142c21;
+    --fg: #eaf8f0;
+    --muted: #6f9582;
+    --border: rgba(52, 211, 153, 0.12);
+    --primary: #34d399;
+    --primary-foreground: #02140d;
+    --accent: #6ee7b7;
+    --ring: #34d399;
+    --shadow-border: 0 0 0 1px rgba(52, 211, 153, 0.15);
+  }
+
+  /* 4. Amber (Warm Bronze / Gold) */
+  :root[data-theme="amber"] {
+    --bg: #120e06;
+    --surface: #1e170c;
+    --surface-elevated: #2c2213;
+    --fg: #fef7ed;
+    --muted: #a38c6d;
+    --border: rgba(251, 191, 36, 0.12);
+    --primary: #fbbf24;
+    --primary-foreground: #1c1301;
+    --accent: #fcd34d;
+    --ring: #fbbf24;
+    --shadow-border: 0 0 0 1px rgba(251, 191, 36, 0.15);
+  }
+
+  /* 5. Rose (Pink / Crimson Glow) */
+  :root[data-theme="rose"] {
+    --bg: #14070a;
+    --surface: #220d13;
+    --surface-elevated: #31131c;
+    --fg: #fff1f3;
+    --muted: #a8727d;
+    --border: rgba(251, 113, 133, 0.12);
+    --primary: #fb7185;
+    --primary-foreground: #1e0509;
+    --accent: #fda4af;
+    --ring: #fb7185;
+    --shadow-border: 0 0 0 1px rgba(251, 113, 133, 0.15);
+  }
+
+  /* 6. OLED (Pure Pitch Black) */
   :root[data-theme="oled"] {
     --bg: #000000;
     --surface: #0a0a0a;
+    --surface-elevated: #141414;
     --fg: #ffffff;
-    --muted: #71717a;
-    --border: #27272a;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
-    --shadow-border: 0 0 0 1px #27272a;
+    --muted: #737373;
+    --border: #222222;
+    --primary: #e5e5e5;
+    --primary-foreground: #000000;
+    --accent: #ffffff;
+    --ring: #ffffff;
+    --shadow-border: 0 0 0 1px #222222;
   }
 
+  /* 7. Midnight (Indigo Glow) */
   :root[data-theme="midnight"] {
-    --bg: #0b0f19;
-    --surface: #111827;
-    --fg: #f9fafb;
-    --muted: #9ca3af;
-    --border: #1f2937;
-    --primary: #6366f1;
-    --primary-foreground: #ffffff;
-    --shadow-border: 0 0 0 1px rgba(99, 102, 241, 0.15);
+    --bg: #080a14;
+    --surface: #0f1424;
+    --surface-elevated: #171e35;
+    --fg: #f0f4fc;
+    --muted: #7986a3;
+    --border: rgba(99, 102, 241, 0.15);
+    --primary: #818cf8;
+    --primary-foreground: #080a14;
+    --accent: #a5b4fc;
+    --ring: #818cf8;
+    --shadow-border: 0 0 0 1px rgba(99, 102, 241, 0.18);
   }
 
+  /* 8. Nord (Arctic Slate) */
   :root[data-theme="nord"] {
-    --bg: #2e3440;
-    --surface: #3b4252;
+    --bg: #242933;
+    --surface: #2e3440;
+    --surface-elevated: #3b4252;
     --fg: #eceff4;
-    --muted: #d8dee9;
+    --muted: #94a3b8;
     --border: #434c5e;
     --primary: #88c0d0;
-    --primary-foreground: #2e3440;
-    --shadow-border: 0 0 0 1px rgba(136, 192, 208, 0.2);
-  }
-
-  :root[data-theme="emerald"] {
-    --bg: #02120d;
-    --surface: #06241b;
-    --fg: #ecfdf5;
-    --muted: #6ee7b7;
-    --border: #0f3d2e;
-    --primary: #10b981;
-    --primary-foreground: #ffffff;
-    --shadow-border: 0 0 0 1px rgba(16, 185, 129, 0.2);
-  }
-
-  :root[data-theme="cyberpunk"] {
-    --bg: #0d0221;
-    --surface: #19053b;
-    --fg: #00f0ff;
-    --muted: #ff007f;
-    --border: #380e6f;
-    --primary: #ffe600;
-    --primary-foreground: #000000;
-    --shadow-border: 0 0 0 1px rgba(0, 240, 255, 0.3);
-  }
-
-  :root[data-theme="sunset"] {
-    --bg: #14080e;
-    --surface: #240f1a;
-    --fg: #fff1f2;
-    --muted: #f43f5e;
-    --border: #3d172a;
-    --primary: #f97316;
-    --primary-foreground: #ffffff;
-    --shadow-border: 0 0 0 1px rgba(249, 115, 22, 0.2);
-  }
-
-  :root[data-theme="light"] {
-    --bg: #f8fafc;
-    --surface: #ffffff;
-    --fg: #0f172a;
-    --muted: #64748b;
-    --border: #e2e8f0;
-    --primary: #2563eb;
-    --primary-foreground: #ffffff;
-    --shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.08);
+    --primary-foreground: #242933;
+    --accent: #81a1c1;
+    --ring: #88c0d0;
+    --shadow-border: 0 0 0 1px rgba(136, 192, 208, 0.18);
   }
 
   * {
@@ -98,22 +131,16 @@
   body {
     background-color: var(--bg);
     color: var(--fg);
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
-}
 
-.bg-surface {
-  background-color: var(--surface) !important;
-}
+  .font-serif-title {
+    font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  }
 
-.text-fg {
-  color: var(--fg) !important;
-}
-
-.text-muted {
-  color: var(--muted) !important;
-}
-
-.border-border {
-  border-color: var(--border) !important;
+  /* إصلاح خلفية ونصوص خيارات القائمة المنسدلة (Select Options) */
+  select option {
+    background-color: var(--surface) !important;
+    color: var(--fg) !important;
+  }
 }
