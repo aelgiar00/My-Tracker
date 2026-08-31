@@ -2,75 +2,118 @@
 
 @layer base {
   :root,
-  :root[data-theme="dark"],
   :root[data-theme="default"],
+  :root[data-theme="dark"],
   :root[data-theme="ink"] {
-    --bg: #0b0c0e;
-    --surface: #111215;
-    --surface-elevated: #17181d;
-    --fg: #f3f4f6;
-    --muted: #7e828c;
-    --border: rgba(255, 255, 255, 0.08);
+    --bg: #0c0d0e;
+    --surface: #141518;
+    --surface-elevated: #1b1c21;
+    --surface-pill: #22232a;
+    --fg: #f5ede2;
+    --muted: #838079;
+    --border: rgba(255, 255, 255, 0.07);
     --primary: #cbb592;
-    --primary-foreground: #111215;
-    --card-border: rgba(255, 255, 255, 0.06);
-    --ai-border: rgba(59, 130, 246, 0.25);
-    --ai-glow: rgba(59, 130, 246, 0.08);
+    --primary-foreground: #0c0d0e;
+    --primary-muted: rgba(203, 181, 146, 0.15);
+    --ring: #cbb592;
   }
 
   :root[data-theme="ocean"] {
-    --bg: #070c14;
-    --surface: #0c1420;
-    --surface-elevated: #121c2c;
-    --fg: #e2f1ff;
-    --muted: #627d98;
+    --bg: #060b13;
+    --surface: #0c1422;
+    --surface-elevated: #142033;
+    --surface-pill: #1b2a43;
+    --fg: #e6f2ff;
+    --muted: #64829f;
     --border: rgba(56, 189, 248, 0.12);
     --primary: #38bdf8;
-    --primary-foreground: #041320;
+    --primary-foreground: #060b13;
+    --primary-muted: rgba(56, 189, 248, 0.15);
+    --ring: #38bdf8;
   }
 
   :root[data-theme="forest"] {
-    --bg: #050f0a;
-    --surface: #0a1912;
-    --surface-elevated: #10241b;
-    --fg: #eaf8f0;
-    --muted: #638875;
+    --bg: #050f0b;
+    --surface: #0a1913;
+    --surface-elevated: #11251d;
+    --surface-pill: #173328;
+    --fg: #ebf7f1;
+    --muted: #648b77;
     --border: rgba(52, 211, 153, 0.12);
     --primary: #34d399;
-    --primary-foreground: #02140d;
+    --primary-foreground: #050f0b;
+    --primary-muted: rgba(52, 211, 153, 0.15);
+    --ring: #34d399;
   }
 
   :root[data-theme="amber"] {
     --bg: #100c05;
-    --surface: #18130a;
-    --surface-elevated: #241c10;
-    --fg: #fef7ed;
-    --muted: #9c8466;
+    --surface: #181309;
+    --surface-elevated: #241c0e;
+    --surface-pill: #312613;
+    --fg: #fef7ec;
+    --muted: #9b8465;
     --border: rgba(251, 191, 36, 0.12);
     --primary: #fbbf24;
-    --primary-foreground: #1c1301;
+    --primary-foreground: #100c05;
+    --primary-muted: rgba(251, 191, 36, 0.15);
+    --ring: #fbbf24;
   }
 
   :root[data-theme="rose"] {
     --bg: #120609;
-    --surface: #1c0a10;
-    --surface-elevated: #291018;
+    --surface: #1b0a0f;
+    --surface-elevated: #270f17;
+    --surface-pill: #361520;
     --fg: #fff1f3;
-    --muted: #a36b77;
+    --muted: #a16a77;
     --border: rgba(251, 113, 133, 0.12);
     --primary: #fb7185;
-    --primary-foreground: #1e0509;
+    --primary-foreground: #120609;
+    --primary-muted: rgba(251, 113, 133, 0.15);
+    --ring: #fb7185;
   }
 
   :root[data-theme="oled"] {
     --bg: #000000;
-    --surface: #080808;
-    --surface-elevated: #121212;
+    --surface: #0a0a0a;
+    --surface-elevated: #141414;
+    --surface-pill: #1f1f1f;
     --fg: #ffffff;
     --muted: #737373;
-    --border: #1f1f1f;
-    --primary: #e5e5e5;
+    --border: #222222;
+    --primary: #cbb592;
     --primary-foreground: #000000;
+    --primary-muted: rgba(203, 181, 146, 0.2);
+    --ring: #cbb592;
+  }
+
+  :root[data-theme="midnight"] {
+    --bg: #080a14;
+    --surface: #0f1424;
+    --surface-elevated: #171f36;
+    --surface-pill: #202b4a;
+    --fg: #f0f4fc;
+    --muted: #7986a3;
+    --border: rgba(99, 102, 241, 0.15);
+    --primary: #818cf8;
+    --primary-foreground: #080a14;
+    --primary-muted: rgba(129, 140, 248, 0.18);
+    --ring: #818cf8;
+  }
+
+  :root[data-theme="nord"] {
+    --bg: #242933;
+    --surface: #2e3440;
+    --surface-elevated: #3b4252;
+    --surface-pill: #434c5e;
+    --fg: #eceff4;
+    --muted: #94a3b8;
+    --border: #434c5e;
+    --primary: #88c0d0;
+    --primary-foreground: #242933;
+    --primary-muted: rgba(136, 192, 208, 0.2);
+    --ring: #88c0d0;
   }
 
   * {
@@ -80,7 +123,7 @@
   body {
     background-color: var(--bg);
     color: var(--fg);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   }
 
   .font-serif-title {
@@ -88,7 +131,7 @@
   }
 
   select option {
-    background-color: var(--surface) !important;
+    background-color: var(--surface-elevated) !important;
     color: var(--fg) !important;
   }
 }
