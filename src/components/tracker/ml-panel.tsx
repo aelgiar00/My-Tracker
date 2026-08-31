@@ -23,7 +23,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
   const toggleCompletion = useTrackerStore((s) => s.toggleCompletion);
   const activeHabits = habits.filter((h) => !h.archived);
 
-  // حساب دقيق يعتمد على جدول كل عادة على حدة (Schedule-Aware Behavioral Forecasting)
+  // خوارزمية التنبؤ الذكية المعتمدة على الـ Active Log Window
   const predictions = useMemo(() => {
     const threshNum = Number(threshold) || 60;
     const testDateObj = parseISO(testDate);
@@ -34,73 +34,73 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
       const schedule = scheduleForMonth(habit, testYear, testMonth) || habit.schedule;
       const isExpectedOnTestDate = isDayExpected(schedule, testDateObj);
 
-      // 1. حساب الإنجاز في الأيام السابقة المجدولة فقط (وليس كل الأيام)
-      let scheduledOccurrences = 0;
-      let completedOccurrences = 0;
-      let recentStreak = 0;
-      let streakBroken = false;
+      // فحص الأيام الـ 7 السابقة فقط (النافذة الواقعية للنشاط)
+      let recentExpected = 0;
+      let recentDone = 0;
+      let streak = 0;
+      let streakActive = true;
 
-      // فحص نافذة الـ 30 يوماً السابقة
-      for (let i = 1; i <= 30; i++) {
+      for (let i = 1; i <= 7; i++) {
         const pastDate = new Date(testDateObj);
         pastDate.setDate(pastDate.getDate() - i);
         const pastIso = format(pastDate, "yyyy-MM-dd");
         const pastSched = scheduleForMonth(habit, pastDate.getFullYear(), pastDate.getMonth() + 1) || habit.schedule;
 
         if (isDayExpected(pastSched, pastDate)) {
-          scheduledOccurrences++;
+          recentExpected++;
           const isDone = Boolean(completions[`${habit.id}|${pastIso}`]);
           if (isDone) {
-            completedOccurrences++;
-            if (!streakBroken) recentStreak++;
+            recentDone++;
+            if (streakActive) streak++;
           } else {
-            streakBroken = true;
+            streakActive = false;
           }
         }
       }
 
-      // 2. حساب نسبة الإنجاز المجدول الدقيقة (Schedule Adherence Rate)
       let probability = 0;
       let driverReason = "";
 
-      if (scheduledOccurrences === 0) {
-        // حالة العادة التي لم يسبق لها أي يوم مجدول (مثل الثلاثاء الذي لم يأتِ بعد)
+      // لو يوم راحة غير مجدول للعادة
+      if (!isExpectedOnTestDate) {
         probability = 0;
-        driverReason = "New schedule / No prior target occurrences recorded";
+        driverReason = "Unscheduled rest day for this habit";
+      } else if (recentExpected === 0) {
+        // عادة مجدولة لأول مرة (مثل الثلاثاء الأول)
+        probability = 50;
+        driverReason = "First scheduled occurrence / Baseline prior";
       } else {
-        const hitRate = (completedOccurrences / scheduledOccurrences) * 100;
+        const hitRate = (recentDone / recentExpected) * 100;
 
-        // إذا كانت العادة مجدولة أسبوعياً ويوم الاختبار ليس ضمن جدولها
-        if (!isExpectedOnTestDate) {
-          probability = 0;
-          driverReason = "Unscheduled rest day for this habit";
-        } else if (hitRate === 100) {
-          // التزام كامل في كل الأيام المجدولة (مثل الجمعة 1 من 1، أو الصلاة 6 من 6)
-          probability = Math.min(98, Math.max(90, 92 + Math.min(6, recentStreak)));
-          driverReason = `Flawless consistency (${completedOccurrences}/${scheduledOccurrences} scheduled occurrences completed)`;
-        } else if (hitRate >= 75) {
-          probability = Math.min(88, Math.max(70, Math.round(hitRate * 0.85 + recentStreak * 3)));
-          driverReason = `Strong adherence pattern (${completedOccurrences}/${scheduledOccurrences} completed)`;
-        } else if (hitRate >= 40) {
-          probability = Math.min(65, Math.max(45, Math.round(hitRate * 0.9)));
-          driverReason = `Moderate execution momentum (${completedOccurrences}/${scheduledOccurrences} completed)`;
+        if (hitRate === 100) {
+          probability = Math.min(97, 90 + streak);
+          driverReason = `Flawless consistency (${recentDone}/${recentExpected} days completed)`;
+        } else if (streak >= 2) {
+          probability = Math.min(88, Math.max(68, Math.round(hitRate * 0.75 + streak * 6)));
+          driverReason = `Active streak momentum (${streak} consecutive days)`;
+        } else if (recentDone > 0) {
+          probability = Math.min(65, Math.max(40, Math.round(hitRate * 0.8)));
+          driverReason = `Moderate weekly adherence (${recentDone}/${recentExpected} days)`;
         } else {
-          probability = Math.max(15, Math.round(hitRate * 0.8));
-          driverReason = `Low execution frequency (${completedOccurrences}/${scheduledOccurrences} completed)`;
+          probability = Math.max(18, Math.round(hitRate * 0.5));
+          driverReason = "Recent misses broken momentum";
         }
       }
 
-      const isYes = probability >= threshNum;
+      const isYes = isExpectedOnTestDate && probability >= threshNum;
       const actualKey = `${habit.id}|${testDate}`;
       const isActualDone = Boolean(completions[actualKey]);
 
       return {
         habit,
-        predicted: isYes ? "Yes" : "No",
+        predicted: !isExpectedOnTestDate ? "Rest" : isYes ? "Yes" : "No",
         probability: `${probability}%`,
         probValue: probability,
         actual: isActualDone,
-        reason: `${isYes ? "High" : "Low"} confidence. Main driver: ${driverReason}`,
+        isRest: !isExpectedOnTestDate,
+        reason: !isExpectedOnTestDate
+          ? "Unscheduled rest day"
+          : `${isYes ? "High" : "Low"} confidence. Main driver: ${driverReason}`,
       };
     });
   }, [activeHabits, completions, testDate, threshold]);
@@ -109,8 +109,8 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
     setRunning(true);
     setTimeout(() => {
       setRunning(false);
-      toast.success("ML Engine inference refreshed with schedule-aware weights!");
-    }, 350);
+      toast.success("ML Engine inference refreshed!");
+    }, 300);
   };
 
   return (
@@ -189,7 +189,15 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                 <tr key={p.habit.id} className="hover:bg-[var(--surface-elevated)]/30 transition-colors">
                   <td className="py-4 font-medium text-[var(--fg)]">{p.habit.name}</td>
                   <td className="py-4 text-center font-bold">
-                    <span className={cn(p.predicted === "Yes" ? "text-emerald-400" : "text-rose-400")}>
+                    <span
+                      className={cn(
+                        p.isRest
+                          ? "text-[var(--muted)]"
+                          : p.predicted === "Yes"
+                          ? "text-emerald-400"
+                          : "text-rose-400"
+                      )}
+                    >
                       {p.predicted}
                     </span>
                   </td>
@@ -199,34 +207,40 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                   <td className="py-4 text-center">
                     <button
                       type="button"
+                      disabled={p.isRest}
                       onClick={() => {
                         toggleCompletion(p.habit.id, testDate);
                         toast.success(`Toggled "${p.habit.name}" for ${testDate}`);
                       }}
                       className={cn(
-                        "inline-flex size-6 items-center justify-center rounded-lg border transition-all duration-150 cursor-pointer",
+                        "inline-flex size-6 items-center justify-center rounded-lg border transition-all duration-150",
+                        p.isRest
+                          ? "opacity-30 cursor-not-allowed border-transparent text-[var(--muted)]"
+                          : "cursor-pointer",
                         p.actual
                           ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
                           : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
                       )}
                     >
-                      {p.actual && <Check className="size-3.5 stroke-[3]" />}
+                      {p.isRest ? "—" : p.actual && <Check className="size-3.5 stroke-[3]" />}
                     </button>
                   </td>
 
                   <td className="py-4 text-xs text-[var(--muted)]">
                     <div className="flex items-center gap-3">
                       <span>{p.reason}</span>
-                      <div className="flex items-end gap-0.5 opacity-70">
-                        <div
-                          className="w-1.5 rounded-xs bg-[var(--primary)]/40"
-                          style={{ height: `${Math.max(3, p.probValue * 0.12)}px` }}
-                        />
-                        <div
-                          className="w-1.5 rounded-xs bg-[var(--primary)]"
-                          style={{ height: `${Math.max(4, p.probValue * 0.22)}px` }}
-                        />
-                      </div>
+                      {!p.isRest && (
+                        <div className="flex items-end gap-0.5 opacity-70">
+                          <div
+                            className="w-1.5 rounded-xs bg-[var(--primary)]/40"
+                            style={{ height: `${Math.max(3, p.probValue * 0.12)}px` }}
+                          />
+                          <div
+                            className="w-1.5 rounded-xs bg-[var(--primary)]"
+                            style={{ height: `${Math.max(4, p.probValue * 0.22)}px` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
