@@ -1,119 +1,138 @@
 @import "tailwindcss";
 
 @layer base {
+  /* 1. Obsidian Gold (Luxury Warm Dark - Default) */
   :root,
   :root[data-theme="default"],
   :root[data-theme="dark"],
   :root[data-theme="ink"] {
-    --bg: #0c0d0e;
-    --surface: #141518;
-    --surface-elevated: #1b1c21;
-    --surface-pill: #22232a;
+    --bg: #090a0c;
+    --surface: #121316;
+    --surface-elevated: #1a1b20;
+    --surface-pill: #24252c;
     --fg: #f5ede2;
-    --muted: #838079;
-    --border: rgba(255, 255, 255, 0.07);
+    --muted: #85827a;
+    --border: rgba(203, 181, 146, 0.12);
     --primary: #cbb592;
-    --primary-foreground: #0c0d0e;
-    --primary-muted: rgba(203, 181, 146, 0.15);
-    --ring: #cbb592;
+    --primary-foreground: #090a0c;
+    --primary-muted: rgba(203, 181, 146, 0.16);
+    --glow: rgba(203, 181, 146, 0.25);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(203, 181, 146, 0.05) 0%, transparent 60%);
   }
 
-  :root[data-theme="ocean"] {
-    --bg: #060b13;
-    --surface: #0c1422;
-    --surface-elevated: #142033;
-    --surface-pill: #1b2a43;
-    --fg: #e6f2ff;
-    --muted: #64829f;
-    --border: rgba(56, 189, 248, 0.12);
-    --primary: #38bdf8;
-    --primary-foreground: #060b13;
-    --primary-muted: rgba(56, 189, 248, 0.15);
-    --ring: #38bdf8;
+  /* 2. Cyberpunk Neon (Cyan / Magenta Glow) */
+  :root[data-theme="ocean"],
+  :root[data-theme="cyberpunk"] {
+    --bg: #05060d;
+    --surface: #0a0d1a;
+    --surface-elevated: #10162a;
+    --surface-pill: #18223f;
+    --fg: #e0f2fe;
+    --muted: #627b9f;
+    --border: rgba(0, 240, 255, 0.18);
+    --primary: #00f0ff;
+    --primary-foreground: #020617;
+    --primary-muted: rgba(0, 240, 255, 0.18);
+    --glow: rgba(0, 240, 255, 0.4);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.08) 0%, rgba(255, 0, 127, 0.04) 50%, transparent 80%);
   }
 
-  :root[data-theme="forest"] {
-    --bg: #050f0b;
-    --surface: #0a1913;
-    --surface-elevated: #11251d;
-    --surface-pill: #173328;
-    --fg: #ebf7f1;
-    --muted: #648b77;
-    --border: rgba(52, 211, 153, 0.12);
-    --primary: #34d399;
-    --primary-foreground: #050f0b;
-    --primary-muted: rgba(52, 211, 153, 0.15);
-    --ring: #34d399;
+  /* 3. Emerald Matrix (Deep Terminal Glow) */
+  :root[data-theme="forest"],
+  :root[data-theme="emerald"] {
+    --bg: #030a06;
+    --surface: #06150c;
+    --surface-elevated: #0b2214;
+    --surface-pill: #123420;
+    --fg: #ecfdf5;
+    --muted: #5e8c74;
+    --border: rgba(16, 185, 129, 0.18);
+    --primary: #10b981;
+    --primary-foreground: #021a0f;
+    --primary-muted: rgba(16, 185, 129, 0.18);
+    --glow: rgba(16, 185, 129, 0.35);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.07) 0%, transparent 70%);
   }
 
-  :root[data-theme="amber"] {
-    --bg: #100c05;
-    --surface: #181309;
-    --surface-elevated: #241c0e;
-    --surface-pill: #312613;
-    --fg: #fef7ec;
-    --muted: #9b8465;
-    --border: rgba(251, 191, 36, 0.12);
-    --primary: #fbbf24;
-    --primary-foreground: #100c05;
-    --primary-muted: rgba(251, 191, 36, 0.15);
-    --ring: #fbbf24;
+  /* 4. Sunset Mirage (Violet / Amber Glow) */
+  :root[data-theme="amber"],
+  :root[data-theme="sunset"] {
+    --bg: #0d070b;
+    --surface: #180d15;
+    --surface-elevated: #241320;
+    --surface-pill: #331b2e;
+    --fg: #fff1f2;
+    --muted: #996f8a;
+    --border: rgba(249, 115, 22, 0.18);
+    --primary: #f97316;
+    --primary-foreground: #140502;
+    --primary-muted: rgba(249, 115, 22, 0.18);
+    --glow: rgba(249, 115, 22, 0.35);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.08) 0%, rgba(217, 70, 239, 0.05) 50%, transparent 80%);
   }
 
+  /* 5. Rose Gold Nebula */
   :root[data-theme="rose"] {
-    --bg: #120609;
-    --surface: #1b0a0f;
-    --surface-elevated: #270f17;
-    --surface-pill: #361520;
+    --bg: #0d0508;
+    --surface: #180910;
+    --surface-elevated: #260f1a;
+    --surface-pill: #371626;
     --fg: #fff1f3;
-    --muted: #a16a77;
-    --border: rgba(251, 113, 133, 0.12);
-    --primary: #fb7185;
-    --primary-foreground: #120609;
-    --primary-muted: rgba(251, 113, 133, 0.15);
-    --ring: #fb7185;
+    --muted: #a36a7a;
+    --border: rgba(244, 63, 94, 0.18);
+    --primary: #f43f5e;
+    --primary-foreground: #170206;
+    --primary-muted: rgba(244, 63, 94, 0.18);
+    --glow: rgba(244, 63, 94, 0.35);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(244, 63, 94, 0.08) 0%, transparent 70%);
   }
 
+  /* 6. OLED Pure Black */
   :root[data-theme="oled"] {
     --bg: #000000;
-    --surface: #0a0a0a;
-    --surface-elevated: #141414;
-    --surface-pill: #1f1f1f;
+    --surface: #080808;
+    --surface-elevated: #121212;
+    --surface-pill: #1c1c1c;
     --fg: #ffffff;
     --muted: #737373;
     --border: #222222;
-    --primary: #cbb592;
+    --primary: #e5e5e5;
     --primary-foreground: #000000;
-    --primary-muted: rgba(203, 181, 146, 0.2);
-    --ring: #cbb592;
+    --primary-muted: rgba(255, 255, 255, 0.12);
+    --glow: rgba(255, 255, 255, 0.25);
+    --bg-gradient: none;
   }
 
+  /* 7. Midnight Indigo */
   :root[data-theme="midnight"] {
-    --bg: #080a14;
-    --surface: #0f1424;
-    --surface-elevated: #171f36;
-    --surface-pill: #202b4a;
+    --bg: #050711;
+    --surface: #0b0f22;
+    --surface-elevated: #121935;
+    --surface-pill: #1b254d;
     --fg: #f0f4fc;
-    --muted: #7986a3;
-    --border: rgba(99, 102, 241, 0.15);
+    --muted: #6f7ea1;
+    --border: rgba(99, 102, 241, 0.18);
     --primary: #818cf8;
-    --primary-foreground: #080a14;
+    --primary-foreground: #050711;
     --primary-muted: rgba(129, 140, 248, 0.18);
-    --ring: #818cf8;
+    --glow: rgba(129, 140, 248, 0.35);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.09) 0%, transparent 70%);
   }
 
+  /* 8. Nordic Frost */
   :root[data-theme="nord"] {
-    --bg: #242933;
-    --surface: #2e3440;
-    --surface-elevated: #3b4252;
-    --surface-pill: #434c5e;
+    --bg: #1e222a;
+    --surface: #252b36;
+    --surface-elevated: #2f3745;
+    --surface-pill: #3b4557;
     --fg: #eceff4;
-    --muted: #94a3b8;
-    --border: #434c5e;
+    --muted: #8897ae;
+    --border: rgba(136, 192, 208, 0.18);
     --primary: #88c0d0;
-    --primary-foreground: #242933;
-    --primary-muted: rgba(136, 192, 208, 0.2);
-    --ring: #88c0d0;
+    --primary-foreground: #1e222a;
+    --primary-muted: rgba(136, 192, 208, 0.18);
+    --glow: rgba(136, 192, 208, 0.3);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(136, 192, 208, 0.07) 0%, transparent 70%);
   }
 
   * {
@@ -122,12 +141,20 @@
 
   body {
     background-color: var(--bg);
+    background-image: var(--bg-gradient);
+    background-attachment: fixed;
     color: var(--fg);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    min-height: 100vh;
   }
 
   .font-serif-title {
     font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  }
+
+  /* توهج الأزرار والخلايا النشطة */
+  .glow-primary {
+    box-shadow: 0 0 15px -2px var(--glow);
   }
 
   select option {
