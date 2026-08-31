@@ -1,548 +1,121 @@
-import { useState, useMemo } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Maximize2, Minimize2, Sparkles, BrainCircuit, Bot, AlertCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ProgressRing } from "@/components/tracker/progress-ring";
-import { scoreFill } from "@/lib/tracker/stats";
-import type { MonthStats } from "@/lib/tracker/types";
+import { StatsResult } from "@/lib/tracker/types";
 import { cn } from "@/lib/utils";
 
-function ChartTip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: { value: number }[];
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-md bg-fg px-2.5 py-1.5 text-xs text-bg">
-      <div className="font-medium">{label}</div>
-      <div>{Number(payload[0].value).toFixed(0)}%</div>
-    </div>
-  );
+interface AnalyticsPanelProps {
+  stats: StatsResult;
 }
 
-export function AnalyticsPanel({ stats }: { stats: MonthStats }) {
-  const [expanded, setExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"charts" | "ml">("charts");
-
-  // ML Matrix Controls State
-  const [selectedEngine, setSelectedEngine] = useState("Gradient Boosting");
-  const [threshold, setThreshold] = useState(70);
-  const [testDate, setTestDate] = useState("2026-08-29");
-  const [runTrigger, setRunTrigger] = useState(0);
-
-  const recurring = stats.habits.filter((h) => h.recurring && h.habit.name.trim());
-  const radarTasks = recurring.filter((h) => h.expected > 0);
-  const dailyData = stats.daily.map((d) => ({
-    label: String(d.date.getDate()),
-    score: Math.round(d.score),
-    name: d.label,
-  }));
-  const taskData = [...recurring]
-    .sort((a, b) => a.score - b.score)
-    .map((h) => ({ name: h.habit.name, score: Math.round(h.score) }));
-
-  const weeks: { iso: string; score: number; label: string }[][] = [];
-  let week: { iso: string; score: number; label: string }[] = [];
-  const pad = stats.daily[0] ? stats.daily[0].weekday : 0;
-  for (let i = 0; i < pad; i += 1) week.push({ iso: `pad-${i}`, score: -1, label: "" });
-  for (const d of stats.daily) {
-    week.push({ iso: d.iso, score: d.expected > 0 ? d.score : -1, label: d.label });
-    if (week.length === 7) {
-      weeks.push(week);
-      week = [];
-    }
-  }
-  if (week.length) {
-    while (week.length < 7) week.push({ iso: `end-${week.length}`, score: -1, label: "" });
-    weeks.push(week);
-  }
-
-  const compactHabitHeight = Math.max(280, Math.min(360, taskData.length * 30));
-  const expandedHabitHeight = Math.max(520, taskData.length * 42);
-
-  // Dynamic Embedded ML Inference
-  const mlPredictions = useMemo(() => {
-    return stats.habits.map((h) => {
-      const isRest = h.expected === 0;
-      if (isRest) {
-        return {
-          name: h.habit.name,
-          predicted: "-",
-          probValue: 0,
-          probability: "N/A",
-          isRestDay: true,
-          mainReason: "Rest day (Not scheduled)",
-          bars: [20, 15, 10],
-        };
-      }
-
-      const habitScore = h.score / 100;
-      const paceScore = (stats.paceScore || 70) / 100;
-      const streakBonus = Math.min(stats.currentStreak * 0.04, 0.2);
-
-      let rawProb = 0.45 * habitScore + 0.35 * paceScore + streakBonus;
-      if (selectedEngine === "Gradient Boosting") {
-        rawProb = Math.min(0.98, Math.max(0.35, rawProb * 1.08));
-      } else if (selectedEngine === "Random Forest") {
-        rawProb = Math.min(0.95, Math.max(0.38, rawProb * 1.02));
-      } else {
-        rawProb = Math.min(0.92, Math.max(0.30, rawProb * 0.96));
-      }
-
-      const isYes = rawProb >= threshold / 100;
-      const mainDriver =
-        habitScore > 0.75
-          ? "Momentum"
-          : paceScore > 0.7
-          ? "Yesterday"
-          : "Day";
-
-      return {
-        name: h.habit.name,
-        predicted: isYes ? "Yes" : "No",
-        probValue: rawProb,
-        probability: `${(rawProb * 100).toFixed(1)}%`,
-        isRestDay: false,
-        mainReason: `${isYes ? "High" : "Low"} confidence. Main driver: ${mainDriver}`,
-        bars: isYes ? [60, 95, 80] : [75, 30, 45],
-      };
-    });
-  }, [stats, selectedEngine, threshold, runTrigger]);
-
-  // Dynamic AI Coach Engine
-  const aiCoachInsight = useMemo(() => {
-    if (stats.habits.length === 0) {
-      return {
-        headline: "No habits tracked yet",
-        body: "Your AI Coach is standby. Add your habits in the Matrix tab to generate real-time behavioral predictions.",
-      };
-    }
-
-    const activeHabits = stats.habits.filter((h) => h.expected > 0);
-    if (activeHabits.length === 0) {
-      return {
-        headline: "All Habits on Rest",
-        body: "All habits are currently set to rest days for this selection.",
-      };
-    }
-
-    const sorted = [...activeHabits].sort((a, b) => b.score - a.score);
-    const topHabit = sorted[0];
-    const weakHabit = sorted[sorted.length - 1];
-
-    if (topHabit.score === weakHabit.score) {
-      return {
-        headline: "Calibrating User Routine",
-        body: `Analyzing ${stats.habits.length} habits. Consistent daily checks will quickly elevate prediction confidence scores across the board.`,
-      };
-    }
-
-    return {
-      headline: `Prioritize "${weakHabit.habit.name}" Today`,
-      body: `Strong performance on "${topHabit.habit.name}" (${Math.round(topHabit.score)}% execution). Focus effort on "${weakHabit.habit.name}" to protect your current streak momentum.`,
-    };
-  }, [stats.habits, stats.paceScore]);
+export function AnalyticsPanel({ stats }: AnalyticsPanelProps) {
+  const { habitsBreakdown = [], daysBreakdown = [] } = stats;
 
   return (
-    <div className={cn("flex flex-col gap-5", expanded && "analytics-expanded")}>
-      {/* Tab Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface px-4 py-3 shadow-[var(--shadow-border)]">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("charts")}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-              activeTab === "charts"
-                ? "bg-accent text-accent-fg"
-                : "bg-surface-2 text-muted hover:text-fg"
-            )}
-          >
-            Analytics
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("ml")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-              activeTab === "ml"
-                ? "bg-accent text-accent-fg shadow-sm"
-                : "bg-surface-2 text-muted hover:text-fg"
-            )}
-          >
-            <Sparkles className="size-3.5" />
-            ML & AI Coach
-          </button>
+    <div className="space-y-6">
+      {/* Top 4 Stat Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Pace</span>
+            <div className="flex size-12 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary-muted)] text-sm font-bold text-[var(--fg)] font-serif-title">
+              {Math.round(stats.paceScore)}%
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-[var(--muted)]">Current monthly velocity</p>
         </div>
 
-        {activeTab === "charts" && (
-          <button
-            type="button"
-            role="switch"
-            aria-checked={expanded}
-            onClick={() => setExpanded((value) => !value)}
-            className={cn(
-              "flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors",
-              expanded ? "bg-accent text-accent-fg" : "bg-surface-2 text-muted hover:text-fg"
-            )}
-          >
-            {expanded ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
-            {expanded ? "Compact charts" : "Full-screen charts"}
-          </button>
-        )}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">To Target Date</span>
+          <p className="mt-2 font-serif-title text-3xl font-bold text-[var(--fg)]">
+            {stats.completedThroughToday}/{stats.expectedThroughToday}
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">Completed vs scheduled</p>
+        </div>
+
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Tracked Habits</span>
+          <p className="mt-2 font-serif-title text-3xl font-bold text-[var(--fg)]">
+            {habitsBreakdown.length}
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">Active rows in matrix</p>
+        </div>
+
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Perfect Streak</span>
+          <p className="mt-2 font-serif-title text-3xl font-bold text-[var(--fg)]">
+            {stats.currentStreak}
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">Consecutive 100% execution days</p>
+        </div>
       </div>
 
-      {activeTab === "ml" ? (
-        /* ML & AI Coach Tab */
-        <div className="flex flex-col gap-5">
-          {/* AI Coach Card */}
-          <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-fg">
-                <Bot className="size-5" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-fg">AI Coach Insights</h3>
-                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[0.65rem] font-medium text-accent">
-                    Real-time Analysis
-                  </span>
-                </div>
-                <p className="mt-1 text-xs font-medium text-accent">{aiCoachInsight.headline}</p>
-                <p className="mt-0.5 text-xs text-muted leading-relaxed">{aiCoachInsight.body}</p>
-              </div>
-            </div>
+      {/* Breakdown Charts Grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Habit Completion Progress Bars */}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <h3 className="font-serif-title text-lg font-normal text-[var(--fg)]">Habit completion</h3>
+          <p className="mt-1 text-xs text-[var(--muted)]">Individual completion percentages</p>
+
+          <div className="mt-6 space-y-4">
+            {habitsBreakdown.length === 0 ? (
+              <p className="text-xs text-[var(--muted)]">No active habits.</p>
+            ) : (
+              habitsBreakdown.map((item: any) => {
+                const pct = Math.round(item.rate || 0);
+                return (
+                  <div key={item.habit.id} className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-medium text-[var(--fg)]">{item.habit.name}</span>
+                      <span className="font-mono text-[var(--muted)]">{pct}%</span>
+                    </div>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--surface-elevated)]">
+                      <div
+                        className="h-full rounded-full bg-[var(--primary)] transition-all duration-300"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
-
-          <Card className="border-border/60 bg-surface">
-            <CardContent className="p-5">
-              <div className="mb-4">
-                <h2 className="font-display text-xl tracking-tight text-fg">ML Prediction Matrix</h2>
-                <p className="text-xs text-muted">Behavioral forecasting and dynamic probability analysis</p>
-              </div>
-
-              {/* Controls */}
-              <div className="flex flex-wrap items-end gap-4 border-b border-border/40 pb-5">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-muted">Test Date</label>
-                  <input
-                    type="date"
-                    value={testDate}
-                    onChange={(e) => setTestDate(e.target.value)}
-                    className="h-9 rounded-md bg-surface-2 px-3 text-xs text-fg shadow-[var(--shadow-border)] outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-muted">Engine</label>
-                  <select
-                    value={selectedEngine}
-                    onChange={(e) => setSelectedEngine(e.target.value)}
-                    className="h-9 rounded-md bg-surface-2 px-3 text-xs text-fg shadow-[var(--shadow-border)] outline-none"
-                  >
-                    <option value="Gradient Boosting">Gradient Boosting</option>
-                    <option value="Random Forest">Random Forest</option>
-                    <option value="Logistic Regression">Logistic Regression</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-muted">Threshold (%)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="99"
-                    value={threshold}
-                    onChange={(e) => setThreshold(Number(e.target.value))}
-                    className="h-9 w-20 rounded-md bg-surface-2 px-3 text-xs text-fg shadow-[var(--shadow-border)] outline-none"
-                  />
-                </div>
-
-                <Button
-                  onClick={() => setRunTrigger((prev) => prev + 1)}
-                  className="h-9 bg-accent px-4 text-xs font-medium text-accent-fg hover:opacity-90"
-                >
-                  <BrainCircuit className="mr-1.5 size-3.5" />
-                  Run Model
-                </Button>
-              </div>
-
-              {/* Table or Empty View */}
-              {stats.habits.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <AlertCircle className="size-10 text-muted/60 mb-2" />
-                  <p className="text-sm font-medium text-fg">No habits tracked yet</p>
-                  <p className="text-xs text-muted mt-1 max-w-sm">
-                    Navigate to the Matrix tab to add your custom habits. Predictions will update here automatically.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto py-3">
-                  <table className="min-w-full text-left text-xs">
-                    <thead>
-                      <tr className="border-b border-border/30 text-muted">
-                        <th className="py-2.5 font-medium">Habit</th>
-                        <th className="py-2.5 font-medium">Predicted</th>
-                        <th className="py-2.5 font-medium">Probability</th>
-                        <th className="py-2.5 font-medium">Actual</th>
-                        <th className="py-2.5 font-medium">Main Reason (Feature Importance)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/20">
-                      {mlPredictions.map((row) => (
-                        <tr key={row.name} className="hover:bg-surface-2/40">
-                          <td className="py-3 font-semibold text-fg">{row.name}</td>
-                          <td className="py-3">
-                            {row.predicted === "Yes" ? (
-                              <span className="font-bold text-accent">Yes</span>
-                            ) : row.predicted === "No" ? (
-                              <span className="font-bold text-red-400">No</span>
-                            ) : (
-                              <span className="text-muted">-</span>
-                            )}
-                          </td>
-                          <td className="py-3 font-mono text-fg">{row.probability}</td>
-                          <td className="py-3">
-                            {!row.isRestDay && (
-                              <input
-                                type="checkbox"
-                                className="size-3.5 rounded border-border/60 accent-accent"
-                                disabled
-                              />
-                            )}
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-muted">{row.mainReason}</span>
-                              {!row.isRestDay && (
-                                <div className="flex items-end gap-1">
-                                  {row.bars.map((h, i) => (
-                                    <span
-                                      key={i}
-                                      style={{ height: `${h * 0.18}px` }}
-                                      className={cn(
-                                        "w-1.5 rounded-t-xs",
-                                        i === 1 ? "bg-accent" : "bg-purple-500/70"
-                                      )}
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Justification Box */}
-              <div className="mt-4 rounded-lg bg-surface-2/60 p-3.5 text-xs text-muted border border-border/30">
-                <p className="font-semibold text-fg mb-1">Model Analytics & Justification</p>
-                <p>
-                  <span className="text-subtle">Engine:</span> {selectedEngine}
-                </p>
-                <p>
-                  <span className="text-subtle">Decision Logic:</span> A decision threshold of {threshold}.0% is enforced to maximize prediction precision.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      ) : (
-        /* Charts View */
-        <>
-          {stats.bestWeekday && stats.bestWeekday.score > 0 && (
-            <div className="rounded-lg bg-accent/10 px-4 py-3 text-sm text-accent">
-              <span className="font-medium">Insight.</span> Highest weekday is typically{" "}
-              <span className="font-medium">{stats.bestWeekday.abbr}</span> (
-              {Math.round(stats.bestWeekday.score * 100)}% through today)
-              {stats.weakestHabit ? (
-                <>
-                  . Weakest recurring habit: {stats.weakestHabit.name} (
-                  {Math.round(stats.weakestHabit.score)}%).
-                </>
-              ) : null}
+
+        {/* Month Heatmap */}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <h3 className="font-serif-title text-lg font-normal text-[var(--fg)]">Month Heatmap</h3>
+          <p className="mt-1 text-xs text-[var(--muted)]">Daily completion density</p>
+
+          <div className="mt-6">
+            <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-medium text-[var(--muted)] uppercase mb-2">
+              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
             </div>
-          )}
-
-          <div className="stagger-in grid grid-cols-2 gap-3 xl:grid-cols-5">
-            <Card className="col-span-2 xl:col-span-1">
-              <CardContent>
-                <ProgressRing percentage={stats.paceScore} label="Pace" />
-              </CardContent>
-            </Card>
-            <Metric
-              title="Through today"
-              value={`${stats.completedThroughToday} / ${stats.expectedThroughToday}`}
-              desc="Completed vs scheduled up to today. Future days are not counted against you."
-            />
-            <Metric
-              title="Tracked habits"
-              value={String(stats.trackedCount)}
-              desc="Active habit rows in the matrix, including single-day habits."
-            />
-            <Metric
-              title="Perfect streak"
-              value={String(stats.currentStreak)}
-              desc={`Consecutive 100% days, skipping an in-progress today. Best this month: ${stats.longestStreak}.`}
-            />
-            <Card className="col-span-2 xl:col-span-1">
-              <CardContent>
-                <ProgressRing percentage={stats.todayScore} label={stats.todayLabel} />
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className={cn("grid gap-4", expanded ? "grid-cols-1" : "xl:grid-cols-2")}>
-            <Card>
-              <CardContent>
-                <h3 className="mb-3 font-display text-lg tracking-tight">Daily execution</h3>
-                <div className={cn(expanded ? "h-[70vh] min-h-[32rem]" : "h-64")}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dailyData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                      <CartesianGrid stroke="color-mix(in oklab, var(--color-fg) 8%, transparent)" vertical={false} />
-                      <XAxis dataKey="label" tick={{ fill: "var(--color-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis domain={[0, 100]} tick={{ fill: "var(--color-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip content={<ChartTip />} cursor={{ fill: "color-mix(in oklab, var(--color-fg) 6%, transparent)" }} />
-                      <Bar dataKey="score" radius={[4, 4, 0, 0]} isAnimationActive={false}>
-                        {dailyData.map((d) => (
-                          <Cell key={d.name} fill={scoreFill(d.score)} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent>
-                <h3 className="mb-3 font-display text-lg tracking-tight">Habit completion</h3>
-                {taskData.length === 0 ? (
-                  <p className="text-sm text-muted">Add a recurring habit to see rates.</p>
-                ) : (
-                  <div className={cn(expanded ? "overflow-visible" : "h-[22rem] overflow-y-auto pr-1")}>
-                    <div style={{ height: expanded ? expandedHabitHeight : compactHabitHeight }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={taskData}
-                          layout="vertical"
-                          margin={{ top: 8, right: 12, left: 8, bottom: 0 }}
-                        >
-                          <CartesianGrid stroke="color-mix(in oklab, var(--color-fg) 8%, transparent)" horizontal={false} />
-                          <XAxis type="number" domain={[0, 100]} tick={{ fill: "var(--color-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                          <YAxis type="category" dataKey="name" width={expanded ? 190 : 145} interval={0} tick={{ fill: "var(--color-fg)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                          <Tooltip content={<ChartTip />} cursor={{ fill: "color-mix(in oklab, var(--color-fg) 6%, transparent)" }} />
-                          <Bar dataKey="score" radius={[0, 4, 4, 0]} isAnimationActive={false}>
-                            {taskData.map((d) => (
-                              <Cell key={d.name} fill={scoreFill(d.score)} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+            <div className="grid grid-cols-7 gap-2">
+              {daysBreakdown.map((d: any) => {
+                const pct = d.expected > 0 ? d.completed / d.expected : 0;
+                return (
+                  <div
+                    key={d.iso}
+                    title={`${d.iso}: ${Math.round(pct * 100)}%`}
+                    className={cn(
+                      "aspect-square rounded-xl flex items-center justify-center text-[11px] font-mono transition-all",
+                      pct >= 0.8
+                        ? "bg-[#cbb592] text-[#111215] font-bold shadow-xs"
+                        : pct >= 0.4
+                        ? "bg-[#cbb592]/50 text-[var(--fg)]"
+                        : pct > 0
+                        ? "bg-[#cbb592]/20 text-[var(--muted)]"
+                        : "bg-[var(--surface-elevated)] text-[var(--muted)]/40 border border-[var(--border)]"
+                    )}
+                  >
+                    {d.iso.slice(8)}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                );
+              })}
+            </div>
           </div>
-
-          <div className={cn("grid gap-4", expanded ? "grid-cols-1" : "xl:grid-cols-2")}>
-            <Card>
-              <CardContent>
-                <h3 className="mb-3 font-display text-lg tracking-tight">Mastery radar</h3>
-                {radarTasks.length < 3 ? (
-                  <p className="text-sm text-muted">
-                    Add at least three recurring habits to see the radar.
-                  </p>
-                ) : (
-                  <div className={cn(expanded ? "h-[70vh] min-h-[32rem]" : "h-72")}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart
-                        data={radarTasks.map((h) => ({
-                          name: h.habit.name,
-                          score: Math.round(h.score),
-                        }))}
-                      >
-                        <PolarGrid stroke="color-mix(in oklab, var(--color-fg) 12%, transparent)" />
-                        <PolarAngleAxis dataKey="name" tick={{ fill: "var(--color-fg)", fontSize: 11 }} />
-                        <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar
-                          dataKey="score"
-                          stroke="var(--color-accent)"
-                          fill="var(--color-accent)"
-                          fillOpacity={0.28}
-                          isAnimationActive={false}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent>
-                <h3 className="mb-3 font-display text-lg tracking-tight">Month heatmap</h3>
-                <div className="grid grid-cols-7 gap-1.5">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                    <div key={d} className="text-center text-[0.65rem] tracking-wide text-muted">
-                      {d}
-                    </div>
-                  ))}
-                  {weeks.flat().map((cell) => (
-                    <div
-                      key={cell.iso}
-                      title={cell.label ? `${cell.label}: ${cell.score < 0 ? "rest" : `${Math.round(cell.score)}%`}` : undefined}
-                      className={cn(
-                        "aspect-square rounded-sm",
-                        cell.score < 0 ? "bg-surface-2" : ""
-                      )}
-                      style={cell.score >= 0 ? { background: scoreFill(cell.score) } : undefined}
-                    />
-                  ))}
-                </div>
-                <p className="mt-3 text-xs text-subtle">
-                  Month remaining is {Math.round(stats.monthScore)}% if empty future days stay empty.
-                  Pace through today is {Math.round(stats.paceScore)}%.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
 
-function Metric({ title, value, desc }: { title: string; value: string; desc: string }) {
-  return (
-    <Card>
-      <CardContent className="flex h-full flex-col justify-between gap-3">
-        <p className="text-xs font-medium tracking-wide text-muted uppercase">{title}</p>
-        <p className="font-display text-3xl tracking-tight tabular-nums">{value}</p>
-        <p className="text-xs leading-snug text-subtle">{desc}</p>
-      </CardContent>
-    </Card>
-  );
-}
+export default AnalyticsPanel;
