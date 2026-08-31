@@ -37,7 +37,7 @@ export function TrackerApp() {
   const [today] = useState(() => new Date());
   const [newOpen, setNewOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mainTab, setMainTab] = useState<MainTab>("stats");
+  const [mainTab, setMainTab] = useState<MainTab>("daily");
   const [statsSubTab, setStatsSubTab] = useState<StatsSubTab>("analytics");
   const [session, setSession] = useState<any>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -156,7 +156,7 @@ export function TrackerApp() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6">
       {!session && (
         <AuthDialog
           onSuccess={() => {
@@ -169,150 +169,168 @@ export function TrackerApp() {
       )}
 
       {/* Header */}
-      <header className="mb-6">
-        <p className="text-[11px] font-semibold tracking-[0.22em] text-[var(--muted)] uppercase">
-          EXECUTION LOG
-        </p>
-        <h1 className="font-serif-title mt-1 text-4xl font-normal tracking-tight text-[var(--fg)] sm:text-5xl">
-          {MONTHS[selectedMonth - 1]} {selectedYear}
-        </h1>
-        <p className="mt-2 text-xs text-[var(--muted)]">
-          Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
-          {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
-        </p>
-
-        {/* Action Controls Bar */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => shiftMonth(-1)}
-                className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)]"
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <NativeSelect
-                className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
-                value={selectedMonth}
-                onChange={(e) => setMonth(selectedYear, Number(e.target.value))}
-              >
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>
-                    {m}
-                  </option>
-                ))}
-              </NativeSelect>
-              <NativeSelect
-                className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
-                value={selectedYear}
-                onChange={(e) => setMonth(Number(e.target.value), selectedMonth)}
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </NativeSelect>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => shiftMonth(1)}
-                className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)]"
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMonth(today.getFullYear(), today.getMonth() + 1)}
-              className="h-10 rounded-xl border border-[var(--primary)]/30 bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[var(--primary)]"
-            >
-              <CalendarDays className="mr-1.5 size-3.5 text-[var(--primary)]" />
-              Today
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={() => {
-                if (undo()) toast("Undid last change.");
-                else toast("Nothing to undo.");
-              }}
-              disabled={undoCount === 0}
-              className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"
-            >
-              <Undo2 className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={() => setSettingsOpen(true)}
-              className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"
-            >
-              <Settings className="size-4" />
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setNewOpen(true)}
-              className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs font-medium text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50"
-            >
-              <Plus className="mr-1.5 size-4 text-[var(--primary)]" />
-              Habit
-            </Button>
-            {session && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  resetToSeed();
-                  setSession(null);
-                  toast("تم تسجيل الخروج");
-                }}
-                className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-rose-400"
-              >
-                <LogOut className="size-4" />
-              </Button>
-            )}
-          </div>
+      <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
+            EXECUTION LOG
+          </p>
+          <h1 className="font-serif-title mt-1 text-4xl font-normal tracking-tight text-[var(--fg)] sm:text-5xl">
+            {MONTHS[selectedMonth - 1]} {selectedYear}
+          </h1>
+          <p className="mt-1.5 text-xs text-[var(--muted)]">
+            Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
+            {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
+          </p>
         </div>
 
-        {/* Top 3-State Main Switcher (Daily / Matrix / Stats) */}
-        <div className="mt-5">
-          <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
-            {(["daily", "matrix", "stats"] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setMainTab(tab)}
-                className={cn(
-                  "flex items-center justify-center rounded-xl py-2.5 text-xs font-medium capitalize transition-all duration-200",
-                  mainTab === tab
-                    ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold shadow-sm"
-                    : "text-[var(--muted)] hover:text-[var(--fg)]"
-                )}
-              >
-                {tab}
-              </button>
-            ))}
+        {/* Action Controls Bar */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => shiftMonth(-1)}
+              className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)]"
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <NativeSelect
+              className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
+              value={selectedMonth}
+              onChange={(e) => setMonth(selectedYear, Number(e.target.value))}
+            >
+              {MONTHS.map((m, i) => (
+                <option key={m} value={i + 1}>
+                  {m}
+                </option>
+              ))}
+            </NativeSelect>
+            <NativeSelect
+              className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
+              value={selectedYear}
+              onChange={(e) => setMonth(Number(e.target.value), selectedMonth)}
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </NativeSelect>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => shiftMonth(1)}
+              className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)]"
+            >
+              <ChevronRight className="size-4" />
+            </Button>
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMonth(today.getFullYear(), today.getMonth() + 1)}
+            className="h-10 rounded-xl border border-[var(--primary)]/30 bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[var(--primary)]"
+          >
+            <CalendarDays className="mr-1.5 size-3.5 text-[var(--primary)]" />
+            Today
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => {
+              if (undo()) toast("Undid last change.");
+              else toast("Nothing to undo.");
+            }}
+            disabled={undoCount === 0}
+            className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"
+          >
+            <Undo2 className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => setSettingsOpen(true)}
+            className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"
+          >
+            <Settings className="size-4" />
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setNewOpen(true)}
+            className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs font-medium text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50"
+          >
+            <Plus className="mr-1.5 size-4 text-[var(--primary)]" />
+            Habit
+          </Button>
+          {session && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                resetToSeed();
+                setSession(null);
+                toast("تم تسجيل الخروج");
+              }}
+              className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-rose-400"
+            >
+              <LogOut className="size-4" />
+            </Button>
+          )}
         </div>
       </header>
 
-      {/* Main Content Areas */}
-      <main className="mt-6">
+      {/* Main Switcher Tabs */}
+      <div className="mb-6">
+        <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
+          {(["daily", "matrix", "stats"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setMainTab(tab)}
+              className={cn(
+                "flex items-center justify-center rounded-xl py-2.5 text-xs font-medium capitalize transition-all duration-200",
+                mainTab === tab
+                  ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold shadow-sm"
+                  : "text-[var(--muted)] hover:text-[var(--fg)]"
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <main>
+        {/* Daily View: Side-by-Side (AI Coach on Left, Matrix on Right) */}
         {mainTab === "daily" && (
-          <div className="rounded-3xl bg-[var(--surface)] p-6 sm:p-8 border border-[var(--border)] shadow-xl">
-            <TodayPanel habits={habits} stats={stats} todayDate={today} />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
+            <section className="min-w-0">
+              <div className="rounded-3xl border border-blue-500/25 bg-[var(--surface)] p-5 shadow-xl">
+                <TodayPanel habits={habits} stats={stats} todayDate={today} />
+              </div>
+            </section>
+
+            <section className="min-w-0">
+              <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl">
+                <HabitMatrix
+                  habits={habits}
+                  days={activeDays}
+                  todayIso={isoDate(today)}
+                  hidePast={hidePast}
+                  daysInMonth={daysInMonth}
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                />
+              </div>
+            </section>
           </div>
         )}
 
+        {/* Matrix Only View */}
         {mainTab === "matrix" && (
           <div className="rounded-3xl bg-[var(--surface)] p-6 sm:p-8 border border-[var(--border)] shadow-xl">
             <HabitMatrix
@@ -327,9 +345,9 @@ export function TrackerApp() {
           </div>
         )}
 
+        {/* Stats View with 4 Sub-Tabs */}
         {mainTab === "stats" && (
           <div className="space-y-6">
-            {/* 4-Pill Sub-nav: Analytics | Audit | Manage | ML */}
             <div className="flex flex-wrap items-center gap-2">
               {(
                 [
@@ -355,7 +373,6 @@ export function TrackerApp() {
               ))}
             </div>
 
-            {/* Sub-tab Views */}
             {statsSubTab === "analytics" && <AnalyticsPanel stats={stats} />}
             {statsSubTab === "audit" && <AuditPanel habits={habits} stats={stats} />}
             {statsSubTab === "ml" && <MlPanel habits={habits} completions={completions} />}
@@ -388,7 +405,7 @@ export function TrackerApp() {
         )}
       </main>
 
-      {/* Bottom Duplicate Nav (كما في الصورة تماماً) */}
+      {/* Bottom Switcher Nav */}
       <footer className="mt-12 mb-4">
         <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
           {(["daily", "matrix", "stats"] as const).map((tab) => (
