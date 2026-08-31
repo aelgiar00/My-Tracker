@@ -1,11 +1,10 @@
 @import "tailwindcss";
 
 @layer base {
-  /* 1. Obsidian Gold (Luxury Warm Dark - Default) */
+  /* 1. Obsidian Gold (Default) */
   :root,
-  :root[data-theme="default"],
-  :root[data-theme="dark"],
-  :root[data-theme="ink"] {
+  :root[data-theme="obsidian"],
+  :root[data-theme="default"] {
     --bg: #090a0c;
     --surface: #121316;
     --surface-elevated: #1a1b20;
@@ -17,122 +16,87 @@
     --primary-foreground: #090a0c;
     --primary-muted: rgba(203, 181, 146, 0.16);
     --glow: rgba(203, 181, 146, 0.25);
-    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(203, 181, 146, 0.05) 0%, transparent 60%);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(203, 181, 146, 0.06) 0%, transparent 60%);
   }
 
-  /* 2. Cyberpunk Neon (Cyan / Magenta Glow) */
-  :root[data-theme="ocean"],
-  :root[data-theme="cyberpunk"] {
-    --bg: #05060d;
-    --surface: #0a0d1a;
-    --surface-elevated: #10162a;
-    --surface-pill: #18223f;
-    --fg: #e0f2fe;
-    --muted: #627b9f;
-    --border: rgba(0, 240, 255, 0.18);
-    --primary: #00f0ff;
-    --primary-foreground: #020617;
-    --primary-muted: rgba(0, 240, 255, 0.18);
-    --glow: rgba(0, 240, 255, 0.4);
-    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.08) 0%, rgba(255, 0, 127, 0.04) 50%, transparent 80%);
-  }
-
-  /* 3. Emerald Matrix (Deep Terminal Glow) */
-  :root[data-theme="forest"],
-  :root[data-theme="emerald"] {
-    --bg: #030a06;
-    --surface: #06150c;
-    --surface-elevated: #0b2214;
-    --surface-pill: #123420;
-    --fg: #ecfdf5;
-    --muted: #5e8c74;
-    --border: rgba(16, 185, 129, 0.18);
-    --primary: #10b981;
-    --primary-foreground: #021a0f;
-    --primary-muted: rgba(16, 185, 129, 0.18);
-    --glow: rgba(16, 185, 129, 0.35);
-    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.07) 0%, transparent 70%);
-  }
-
-  /* 4. Sunset Mirage (Violet / Amber Glow) */
-  :root[data-theme="amber"],
-  :root[data-theme="sunset"] {
-    --bg: #0d070b;
-    --surface: #180d15;
-    --surface-elevated: #241320;
-    --surface-pill: #331b2e;
-    --fg: #fff1f2;
-    --muted: #996f8a;
-    --border: rgba(249, 115, 22, 0.18);
-    --primary: #f97316;
-    --primary-foreground: #140502;
-    --primary-muted: rgba(249, 115, 22, 0.18);
-    --glow: rgba(249, 115, 22, 0.35);
-    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.08) 0%, rgba(217, 70, 239, 0.05) 50%, transparent 80%);
-  }
-
-  /* 5. Rose Gold Nebula */
-  :root[data-theme="rose"] {
-    --bg: #0d0508;
-    --surface: #180910;
-    --surface-elevated: #260f1a;
-    --surface-pill: #371626;
-    --fg: #fff1f3;
-    --muted: #a36a7a;
-    --border: rgba(244, 63, 94, 0.18);
-    --primary: #f43f5e;
-    --primary-foreground: #170206;
-    --primary-muted: rgba(244, 63, 94, 0.18);
-    --glow: rgba(244, 63, 94, 0.35);
-    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(244, 63, 94, 0.08) 0%, transparent 70%);
-  }
-
-  /* 6. OLED Pure Black */
-  :root[data-theme="oled"] {
-    --bg: #000000;
-    --surface: #080808;
-    --surface-elevated: #121212;
-    --surface-pill: #1c1c1c;
-    --fg: #ffffff;
-    --muted: #737373;
-    --border: #222222;
-    --primary: #e5e5e5;
-    --primary-foreground: #000000;
+  /* 2. Ink (Deep Midnight Charcoal) */
+  :root[data-theme="ink"] {
+    --bg: #0b0c0e;
+    --surface: #111215;
+    --surface-elevated: #17181d;
+    --surface-pill: #202127;
+    --fg: #f3f4f6;
+    --muted: #7e828c;
+    --border: rgba(255, 255, 255, 0.08);
+    --primary: #e2e8f0;
+    --primary-foreground: #0b0c0e;
     --primary-muted: rgba(255, 255, 255, 0.12);
-    --glow: rgba(255, 255, 255, 0.25);
+    --glow: rgba(255, 255, 255, 0.15);
     --bg-gradient: none;
   }
 
-  /* 7. Midnight Indigo */
-  :root[data-theme="midnight"] {
-    --bg: #050711;
-    --surface: #0b0f22;
-    --surface-elevated: #121935;
-    --surface-pill: #1b254d;
-    --fg: #f0f4fc;
-    --muted: #6f7ea1;
-    --border: rgba(99, 102, 241, 0.18);
-    --primary: #818cf8;
-    --primary-foreground: #050711;
-    --primary-muted: rgba(129, 140, 248, 0.18);
-    --glow: rgba(129, 140, 248, 0.35);
-    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.09) 0%, transparent 70%);
+  /* 3. Paper (Warm Editorial Light) */
+  :root[data-theme="paper"] {
+    --bg: #f7f4ed;
+    --surface: #ffffff;
+    --surface-elevated: #ede8dc;
+    --surface-pill: #dfd8c7;
+    --fg: #1a1815;
+    --muted: #7d7565;
+    --border: rgba(0, 0, 0, 0.08);
+    --primary: #8c6d3f;
+    --primary-foreground: #ffffff;
+    --primary-muted: rgba(140, 109, 63, 0.15);
+    --glow: rgba(140, 109, 63, 0.18);
+    --bg-gradient: none;
   }
 
-  /* 8. Nordic Frost */
-  :root[data-theme="nord"] {
-    --bg: #1e222a;
-    --surface: #252b36;
-    --surface-elevated: #2f3745;
-    --surface-pill: #3b4557;
-    --fg: #eceff4;
-    --muted: #8897ae;
-    --border: rgba(136, 192, 208, 0.18);
-    --primary: #88c0d0;
-    --primary-foreground: #1e222a;
-    --primary-muted: rgba(136, 192, 208, 0.18);
-    --glow: rgba(136, 192, 208, 0.3);
-    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(136, 192, 208, 0.07) 0%, transparent 70%);
+  /* 4. Slate (Clean Cool Steel) */
+  :root[data-theme="slate"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface-elevated: #334155;
+    --surface-pill: #475569;
+    --fg: #f8fafc;
+    --muted: #94a3b8;
+    --border: rgba(148, 163, 184, 0.15);
+    --primary: #38bdf8;
+    --primary-foreground: #0f172a;
+    --primary-muted: rgba(56, 189, 248, 0.16);
+    --glow: rgba(56, 189, 248, 0.25);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 60%);
+  }
+
+  /* 5. Forest (Rich Pine Green) */
+  :root[data-theme="forest"] {
+    --bg: #050f0a;
+    --surface: #0a1912;
+    --surface-elevated: #11261c;
+    --surface-pill: #173728;
+    --fg: #ecfdf5;
+    --muted: #5e8c74;
+    --border: rgba(52, 211, 153, 0.15);
+    --primary: #34d399;
+    --primary-foreground: #02140d;
+    --primary-muted: rgba(52, 211, 153, 0.16);
+    --glow: rgba(52, 211, 153, 0.25);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(52, 211, 153, 0.06) 0%, transparent 60%);
+  }
+
+  /* 6. Lavender (Pastel Purple Dark) */
+  :root[data-theme="lavender"] {
+    --bg: #0d0a14;
+    --surface: #151022;
+    --surface-elevated: #201a33;
+    --surface-pill: #2d2448;
+    --fg: #faf5ff;
+    --muted: #8b7ca8;
+    --border: rgba(192, 132, 252, 0.15);
+    --primary: #c084fc;
+    --primary-foreground: #0d0a14;
+    --primary-muted: rgba(192, 132, 252, 0.16);
+    --glow: rgba(192, 132, 252, 0.25);
+    --bg-gradient: radial-gradient(circle at 50% 0%, rgba(192, 132, 252, 0.07) 0%, transparent 60%);
   }
 
   * {
@@ -144,17 +108,12 @@
     background-image: var(--bg-gradient);
     background-attachment: fixed;
     color: var(--fg);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
   }
 
   .font-serif-title {
     font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-  }
-
-  /* توهج الأزرار والخلايا النشطة */
-  .glow-primary {
-    box-shadow: 0 0 15px -2px var(--glow);
   }
 
   select option {
