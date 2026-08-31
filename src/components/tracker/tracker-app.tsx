@@ -1,472 +1,391 @@
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { parseISO } from "date-fns";
-import type { Completion, DailyTask, Habit, Schedule, TrackerSnapshot } from "@/lib/tracker/types";
-import { completionKey, isDayExpected, isRestDay, monthKey, scheduleForMonth } from "@/lib/tracker/schedule";
+import { useEffect, useMemo, useState } from "react";
+import { format, startOfWeek, addDays } from "date-fns";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Plus,
+  Settings,
+  Undo2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { AnalyticsPanel } from "@/components/tracker/analytics-panel";
+import { AuditPanel } from "@/components/tracker/audit-panel";
+import { BulkUpdatePanel, NewHabitDialog, SettingsDialog } from "@/components/tracker/habit-dialogs";
+import { HabitMatrix } from "@/components/tracker/habit-matrix";
+import { TodayPanel } from "@/components/tracker/today-panel";
+import { AuthDialog } from "@/components/tracker/auth-dialog";
+import { Button } from "@/components/ui/button";
+import { NativeSelect } from "@/components/tracker/native-select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isoDate } from "@/lib/tracker/schedule";
+import { computeStats, monthDays } from "@/lib/tracker/stats";
+import { useTrackerStore, exportSnapshot } from "@/store/tracker-store";
+import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
-const UNDO_LIMIT = 30;
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
-export type ThemeId =
-  | "default"
-  | "ocean"
-  | "forest"
-  | "amber"
-  | "rose"
-  | "oled"
-  | "midnight"
-  | "nord";
+type MainTab = "daily" | "matrix" | "stats";
 
-export type MatrixViewMode = "month" | "week";
-type UndoSnap = Pick<TrackerSnapshot, "habits" | "completions" | "dailyTasks">;
+export function TrackerApp() {
+  const [today] = useState(() => new Date());
+  const [newOpen, setNewOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mainTab, setMainTab] = useState<MainTab>("daily");
+  const [session, setSession] = useState<any>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
-type TrackerState = TrackerSnapshot & {
-  undoStack: UndoSnap[];
-  selectedYear: number;
-  selectedMonth: number;
-  inspectIso: string | null;
-  theme: ThemeId;
-  matrixView: MatrixViewMode;
-  setMatrixView: (view: MatrixViewMode) => void;
-  setTheme: (theme: ThemeId) => void;
-  hydrateDefaults: (today: Date) => void;
-  setMonth: (year: number, month: number) => void;
-  setHidePast: (value: boolean) => void;
-  setTrackingStart: (iso: string) => void;
-  setInspectIso: (iso: string | null) => void;
-  addHabit: (name: string, schedule: Schedule, options?: { monthKey?: string; monthlyOnly?: boolean }) => string;
-  addHabits: (names: string[], schedule?: Schedule, options?: { monthKey?: string; monthlyOnly?: boolean }) => number;
-  renameHabit: (id: string, name: string) => void;
-  setSchedule: (id: string, schedule: Schedule) => void;
-  setScheduleForMonth: (id: string, year: number, month: number, schedule: Schedule | null) => void;
-  setRestDay: (id: string, iso: string, rest: boolean) => void;
-  addTask: (iso: string, name: string) => string;
-  toggleTask: (iso: string, taskId: string) => void;
-  deleteTask: (iso: string, taskId: string) => void;
-  archiveHabit: (id: string, archived: boolean) => void;
-  deleteHabit: (id: string) => void;
-  reorderHabits: (fromId: string, toId: string) => void;
-  captureUndo: () => void;
-  toggleCompletion: (habitId: string, iso: string) => void;
-  setCompletion: (habitId: string, iso: string, done: boolean) => void;
-  setNote: (habitId: string, iso: string, note: string) => void;
-  bulkSet: (habitIds: string[], isos: string[], done: boolean) => number;
-  markAllToday: (iso: string, done: boolean) => number;
-  undo: () => boolean;
-  importSnapshot: (raw: unknown) => string | null;
-  resetToSeed: () => void;
-};
+  const habits = useTrackerStore((s) => s.habits);
+  const completions = useTrackerStore((s) => s.completions);
+  const dailyTasks = useTrackerStore((s) => s.dailyTasks);
+  const trackingStart = useTrackerStore((s) => s.trackingStart);
+  const hidePast = useTrackerStore((s) => s.hidePast);
+  const theme = useTrackerStore((s) => s.theme);
+  const matrixView = useTrackerStore((s) => s.matrixView);
+  const selectedYear = useTrackerStore((s) => s.selectedYear);
+  const selectedMonth = useTrackerStore((s) => s.selectedMonth);
+  const setMonth = useTrackerStore((s) => s.setMonth);
+  const undo = useTrackerStore((s) => s.undo);
+  const archiveHabit = useTrackerStore((s) => s.archiveHabit);
+  const undoCount = useTrackerStore((s) => s.undoStack.length);
+  const importSnapshot = useTrackerStore((s) => s.importSnapshot);
+  const resetToSeed = useTrackerStore((s) => s.resetToSeed);
 
-function newId(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-  return `habit-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function pushUndo(state: TrackerState): Partial<TrackerState> {
-  const snap: UndoSnap = {
-    habits: state.habits.map((h) => ({ ...h })),
-    completions: { ...state.completions },
-    dailyTasks: Object.fromEntries(
-      Object.entries(state.dailyTasks).map(([iso, tasks]) => [iso, tasks.map((task) => ({ ...task }))]),
-    ),
-  };
-  return { undoStack: [...state.undoStack, snap].slice(-UNDO_LIMIT) };
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-function parseImported(raw: unknown): TrackerSnapshot | null {
-  if (!isRecord(raw)) return null;
-  if (!Array.isArray(raw.habits) || !isRecord(raw.completions)) return null;
-  const habits: Habit[] = [];
-  for (const item of raw.habits) {
-    if (!isRecord(item)) continue;
-    if (typeof item.id !== "string" || typeof item.name !== "string") continue;
-    if (!isRecord(item.schedule)) continue;
-    habits.push({
-      id: item.id,
-      name: item.name,
-      schedule: item.schedule as Schedule,
-      archived: Boolean(item.archived),
-      createdAt: typeof item.createdAt === "string" ? item.createdAt : new Date().toISOString(),
-      monthOverrides: isRecord(item.monthOverrides) ? (item.monthOverrides as Record<string, Schedule | null>) : undefined,
-      monthlyOnly: Boolean(item.monthlyOnly),
-      restDays: isRecord(item.restDays)
-        ? Object.fromEntries(Object.entries(item.restDays).filter(([, value]) => value === true).map(([iso]) => [iso, true]))
-        : undefined,
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoadingAuth(false);
+      if (session) fetchCloudData(session.user.id);
     });
-  }
-  const completions: Record<string, Completion> = {};
-  for (const [key, value] of Object.entries(raw.completions)) {
-    if (!isRecord(value) || typeof value.at !== "string") continue;
-    completions[key] = {
-      at: value.at,
-      note: typeof value.note === "string" ? value.note : undefined,
-    };
-  }
-  const dailyTasks: Record<string, DailyTask[]> = {};
-  if (isRecord(raw.dailyTasks)) {
-    for (const [iso, rawTasks] of Object.entries(raw.dailyTasks)) {
-      if (!Array.isArray(rawTasks)) continue;
-      dailyTasks[iso] = rawTasks.flatMap((task) => {
-        if (!isRecord(task) || typeof task.id !== "string" || typeof task.name !== "string") return [];
-        return [
-          {
-            id: task.id,
-            name: task.name,
-            done: Boolean(task.done),
-            createdAt: typeof task.createdAt === "string" ? task.createdAt : new Date().toISOString(),
-          },
-        ];
-      });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchCloudData(session.user.id);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function fetchCloudData(userId: string) {
+    try {
+      const { data } = await supabase
+        .from("user_tracker_data")
+        .select("snapshot")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (data && data.snapshot) {
+        importSnapshot(data.snapshot);
+      } else {
+        resetToSeed();
+        const rawJson = JSON.parse(exportSnapshot());
+        await supabase.from("user_tracker_data").upsert({
+          user_id: userId,
+          snapshot: rawJson,
+          updated_at: new Date().toISOString(),
+        });
+      }
+    } catch {
+      resetToSeed();
     }
   }
-  return {
-    habits,
-    completions,
-    dailyTasks,
-    trackingStart: typeof raw.trackingStart === "string" ? raw.trackingStart : new Date().toISOString().slice(0, 10),
-    hidePast: Boolean(raw.hidePast),
-    seeded: true,
-  };
-}
 
-const emptyInitialState: TrackerSnapshot = {
-  habits: [],
-  completions: {},
-  dailyTasks: {},
-  trackingStart: new Date().toISOString().slice(0, 10),
-  hidePast: false,
-  seeded: true,
-};
-
-export const useTrackerStore = create<TrackerState>()(
-  persist(
-    (set, get) => ({
-      ...emptyInitialState,
-      undoStack: [],
-      selectedYear: new Date().getFullYear(),
-      selectedMonth: new Date().getMonth() + 1,
-      inspectIso: null,
-      theme: "default",
-      matrixView: "month",
-
-      setMatrixView: (matrixView) => set({ matrixView }),
-
-      hydrateDefaults: (today) => {
-        const state = get();
-        if (state.selectedYear && state.selectedMonth) return;
-        set({ selectedYear: today.getFullYear(), selectedMonth: today.getMonth() + 1 });
-      },
-
-      setMonth: (year, month) => set({ selectedYear: year, selectedMonth: month, inspectIso: null }),
-      setHidePast: (value) => set({ hidePast: value }),
-      setTrackingStart: (iso) => set({ trackingStart: iso }),
-      setInspectIso: (iso) => set({ inspectIso: iso }),
-      setTheme: (theme) => {
-        document.documentElement.dataset.theme = theme;
-        set({ theme });
-      },
-
-      addHabit: (name, schedule, options) => {
-        const id = newId();
-        const trimmed = name.trim() || "New habit";
-        set((s) => ({
-          ...pushUndo(s),
-          habits: [
-            ...s.habits,
-            {
-              id,
-              name: trimmed,
-              schedule,
-              archived: false,
-              createdAt: new Date().toISOString(),
-              monthlyOnly: Boolean(options?.monthlyOnly),
-              monthOverrides: options?.monthKey ? { [options.monthKey]: schedule } : undefined,
-            },
-          ],
-        }));
-        return id;
-      },
-
-      addHabits: (names, schedule = { type: "preset", id: "daily" }, options) => {
-        const existing = new Set(get().habits.map((h) => h.name.trim().toLowerCase()));
-        const toAdd = names.filter((n) => n.trim() && !existing.has(n.trim().toLowerCase()));
-        if (toAdd.length === 0) return 0;
-        set((s) => ({
-          ...pushUndo(s),
-          habits: [
-            ...s.habits,
-            ...toAdd.map((name) => ({
-              id: newId(),
-              name: name.trim(),
-              schedule,
-              archived: false,
-              createdAt: new Date().toISOString(),
-              monthlyOnly: Boolean(options?.monthlyOnly),
-              monthOverrides: options?.monthKey ? { [options.monthKey]: schedule } : undefined,
-            })),
-          ],
-        }));
-        return toAdd.length;
-      },
-
-      renameHabit: (id, name) => {
-        const trimmed = name.trim();
-        if (!trimmed) return;
-        set((s) => ({
-          ...pushUndo(s),
-          habits: s.habits.map((h) => (h.id === id ? { ...h, name: trimmed } : h)),
-        }));
-      },
-
-      setSchedule: (id, schedule) => {
-        set((s) => ({
-          ...pushUndo(s),
-          habits: s.habits.map((h) => (h.id === id ? { ...h, schedule } : h)),
-        }));
-      },
-
-      setScheduleForMonth: (id, year, month, schedule) => {
-        const key = monthKey(year, month);
-        set((s) => ({
-          ...pushUndo(s),
-          habits: s.habits.map((h) => {
-            if (h.id !== id) return h;
-            const monthOverrides = { ...(h.monthOverrides ?? {}) };
-            monthOverrides[key] = schedule;
-            return { ...h, monthOverrides };
-          }),
-        }));
-      },
-
-      setRestDay: (id, iso, rest) => {
-        set((s) => {
-          const habit = s.habits.find((h) => h.id === id);
-          if (!habit) return s;
-          const restDays = { ...(habit.restDays ?? {}) };
-          if (rest) restDays[iso] = true;
-          else delete restDays[iso];
-          const completions = { ...s.completions };
-          if (rest) delete completions[completionKey(id, iso)];
-          return {
-            ...pushUndo(s),
-            habits: s.habits.map((h) => (h.id === id ? { ...h, restDays } : h)),
-            completions,
-          };
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const timer = setTimeout(async () => {
+      try {
+        const rawJson = JSON.parse(exportSnapshot());
+        await supabase.from("user_tracker_data").upsert({
+          user_id: session.user.id,
+          snapshot: rawJson,
+          updated_at: new Date().toISOString(),
         });
-      },
+      } catch {}
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [habits, completions, dailyTasks, session]);
 
-      addTask: (iso, name) => {
-        const id = newId();
-        const task: DailyTask = { id, name: name.trim() || "New task", done: false, createdAt: new Date().toISOString() };
-        set((s) => ({
-          ...pushUndo(s),
-          dailyTasks: { ...s.dailyTasks, [iso]: [...(s.dailyTasks[iso] ?? []), task] },
-        }));
-        return id;
-      },
+  useEffect(() => {
+    void useTrackerStore.persist.rehydrate();
+  }, []);
 
-      toggleTask: (iso, taskId) => {
-        set((s) => ({
-          ...pushUndo(s),
-          dailyTasks: {
-            ...s.dailyTasks,
-            [iso]: (s.dailyTasks[iso] ?? []).map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)),
-          },
-        }));
-      },
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
-      deleteTask: (iso, taskId) => {
-        set((s) => ({
-          ...pushUndo(s),
-          dailyTasks: {
-            ...s.dailyTasks,
-            [iso]: (s.dailyTasks[iso] ?? []).filter((task) => task.id !== taskId),
-          },
-        }));
-      },
+  const monthDaysList = useMemo(
+    () => monthDays(selectedYear, selectedMonth, trackingStart),
+    [selectedYear, selectedMonth, trackingStart]
+  );
 
-      archiveHabit: (id, archived) => {
-        set((s) => ({
-          ...pushUndo(s),
-          habits: s.habits.map((h) => (h.id === id ? { ...h, archived } : h)),
-        }));
-      },
+  const weekDaysList = useMemo(() => {
+    const start = startOfWeek(today, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  }, [today]);
 
-      deleteHabit: (id) => {
-        set((s) => {
-          const completions = { ...s.completions };
-          for (const key of Object.keys(completions)) {
-            if (key.startsWith(`${id}|`)) delete completions[key];
-          }
-          return {
-            ...pushUndo(s),
-            habits: s.habits.filter((h) => h.id !== id),
-            completions,
-          };
-        });
-      },
+  const activeDays = matrixView === "week" ? weekDaysList : monthDaysList;
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
 
-      reorderHabits: (fromId, toId) => {
-        if (fromId === toId) return;
-        set((s) => {
-          const next = [...s.habits];
-          const from = next.findIndex((h) => h.id === fromId);
-          const to = next.findIndex((h) => h.id === toId);
-          if (from < 0 || to < 0) return s;
-          const [item] = next.splice(from, 1);
-          next.splice(to, 0, item);
-          return { habits: next };
-        });
-      },
+  const stats = useMemo(
+    () => computeStats(habits, completions, monthDaysList, today, dailyTasks),
+    [habits, completions, monthDaysList, today, dailyTasks]
+  );
 
-      captureUndo: () => set((s) => pushUndo(s)),
+  const archived = habits.filter((h) => h.archived);
 
-      toggleCompletion: (habitId, iso) => {
-        const key = completionKey(habitId, iso);
-        set((s) => {
-          const completions = { ...s.completions };
-          if (completions[key]) delete completions[key];
-          else completions[key] = { at: new Date().toISOString() };
-          return { ...pushUndo(s), completions };
-        });
-      },
+  function shiftMonth(delta: number) {
+    const d = new Date(selectedYear, selectedMonth - 1 + delta, 1);
+    setMonth(d.getFullYear(), d.getMonth() + 1);
+  }
 
-      setCompletion: (habitId, iso, done) => {
-        const key = completionKey(habitId, iso);
-        set((s) => {
-          const exists = Boolean(s.completions[key]);
-          if (exists === done) return s;
-          const completions = { ...s.completions };
-          if (done) completions[key] = { at: new Date().toISOString() };
-          else delete completions[key];
-          return { ...pushUndo(s), completions };
-        });
-      },
+  const years = Array.from({ length: 8 }, (_, i) => 2025 + i);
 
-      setNote: (habitId, iso, note) => {
-        const key = completionKey(habitId, iso);
-        set((s) => {
-          const current = s.completions[key];
-          if (!current) return s;
-          return {
-            ...pushUndo(s),
-            completions: {
-              ...s.completions,
-              [key]: { ...current, note: note.trim() || undefined },
-            },
-          };
-        });
-      },
+  if (loadingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-muted">
+        Loading Tracker...
+      </div>
+    );
+  }
 
-      bulkSet: (habitIds, isos, done) => {
-        const s = get();
-        const completions = { ...s.completions };
-        const idSet = new Set(habitIds);
-        let applied = 0;
-        for (const habit of s.habits) {
-          if (!idSet.has(habit.id) || habit.archived) continue;
-          for (const iso of isos) {
-            const date = parseISO(iso);
-            const schedule = scheduleForMonth(habit, date.getFullYear(), date.getMonth() + 1);
-            if (!schedule || !isDayExpected(schedule, date) || isRestDay(habit, iso)) continue;
-            const key = completionKey(habit.id, iso);
-            const exists = Boolean(completions[key]);
-            if (done && !exists) {
-              completions[key] = { at: new Date().toISOString() };
-              applied += 1;
-            } else if (!done && exists) {
-              delete completions[key];
-              applied += 1;
-            }
-          }
-        }
-        if (applied === 0) return 0;
-        set({ ...pushUndo(s), completions });
-        return applied;
-      },
+  return (
+    <div className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-8">
+      {!session && (
+        <AuthDialog
+          onSuccess={() => {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+              setSession(session);
+              if (session) fetchCloudData(session.user.id);
+            });
+          }}
+        />
+      )}
 
-      markAllToday: (iso, done) => {
-        const { habits } = get();
-        return get().bulkSet(
-          habits.filter((h) => !h.archived).map((h) => h.id),
-          [iso],
-          done,
-        );
-      },
+      {/* Header */}
+      <header className="mb-6">
+        <p className="text-[11px] font-semibold tracking-[0.22em] text-[#8b8882] uppercase">
+          EXECUTION LOG
+        </p>
+        <h1 className="font-serif-title mt-1 text-4xl font-bold tracking-tight text-[var(--fg)] sm:text-5xl">
+          {MONTHS[selectedMonth - 1]} {selectedYear}
+        </h1>
+        <p className="mt-2 text-xs text-[#8b8882]">
+          Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
+          {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
+        </p>
 
-      undo: () => {
-        const stack = get().undoStack;
-        if (stack.length === 0) return false;
-        const prev = stack[stack.length - 1];
-        set({
-          habits: prev.habits,
-          completions: prev.completions,
-          dailyTasks: prev.dailyTasks,
-          undoStack: stack.slice(0, -1),
-        });
-        return true;
-      },
+        {/* Action Controls Bar */}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => shiftMonth(-1)}
+                className="h-8 w-8 text-[#8b8882] hover:text-[var(--fg)]"
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <NativeSelect
+                className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
+                value={selectedMonth}
+                onChange={(e) => setMonth(selectedYear, Number(e.target.value))}
+              >
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1} className="bg-[var(--surface)] text-[var(--fg)]">
+                    {m}
+                  </option>
+                ))}
+              </NativeSelect>
+              <NativeSelect
+                className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
+                value={selectedYear}
+                onChange={(e) => setMonth(Number(e.target.value), selectedMonth)}
+              >
+                {years.map((y) => (
+                  <option key={y} value={y} className="bg-[var(--surface)] text-[var(--fg)]">
+                    {y}
+                  </option>
+                ))}
+              </NativeSelect>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => shiftMonth(1)}
+                className="h-8 w-8 text-[#8b8882] hover:text-[var(--fg)]"
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
 
-      importSnapshot: (raw) => {
-        const parsed = parseImported(raw);
-        if (!parsed) return "That file is not a valid matrix export.";
-        if (parsed.habits.length === 0) return "No habits found in that file.";
-        set((s) => ({
-          ...pushUndo(s),
-          ...parsed,
-          seeded: true,
-        }));
-        return null;
-      },
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMonth(today.getFullYear(), today.getMonth() + 1)}
+              className="h-10 rounded-xl border-[var(--border)] bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[#cbb592]/50 hover:bg-[var(--surface-elevated)]"
+            >
+              <CalendarDays className="mr-1.5 size-3.5 text-[#cbb592]" />
+              Today
+            </Button>
+          </div>
 
-      resetToSeed: () => {
-        set((s) => ({
-          ...pushUndo(s),
-          ...emptyInitialState,
-        }));
-      },
-    }),
-    {
-      name: "performance-matrix-v2",
-      storage: createJSONStorage(() => localStorage),
-      skipHydration: true,
-      merge: (persisted, current) => ({
-        ...current,
-        ...(persisted as Partial<TrackerState>),
-        dailyTasks: (persisted as Partial<TrackerState>)?.dailyTasks ?? current.dailyTasks ?? {},
-      }),
-      partialize: (s) => ({
-        habits: s.habits,
-        completions: s.completions,
-        dailyTasks: s.dailyTasks,
-        trackingStart: s.trackingStart,
-        hidePast: s.hidePast,
-        seeded: s.seeded,
-        selectedYear: s.selectedYear,
-        selectedMonth: s.selectedMonth,
-        theme: s.theme,
-        matrixView: s.matrixView,
-      }),
-    },
-  ),
-);
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => {
+                if (undo()) toast("Undid last change.");
+                else toast("Nothing to undo.");
+              }}
+              disabled={undoCount === 0}
+              className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"
+            >
+              <Undo2 className="size-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => setSettingsOpen(true)}
+              className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"
+            >
+              <Settings className="size-4" />
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setNewOpen(true)}
+              className="h-10 rounded-xl bg-[var(--surface)] px-4 text-xs font-medium text-[var(--fg)] border border-[var(--border)] hover:border-[#cbb592]/50"
+            >
+              <Plus className="mr-1.5 size-4 text-[#cbb592]" />
+              Habit
+            </Button>
+            {session && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  resetToSeed();
+                  setSession(null);
+                  toast("تم تسجيل الخروج");
+                }}
+                className="h-10 w-10 rounded-xl hover:bg-rose-500/10"
+              >
+                <LogOut className="size-4 text-rose-400" />
+              </Button>
+            )}
+          </div>
+        </div>
 
-export function exportSnapshot(): string {
-  const s = useTrackerStore.getState();
-  return JSON.stringify(
-    {
-      version: 2,
-      exportedAt: new Date().toISOString(),
-      habits: s.habits,
-      completions: s.completions,
-      dailyTasks: s.dailyTasks,
-      trackingStart: s.trackingStart,
-      hidePast: s.hidePast,
-    },
-    null,
-    2,
+        {/* Switcher Tabs */}
+        <div className="mt-6">
+          <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
+            {(["daily", "matrix", "stats"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setMainTab(tab)}
+                className={cn(
+                  "flex items-center justify-center rounded-xl py-2.5 text-xs font-medium capitalize transition-all duration-200",
+                  mainTab === tab
+                    ? "bg-[#25252b] text-[var(--fg)] shadow-sm font-semibold"
+                    : "text-[#8b8882] hover:text-[var(--fg)]"
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Views */}
+      <main className="mt-6">
+        {mainTab === "daily" && (
+          <div className="rounded-3xl bg-[var(--surface)] p-5 sm:p-7 border border-[var(--border)] shadow-xl">
+            <TodayPanel habits={habits} stats={stats} todayDate={today} />
+          </div>
+        )}
+
+        {mainTab === "matrix" && (
+          <div className="rounded-3xl bg-[var(--surface)] p-5 sm:p-7 border border-[var(--border)] shadow-xl">
+            <HabitMatrix
+              habits={habits}
+              days={activeDays}
+              todayIso={isoDate(today)}
+              hidePast={hidePast}
+              daysInMonth={daysInMonth}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+            />
+          </div>
+        )}
+
+        {mainTab === "stats" && (
+          <div className="space-y-6">
+            <Tabs defaultValue="analytics" className="w-full">
+              <TabsList className="mb-4 h-11 rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
+                <TabsTrigger value="analytics" className="rounded-lg text-xs data-[state=active]:bg-[#25252b]">
+                  Analytics
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="rounded-lg text-xs data-[state=active]:bg-[#25252b]">
+                  Audit
+                </TabsTrigger>
+                <TabsTrigger value="manage" className="rounded-lg text-xs data-[state=active]:bg-[#25252b]">
+                  Manage
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="analytics">
+                <AnalyticsPanel stats={stats} />
+              </TabsContent>
+              <TabsContent value="audit">
+                <AuditPanel habits={habits} stats={stats} />
+              </TabsContent>
+              <TabsContent value="manage">
+                <div className="flex flex-col gap-5">
+                  <BulkUpdatePanel
+                    days={activeDays.map((d) => ({ iso: isoDate(d), label: format(d, "EEE d") }))}
+                    todayIso={isoDate(today)}
+                  />
+                  <div className="rounded-2xl bg-[var(--surface)] p-5 border border-[var(--border)]">
+                    <h3 className="font-serif-title text-lg">Archived Habits</h3>
+                    {archived.length === 0 ? (
+                      <p className="mt-2 text-xs text-[#8b8882]">No archived habits.</p>
+                    ) : (
+                      <ul className="mt-3 flex flex-col gap-2">
+                        {archived.map((h) => (
+                          <li key={h.id} className="flex items-center justify-between gap-3">
+                            <span className="text-sm text-[var(--fg)]">{h.name}</span>
+                            <Button size="sm" variant="secondary" onClick={() => archiveHabit(h.id, false)}>
+                              Restore
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+      </main>
+
+      <NewHabitDialog
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        daysInMonth={daysInMonth}
+        selectedYear={selectedYear}
+        selectedMonth={selectedMonth}
+      />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </div>
   );
 }
+
+// إضافة default export للتوافق مع أي استيراد آخر
+export default TrackerApp;
