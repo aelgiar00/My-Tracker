@@ -23,31 +23,31 @@ function parseHabitSpecs(name: string): HabitWeight {
   const lower = name.toLowerCase();
 
   if (lower.includes("pray") || lower.includes("صلاة")) {
-    return { durationMinutes: 20, durationLabel: "20 دقيقة", baseFriction: 0.1, priority: 1, priorityLabel: "أولوية قصوى" };
+    return { durationMinutes: 20, durationLabel: "20m", baseFriction: 0.1, priority: 1, priorityLabel: "Critical" };
   }
   if (lower.includes("touch") || lower.includes("typing")) {
-    return { durationMinutes: 30, durationLabel: "30 دقيقة", baseFriction: 0.25, priority: 2, priorityLabel: "أولوية متوسطة" };
+    return { durationMinutes: 30, durationLabel: "30m", baseFriction: 0.25, priority: 2, priorityLabel: "Medium" };
   }
   if (lower.includes("nti") || lower.includes("notebook")) {
-    return { durationMinutes: 120, durationLabel: "ساعتان", baseFriction: 0.7, priority: 1, priorityLabel: "أولوية قصوى" };
+    return { durationMinutes: 120, durationLabel: "2h", baseFriction: 0.7, priority: 1, priorityLabel: "Critical" };
   }
   if (lower.includes("ml") || lower.includes("machine") || lower.includes("learning")) {
-    return { durationMinutes: 150, durationLabel: "ساعتان ونصف", baseFriction: 0.85, priority: 1, priorityLabel: "أولوية قصوى" };
+    return { durationMinutes: 150, durationLabel: "2.5h", baseFriction: 0.85, priority: 1, priorityLabel: "Critical" };
   }
   if (lower.includes("depi")) {
-    return { durationMinutes: 120, durationLabel: "ساعتان", baseFriction: 0.65, priority: 1, priorityLabel: "أولوية قصوى" };
+    return { durationMinutes: 120, durationLabel: "2h", baseFriction: 0.65, priority: 1, priorityLabel: "Critical" };
   }
   if (lower.includes("deep") || lower.includes("work")) {
-    return { durationMinutes: 90, durationLabel: "ساعة ونصف", baseFriction: 0.75, priority: 1, priorityLabel: "أولوية قصوى" };
+    return { durationMinutes: 90, durationLabel: "1.5h", baseFriction: 0.75, priority: 1, priorityLabel: "Critical" };
   }
   if (lower.includes("read") || lower.includes("قراءة")) {
-    return { durationMinutes: 30, durationLabel: "30 دقيقة", baseFriction: 0.3, priority: 2, priorityLabel: "أولوية متوسطة" };
+    return { durationMinutes: 30, durationLabel: "30m", baseFriction: 0.3, priority: 2, priorityLabel: "Medium" };
   }
   if (lower.includes("workout") || lower.includes("تمرين")) {
-    return { durationMinutes: 45, durationLabel: "45 دقيقة", baseFriction: 0.5, priority: 2, priorityLabel: "أولوية متوسطة" };
+    return { durationMinutes: 45, durationLabel: "45m", baseFriction: 0.5, priority: 2, priorityLabel: "Medium" };
   }
 
-  return { durationMinutes: 45, durationLabel: "45 دقيقة", baseFriction: 0.4, priority: 3, priorityLabel: "عادي" };
+  return { durationMinutes: 45, durationLabel: "45m", baseFriction: 0.4, priority: 3, priorityLabel: "Standard" };
 }
 
 export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
@@ -63,7 +63,6 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const availableHours = Math.max(0, 24 - totalOccupied);
   const availableMinutes = availableHours * 60;
 
-  // الجاهزية الكلية لليوم بناءً على النوم وضغط الوقت
   const readinessScore = useMemo(() => {
     if (availableHours <= 0) return 15;
     const sleepFactor = sleepHours >= 7 && sleepHours <= 9 ? 1.0 : sleepHours < 6 ? 0.7 : 0.85;
@@ -77,7 +76,6 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
       .filter((h) => isDayExpected(h.schedule, todayDate));
   }, [habits, todayDate]);
 
-  // حساب دقيق وغير متكرر لكل عادة
   const habitPredictions = useMemo(() => {
     let accumulatedTime = 0;
 
@@ -101,7 +99,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         return {
           ...item,
           chance: 100,
-          statusLabel: "تم الإنجاز",
+          statusLabel: "Completed",
           feasible: true,
         };
       }
@@ -109,13 +107,12 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
       const fitsInTime = accumulatedTime + item.specs.durationMinutes <= availableMinutes;
       accumulatedTime += item.specs.durationMinutes;
 
-      // حساب النسبة الفردية الخاصة بالعادة
       let score = Math.round(
         readinessScore * 0.5 +
         (1 - item.specs.baseFriction) * 35 +
         (item.streakCount * 4) +
         (item.specs.durationMinutes <= 30 ? 12 : item.specs.durationMinutes <= 60 ? 4 : -8) -
-        (index * 3) // ترتيب الحمل اليومي
+        (index * 3)
       );
 
       if (!fitsInTime) {
@@ -129,8 +126,8 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         chance: finalChance,
         feasible: fitsInTime,
         statusLabel: fitsInTime
-          ? finalChance >= 85 ? "جاهزية مرتفعة جداً" : "الوقت متاح للإنجاز"
-          : "ضغط وقت ومزاحمة",
+          ? finalChance >= 85 ? "High Confidence" : "Time Feasible"
+          : "Time Constrained",
       };
     });
   }, [todayHabits, availableMinutes, completions, todayIso, readinessScore, todayDate]);
@@ -138,28 +135,30 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const nonNegotiables = habitPredictions.filter((h) => h.specs.priority === 1);
 
   return (
-    <div className="flex flex-col gap-5 font-sans" dir="rtl">
+    <div className="flex flex-col gap-4 text-left font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[var(--border)] pb-4" dir="ltr">
-        <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-blue-500 animate-pulse"></span>
-          <h2 className="text-sm font-semibold tracking-wide text-blue-400">
-            Personal AI <br />
-            <span className="text-[11px] text-[var(--muted)]">Execution Coach</span>
-          </h2>
+      <div className="flex items-center justify-between border-b border-[var(--border)] pb-3.5">
+        <div className="flex items-center gap-2.5">
+          <span className="size-2 rounded-full bg-[var(--primary)] animate-pulse"></span>
+          <div>
+            <h2 className="text-xs font-semibold tracking-wider uppercase text-[var(--fg)]">
+              Personal AI
+            </h2>
+            <p className="text-[10px] text-[var(--muted)]">Execution Coach</p>
+          </div>
         </div>
-        <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-1.5 text-center">
-          <span className="text-[10px] text-blue-300 block">جاهزية اليوم:</span>
-          <span className="text-lg font-bold text-blue-400 font-serif-title">{readinessScore}%</span>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1 text-right">
+          <span className="text-[9px] font-medium text-[var(--muted)] uppercase block">Readiness</span>
+          <span className="text-sm font-bold text-[var(--primary)] font-serif-title">{readinessScore}%</span>
         </div>
       </div>
 
-      {/* Sliders */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)]">
-          <div className="flex justify-between text-xs text-[var(--fg)] font-medium mb-1.5">
-            <span>نوم:</span>
-            <span>{sleepHours}س</span>
+      {/* Inputs / Sliders */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl bg-[var(--surface-elevated)] p-2 border border-[var(--border)]">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-medium mb-1">
+            <span className="text-[var(--muted)]">Sleep</span>
+            <span>{sleepHours}h</span>
           </div>
           <input
             type="range"
@@ -167,14 +166,14 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
             max="12"
             value={sleepHours}
             onChange={(e) => setSleepHours(Number(e.target.value))}
-            className="h-1.5 w-full appearance-none rounded-lg bg-white/10 accent-blue-500 cursor-pointer"
+            className="h-1 w-full appearance-none rounded-lg bg-white/10 accent-[var(--primary)] cursor-pointer"
           />
         </div>
 
-        <div className="rounded-xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)]">
-          <div className="flex justify-between text-xs text-[var(--fg)] font-medium mb-1.5">
-            <span>كلية:</span>
-            <span>{collegeHours}س</span>
+        <div className="rounded-xl bg-[var(--surface-elevated)] p-2 border border-[var(--border)]">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-medium mb-1">
+            <span className="text-[var(--muted)]">College</span>
+            <span>{collegeHours}h</span>
           </div>
           <input
             type="range"
@@ -182,14 +181,14 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
             max="10"
             value={collegeHours}
             onChange={(e) => setCollegeHours(Number(e.target.value))}
-            className="h-1.5 w-full appearance-none rounded-lg bg-white/10 accent-blue-500 cursor-pointer"
+            className="h-1 w-full appearance-none rounded-lg bg-white/10 accent-[var(--primary)] cursor-pointer"
           />
         </div>
 
-        <div className="rounded-xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)]">
-          <div className="flex justify-between text-xs text-[var(--fg)] font-medium mb-1.5">
-            <span>شغل:</span>
-            <span>{workHours}س</span>
+        <div className="rounded-xl bg-[var(--surface-elevated)] p-2 border border-[var(--border)]">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-medium mb-1">
+            <span className="text-[var(--muted)]">Work</span>
+            <span>{workHours}h</span>
           </div>
           <input
             type="range"
@@ -197,35 +196,35 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
             max="12"
             value={workHours}
             onChange={(e) => setWorkHours(Number(e.target.value))}
-            className="h-1.5 w-full appearance-none rounded-lg bg-white/10 accent-blue-500 cursor-pointer"
+            className="h-1 w-full appearance-none rounded-lg bg-white/10 accent-[var(--primary)] cursor-pointer"
           />
         </div>
       </div>
 
-      {/* Available Time */}
-      <div className="flex items-center justify-between text-xs text-[var(--muted)] px-1">
-        <span>الوقت المتاح الصافي: <strong className="text-[var(--fg)]">{availableHours} ساعات</strong></span>
+      {/* Available Time Summary */}
+      <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5">
+        <span>Net Available: <strong className="text-[var(--fg)] font-mono">{availableHours}h</strong></span>
         <button
           type="button"
           onClick={() => setShowDetails(!showDetails)}
-          className="text-[11px] text-blue-400 hover:underline"
+          className="text-[11px] text-[var(--primary)] hover:underline cursor-pointer"
         >
-          {showDetails ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+          {showDetails ? "Hide Focus" : "Show Focus"}
         </button>
       </div>
 
-      {/* Non-Negotiables Box */}
+      {/* Non-Negotiables Focus Card */}
       {showDetails && (
-        <div className="rounded-xl bg-[var(--surface-elevated)]/70 p-3.5 border border-[var(--border)] text-xs">
-          <p className="font-semibold text-rose-400 mb-2 flex items-center gap-1.5">
-            🎯 الحد الأدنى المطلوب اليوم (Non-Negotiables):
+        <div className="rounded-xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs">
+          <p className="font-semibold text-[var(--fg)] mb-2 flex items-center gap-1.5 text-[11px]">
+            🎯 Non-Negotiables Today:
           </p>
-          <ul className="space-y-2 text-[11px] text-[var(--fg)]">
+          <ul className="space-y-1.5 text-[11px] text-[var(--fg)]">
             {nonNegotiables.map(({ habit, specs }) => (
-              <li key={habit.id} className="flex justify-between items-center pr-1 border-b border-white/5 pb-1">
-                <span>• {habit.name}</span>
-                <span className="text-[10px] text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">
-                  {specs.durationLabel} ({specs.priorityLabel})
+              <li key={habit.id} className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1 last:border-0 last:pb-0">
+                <span className="truncate max-w-[140px]">• {habit.name}</span>
+                <span className="text-[9.5px] font-mono text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded border border-[var(--primary)]/20">
+                  {specs.durationLabel}
                 </span>
               </li>
             ))}
@@ -233,25 +232,25 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       )}
 
-      {/* Habit Individual Score Cards */}
-      <div className="space-y-2 max-h-[320px] overflow-y-auto pl-1">
+      {/* Individual Habit Predictions List (No Scrollbar Glitches) */}
+      <div className="space-y-1.5 pt-1">
         {habitPredictions.map(({ habit, chance, isDone, feasible, statusLabel }) => (
           <div
             key={habit.id}
             className={cn(
-              "flex items-center justify-between rounded-xl p-3 border transition-all duration-150",
+              "flex items-center justify-between rounded-xl px-3 py-2 border transition-all duration-150",
               isDone
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                ? "bg-[var(--primary-muted)]/20 border-[var(--primary)]/40 text-[var(--primary)]"
                 : feasible
                 ? "bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--fg)] hover:border-[var(--muted)]"
-                : "bg-rose-500/5 border-rose-500/20 text-[var(--muted)]"
+                : "bg-[var(--surface-elevated)]/50 border-[var(--border)] text-[var(--muted)] opacity-60"
             )}
           >
             <div>
-              <p className="text-xs font-semibold">{habit.name}</p>
-              <span className="text-[10px] opacity-70 block mt-0.5">{statusLabel}</span>
+              <p className="text-xs font-medium text-[var(--fg)] truncate max-w-[140px]">{habit.name}</p>
+              <span className="text-[9.5px] text-[var(--muted)] block">{statusLabel}</span>
             </div>
-            <div className="text-left font-serif-title text-sm font-bold">
+            <div className="font-serif-title text-xs font-bold text-[var(--fg)]">
               {isDone ? "✓" : `${chance}%`}
             </div>
           </div>
