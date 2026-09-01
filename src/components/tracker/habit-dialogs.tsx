@@ -11,7 +11,7 @@ import { NativeSelect } from "@/components/tracker/native-select";
 import { useTrackerStore, exportSnapshot, ThemeId } from "@/store/tracker-store";
 import { Schedule, HabitPriority } from "@/lib/tracker/types";
 import { toast } from "sonner";
-import { Download, Upload, RotateCcw } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface NewHabitDialogProps {
@@ -183,7 +183,6 @@ export function NewHabitDialog({
                 onChange={(e) => setPriority(e.target.value as HabitPriority)}
                 className="h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs font-medium text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
               >
-                {/* تم استبدال الكلمة وإزالة الإيموجي هنا */}
                 <option value="critical">Important</option>
                 <option value="standard">Standard Habit</option>
               </NativeSelect>
@@ -467,7 +466,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const trackingStart = useTrackerStore((s) => s.trackingStart);
   const setTrackingStart = useTrackerStore((s) => s.setTrackingStart);
   const importSnapshot = useTrackerStore((s) => s.importSnapshot);
-  const resetToSeed = useTrackerStore((s) => s.resetToSeed);
 
   const [enableMl, setEnableMl] = useState(true);
   const [serviceUrl, setServiceUrl] = useState("");
@@ -579,19 +577,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <input type="file" accept=".json" onChange={handleImport} className="hidden" />
             </label>
           </div>
-
-          <Button
-            type="button"
-            onClick={() => {
-              resetToSeed();
-              toast.success("Sample data restored.");
-              onOpenChange(false);
-            }}
-            className="mt-2 h-11 w-full rounded-xl bg-[var(--primary)] text-xs font-bold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
-          >
-            <RotateCcw className="mr-1.5 size-3.5" />
-            Restore sample data
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
