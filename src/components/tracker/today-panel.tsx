@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { Habit } from "@/lib/tracker/types";
 import { isDayExpected, completionKey } from "@/lib/tracker/schedule";
 import { useTrackerStore } from "@/store/tracker-store";
-import { Pencil } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TodayPanelProps {
@@ -34,45 +34,71 @@ function getHabitSpecs(habit: Habit) {
   };
 }
 
+// الواجهة الخاصة بالأنشطة اليومية المخصصة
+interface TimeBlock {
+  id: string;
+  name: string;
+  hours: number;
+}
+
 export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
-  const [sleepHours, setSleepHours] = useState(8);
-  const [collegeHours, setCollegeHours] = useState(4);
-  const [workHours, setWorkHours] = useState(0);
   const [showDetails, setShowDetails] = useState(true);
 
-  // حالة ديناميكية لأسماء السلايدرز يتم حفظها في المتصفح
-  const [labels, setLabels] = useState(() => {
+  // نظام السلايدرز الديناميكي (اليوزر بيضيف ويمسح براحته)
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(() => {
     try {
-      const saved = localStorage.getItem("personal_ai_labels");
+      const saved = localStorage.getItem("personal_ai_blocks");
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return ["Sleep", "College", "Work"];
+    // القيم الافتراضية لأول مرة
+    return [
+      { id: "1", name: "Sleep", hours: 8 },
+      { id: "2", name: "College", hours: 4 },
+      { id: "3", name: "Work", hours: 0 }
+    ];
   });
 
-  // حفظ الأسماء تلقائياً عند تغييرها
+  // حفظ الأنشطة فوراً في المتصفح
   useEffect(() => {
-    localStorage.setItem("personal_ai_labels", JSON.stringify(labels));
-  }, [labels]);
+    localStorage.setItem("personal_ai_blocks", JSON.stringify(timeBlocks));
+  }, [timeBlocks]);
 
-  const updateLabel = (idx: number, val: string) => {
-    const newLabels = [...labels];
-    newLabels[idx] = val;
-    setLabels(newLabels);
+  const updateBlockName = (id: string, name: string) => {
+    setTimeBlocks(prev => prev.map(b => b.id === id ? { ...b, name } : b));
+  };
+
+  const updateBlockHours = (id: string, hours: number) => {
+    setTimeBlocks(prev => prev.map(b => b.id === id ? { ...b, hours } : b));
+  };
+
+  const removeBlock = (id: string) => {
+    setTimeBlocks(prev => prev.filter(b => b.id !== id));
+  };
+
+  const addBlock = () => {
+    if (timeBlocks.length >= 6) return; // حد أقصى 6 أنشطة عشان الشكل العام
+    const newId = Date.now().toString();
+    setTimeBlocks(prev => [...prev, { id: newId, name: "New Activity", hours: 2 }]);
   };
 
   const completions = useTrackerStore((s) => s.completions);
   const todayIso = format(todayDate, "yyyy-MM-dd");
 
-  const totalOccupied = sleepHours + collegeHours + workHours;
+  const totalOccupied = timeBlocks.reduce((acc, b) => acc + b.hours, 0);
   const availableHours = Math.max(0, 24 - totalOccupied);
   const availableMinutes = availableHours * 60;
 
   const readinessScore = useMemo(() => {
     if (availableHours <= 0) return 15;
+    
+    // بندور على أي حاجة اليوزر مسميها "Sleep" أو نوم عشان نحسب جودتها
+    const sleepBlock = timeBlocks.find(b => b.name.toLowerCase().includes("sleep"));
+    const sleepHours = sleepBlock ? sleepBlock.hours : 8; // لو مسحها، بنفترض 8 عشان ميبوظش السكور
+    
     const sleepFactor = sleepHours >= 7 && sleepHours <= 9 ? 1.0 : sleepHours < 6 ? 0.7 : 0.85;
     const loadFactor = Math.min(1.0, availableHours / 12);
     return Math.round(Math.min(100, (loadFactor * 0.65 + sleepFactor * 0.35) * 100));
-  }, [availableHours, sleepHours]);
+  }, [availableHours, timeBlocks]);
 
   const todayHabits = useMemo(() => {
     return habits
@@ -138,10 +164,6 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
 
   const nonNegotiables = habitPredictions.filter((h) => h.specs.priority === 1);
 
-  const sleepPercent = ((sleepHours - 4) / (12 - 4)) * 100;
-  const collegePercent = (collegeHours / 10) * 100;
-  const workPercent = (workHours / 12) * 100;
-
   return (
     <div className="flex flex-col gap-4 text-left font-sans">
       {/* Header */}
@@ -161,113 +183,69 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       </div>
 
-      {/* Sliders with Editable Dynamic Labels */}
-      <div className="grid grid-cols-3 gap-2">
-        {/* Slider 1 (Sleep by default) */}
-        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
-            <div className="flex items-center gap-1 group relative">
-              <input
-                type="text"
-                value={labels[0]}
-                onChange={(e) => updateLabel(0, e.target.value)}
-                className="w-14 bg-transparent text-[var(--muted)] font-medium outline-none focus:text-[var(--fg)] focus:border-[var(--primary)] border-b border-transparent transition-colors"
-                title="Edit name"
-              />
-              <Pencil className="size-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted)] absolute -right-3 pointer-events-none" />
-            </div>
-            <span className="font-mono text-[var(--primary)] shrink-0">{sleepHours}h</span>
-          </div>
-          <div className="py-1">
-            <input
-              type="range"
-              min="4"
-              max="12"
-              step="1"
-              value={sleepHours}
-              onChange={(e) => setSleepHours(Number(e.target.value))}
-              style={{ background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${sleepPercent}%, var(--surface-pill) ${sleepPercent}%, var(--surface-pill) 100%)` }}
-              className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
-            />
-          </div>
-          <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
-            <span>4h</span>
-            <span>8h</span>
-            <span>12h</span>
-          </div>
-        </div>
+      {/* Dynamic Time Allocation Blocks */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        {timeBlocks.map((block) => {
+          const percent = (block.hours / 24) * 100; // نسبة موحدة من 24 ساعة للكل
+          
+          return (
+            <div key={block.id} className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between relative group transition-colors hover:border-[var(--muted)]/50">
+              {/* زر مسح السلايدر */}
+              <button
+                onClick={() => removeBlock(block.id)}
+                className="absolute -top-1.5 -right-1.5 size-4.5 flex items-center justify-center rounded-full bg-rose-500/90 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm z-10 hover:bg-rose-500"
+                title="Remove activity"
+              >
+                <X className="size-3" />
+              </button>
 
-        {/* Slider 2 (College by default) */}
-        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
-            <div className="flex items-center gap-1 group relative">
-              <input
-                type="text"
-                value={labels[1]}
-                onChange={(e) => updateLabel(1, e.target.value)}
-                className="w-14 bg-transparent text-[var(--muted)] font-medium outline-none focus:text-[var(--fg)] focus:border-[var(--primary)] border-b border-transparent transition-colors"
-                title="Edit name"
-              />
-              <Pencil className="size-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted)] absolute -right-3 pointer-events-none" />
-            </div>
-            <span className="font-mono text-[var(--primary)] shrink-0">{collegeHours}h</span>
-          </div>
-          <div className="py-1">
-            <input
-              type="range"
-              min="0"
-              max="10"
-              step="1"
-              value={collegeHours}
-              onChange={(e) => setCollegeHours(Number(e.target.value))}
-              style={{ background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${collegePercent}%, var(--surface-pill) ${collegePercent}%, var(--surface-pill) 100%)` }}
-              className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
-            />
-          </div>
-          <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
-            <span>0h</span>
-            <span>5h</span>
-            <span>10h</span>
-          </div>
-        </div>
+              <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1 gap-1">
+                <input
+                  type="text"
+                  value={block.name}
+                  onChange={(e) => updateBlockName(block.id, e.target.value)}
+                  placeholder="Activity"
+                  className="w-[70%] bg-transparent text-[var(--muted)] font-medium outline-none focus:text-[var(--fg)] focus:border-b focus:border-[var(--primary)] transition-colors truncate"
+                  title="Click to rename"
+                />
+                <span className="font-mono text-[var(--primary)] shrink-0">{block.hours}h</span>
+              </div>
 
-        {/* Slider 3 (Work by default) */}
-        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
-            <div className="flex items-center gap-1 group relative">
-              <input
-                type="text"
-                value={labels[2]}
-                onChange={(e) => updateLabel(2, e.target.value)}
-                className="w-14 bg-transparent text-[var(--muted)] font-medium outline-none focus:text-[var(--fg)] focus:border-[var(--primary)] border-b border-transparent transition-colors"
-                title="Edit name"
-              />
-              <Pencil className="size-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted)] absolute -right-3 pointer-events-none" />
+              <div className="py-1">
+                <input
+                  type="range"
+                  min="0"
+                  max="24"
+                  step="1"
+                  value={block.hours}
+                  onChange={(e) => updateBlockHours(block.id, Number(e.target.value))}
+                  style={{ background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${percent}%, var(--surface-pill) ${percent}%, var(--surface-pill) 100%)` }}
+                  className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
+                />
+              </div>
+              <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
+                <span>0h</span>
+                <span>12h</span>
+                <span>24h</span>
+              </div>
             </div>
-            <span className="font-mono text-[var(--primary)] shrink-0">{workHours}h</span>
-          </div>
-          <div className="py-1">
-            <input
-              type="range"
-              min="0"
-              max="12"
-              step="1"
-              value={workHours}
-              onChange={(e) => setWorkHours(Number(e.target.value))}
-              style={{ background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${workPercent}%, var(--surface-pill) ${workPercent}%, var(--surface-pill) 100%)` }}
-              className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
-            />
-          </div>
-          <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
-            <span>0h</span>
-            <span>6h</span>
-            <span>12h</span>
-          </div>
-        </div>
+          );
+        })}
+
+        {/* زر إضافة نشاط جديد (يختفي لو اليوزر ضاف 6 أنشطة عشان نحافظ على الشكل) */}
+        {timeBlocks.length < 6 && (
+          <button
+            onClick={addBlock}
+            className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-elevated)]/30 flex flex-col items-center justify-center text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--primary)] hover:bg-[var(--surface-elevated)] transition-all min-h-[72px] cursor-pointer"
+          >
+            <Plus className="size-4 mb-0.5" />
+            <span className="text-[9px] font-semibold uppercase tracking-wider">Add</span>
+          </button>
+        )}
       </div>
 
       {/* Available Time Summary */}
-      <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5">
+      <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5 mt-1">
         <span>
           Net Available: <strong className="text-[var(--fg)] font-mono text-sm">{availableHours}h</strong>
         </span>
@@ -280,11 +258,11 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </button>
       </div>
 
-      {/* Non-Negotiables Focus Card */}
+      {/* Non-Negotiables Focus Card (Removed Emoji) */}
       {showDetails && (
-        <div className="rounded-2xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs shadow-xs">
-          <p className="font-semibold text-[var(--fg)] mb-2 flex items-center gap-1.5 text-[11px]">
-            🎯 Important Today:
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs shadow-xs mt-1">
+          <p className="font-semibold text-[var(--fg)] mb-2 flex items-center gap-1 text-[11px]">
+            Important Today:
           </p>
           {nonNegotiables.length === 0 ? (
             <p className="text-[10px] text-[var(--muted)]">No important habits scheduled today.</p>
