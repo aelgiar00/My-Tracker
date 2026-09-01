@@ -19,7 +19,7 @@
     --bg-gradient: radial-gradient(circle at 50% 0%, rgba(203, 181, 146, 0.06) 0%, transparent 60%);
   }
 
-  /* 2. Ink (Deep Midnight Charcoal) */
+  /* 2. Ink */
   :root[data-theme="ink"] {
     --bg: #0b0c0e;
     --surface: #111215;
@@ -35,7 +35,7 @@
     --bg-gradient: none;
   }
 
-  /* 3. Paper (Warm Editorial Light) */
+  /* 3. Paper */
   :root[data-theme="paper"] {
     --bg: #f7f4ed;
     --surface: #ffffff;
@@ -51,7 +51,7 @@
     --bg-gradient: none;
   }
 
-  /* 4. Slate (Clean Cool Steel) */
+  /* 4. Slate */
   :root[data-theme="slate"] {
     --bg: #0f172a;
     --surface: #1e293b;
@@ -67,7 +67,7 @@
     --bg-gradient: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 60%);
   }
 
-  /* 5. Forest (Rich Pine Green) */
+  /* 5. Forest */
   :root[data-theme="forest"] {
     --bg: #050f0a;
     --surface: #0a1912;
@@ -83,7 +83,7 @@
     --bg-gradient: radial-gradient(circle at 50% 0%, rgba(52, 211, 153, 0.06) 0%, transparent 60%);
   }
 
-  /* 6. Lavender (Pastel Purple Dark) */
+  /* 6. Lavender */
   :root[data-theme="lavender"] {
     --bg: #0d0a14;
     --surface: #151022;
@@ -101,6 +101,26 @@
 
   * {
     border-color: var(--border);
+  }
+
+  /* تخصيص السكرول بار لجميع العناصر */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--surface-pill);
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-muted);
   }
 
   body {
