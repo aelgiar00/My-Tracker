@@ -1,25 +1,30 @@
 
-# 🚀 My-Tracker: AI-Powered Intelligent Habit Tracking System
+# 🚀 Habit Mastery & Personal AI Tracker
 
-> **A high-performance, full-stack habit tracking and behavior analytics dashboard integrated with an Embedded Machine Learning Engine for habit completion forecasting and behavioral pattern recognition.**
+> An elite, AI-driven habit-tracking and life execution platform engineered for high-performance personal analytics, dynamic workflow personalization, and machine learning behavioral insights.
 
----
-
-## 📌 Project Overview
-
-**My-Tracker** is an end-to-end habit-tracking web platform designed to help users build consistency through data-driven insights. Unlike traditional habit trackers, this system integrates statistical analytics with **Supervised Machine Learning Models** to forecast daily habit completion likelihood, dynamically calculate feature importance (momentum, previous day performance, weekday bias), and eliminate false positives via custom decision thresholds.
+[![Live App Status](https://my-tracker-kappa-nine.vercel.app/)
+[![GitHub Repository](https://github.com/aelgiar00/My-Tracker)
 
 ---
 
-## ✨ Key Features
+## 🌟 What We Built Today (Key Features & Overhauls)
 
-- **Interactive Habit Matrix:** Dynamic, matrix-based tracking with support for custom schedules, single-day habits, and rest day detection.
-- **Embedded Machine Learning Prediction Engine:** Client-side zero-latency inference running multi-model evaluations.
-- **Comprehensive Behavior Analytics:** Execution heatmaps, pace completion scores, streak analyzers, and radar mastery charts.
-- **Configurable Decision Thresholds:** Fine-tune model precision and recall by adjusting probability cutoff limits (e.g., 70% threshold).
-- **Explainable AI (Feature Importance):** Real-time feature weight visualization displaying key drivers behind predictions (Momentum, Recency, Day bias).
-- **Multi-Device Responsive UI:** Built with Tailwind CSS and Radix UI primitives for seamless mobile and desktop experiences.
-- **Enterprise-Grade Authentication:** Configured via Better Auth with session management and multi-provider token verification.
+### 1. 🧠 ML-Driven Predictive Analytics Engine
+* **Multi-Model Intelligence**: Integrated a sophisticated prediction engine supporting **Gradient Boosting**, **Random Forest**, and **Logistic Regression** engines[cite: 5]. Each engine runs on isolated heuristic weights to provide distinct, accurate probability outputs.
+* **Interactive Probability Matrix**: Dynamic prediction table evaluating historical patterns against selected test dates, featuring **Low, Medium, and High** dynamic prediction classes with customizable range settings[cite: 5].
+* **Deep Habit Drilldown**: Clickable accordion rows for each habit revealing a **14-day probability trend sparkline**, **7-day execution context timeline**, and the model's underlying reasoning[cite: 5].
+* **Performance Histogram Comparison**: A visual benchmarking section comparing model accuracy and F1 scores[cite: 5].
+
+### 2. 🎨 Premium UI/UX & Glassmorphism Engine
+* **Glassmorphism Modals**: Overhauled dialog windows (Settings, New Habit, Prediction Ranges) with a transparent, blurred backdrop (`backdrop-blur-3xl`) that seamlessly blends with any active theme[cite: 4, 6].
+* **Dynamic Theme Engine**: Fully compatible with 5 luxury themes: *Obsidian Gold*, *Ink*, *Paper*, *Slate*, and *Lavender*[cite: 4].
+* **Sticky Bottom Navigation Bar**: Fluid mobile-friendly tab switcher (`Daily`, `Matrix`, `Stats`) for rapid context switching[cite: 5].
+* **Polished Typography**: High-definition radial gauge progress rings paired with *Playfair Display* serif numbers for elite visual feedback[cite: 5].
+
+### 3. ⚙️ Highly Personalized Execution Coach (Personal AI)
+* **Customizable Time Blocks**: Replaced hardcoded lifestyle sliders with a fully dynamic allocation system where users can add, rename, or remove life categories (e.g., Sleep, Work 1, Work 2, Gym, Reading) and save states directly to `localStorage`[cite: 5].
+* **Integrated Daily Score**: Dynamic calculation combining scheduled habits and one-off daily tasks into a single high-definition percentage ring[cite: 5].
 
 ---
 
@@ -36,130 +41,142 @@ The application implements a comparative ML engine allowing users to dynamically
 ### 📊 Feature Engineering Pipeline
 
 The inference engine extracts and weighs behavioral features per habit:
-1. **Historical Execution Rate ($Score_{habit}$):** Long-term historical consistency.
-2. **Pace Score ($Score_{pace}$):** Overall month-to-date execution momentum.
-3. **Streak Multiplier ($Bonus_{streak}$):** Non-linear reward boosting for consecutive completions.
-4. **Calendar Context:** Automated bypass for scheduled Rest Days (`Rest day (Not scheduled)`).
+
+1. **Historical Execution Rate ($Score_{habit}$)**: Long-term historical consistency.
+2. **Pace Score ($Score_{pace}$)**: Overall month-to-date execution momentum.
+3. **Streak Multiplier ($Bonus_{streak}$)**: Non-linear reward boosting for consecutive completions.
+4. **Calendar Context**: Automated bypass for scheduled Rest Days (`Rest day (Not scheduled)`).
 
 $$\text{Probability} = f(w_1 \cdot \text{HabitScore} + w_2 \cdot \text{PaceScore} + \text{StreakBonus})$$
 
 ---
 
-## 🛠 Tech Stack
+## 🛠️ Tech Stack & Architecture
 
-### Frontend & Dashboard
-- **Framework:** React 18+ with TypeScript
-- **Routing & State:** TanStack Router / Zustand / Local Storage persistence
-- **Data Visualization:** Recharts (Heatmaps, Bar Charts, Mastery Radar)
-- **UI Components & Icons:** Tailwind CSS, Radix UI Primitives, Lucide Icons, Sonner Toasts
-
-### Backend & Database Services
-- **Authentication:** Better Auth (Dynamic origin negotiation & token sessions)
-- **Database & Storage:** Supabase / PGLite embedded fallback
-- **Model Hosting & Serving:** PythonAnywhere (Microservice endpoint) & Embedded Client-Side Engine
-
-### Deployment & CI/CD
-- **Frontend Hosting:** Vercel (Edge-optimized build configuration)
-- **Repository & Version Control:** GitHub (`aelgiar00/My-Tracker`)
+* **Framework**: React, TypeScript, Vite, Tailwind CSS v4[cite: 5]
+* **State Management**: Zustand (with local persistence & snapshot export/import workflows)[cite: 5]
+* **Data Visualization**: Recharts (`<RadarChart>`, `<BarChart>`, `<ResponsiveContainer>`)[cite: 5]
+* **Database & Cloud Auth**: Supabase (PostgreSQL for real-time user state synchronization)[cite: 5]
+* **Date Manipulation**: `date-fns`[cite: 5]
 
 ---
 
-## 📁 Repository Structure
+## 📦 Project Structure
 
 ```text
-├── src/
-│   ├── components/
-│   │   ├── tracker/
-│   │   │   ├── analytics-panel.tsx   # Analytics Dashboard & Embedded ML Matrix
-│   │   │   ├── habit-matrix.tsx      # Main Interactive Grid
-│   │   │   ├── progress-ring.tsx     # Animated SVG Progress Rings
-│   │   │   └── today-panel.tsx       # Daily Focus Execution Panel
-│   │   └── ui/                       # Reusable UI Primitives (Buttons, Cards, Dialogs)
-│   ├── lib/
-│   │   ├── auth/                     # Better Auth configuration & Token validation
-│   │   └── tracker/                  # Statistics, Schedule algorithms & Types
-│   ├── store/                        # Zustand Global State Management
-│   └── routes/                       # Application route definitions
-├── .vercelignore                     # Vercel deployment filter
-├── package.json                      # Project dependencies and build scripts
-└── README.md                         # Project documentation
+src/
+├── components/
+│   ├── tracker/
+│   │   ├── tracker-app.tsx         # Main layout container & bottom navigation
+│   │   ├── today-panel.tsx         # Personal AI & dynamic life blocks
+│   │   ├── analytics-panel.tsx     # Recharts mastery radar, heatmaps, & correlation matrix
+│   │   ├── ml-panel.tsx            # ML prediction matrix, confidence classes, & histograms
+│   │   ├── habit-matrix.tsx        # Month/Week execution grid matrix
+│   │   ├── habit-dialogs.tsx       # Glassmorphic modal dialogs & settings
+│   │   └── auth-dialog.tsx         # Supabase authentication modal
+│   └── ui/                         # Reusable core UI primitives (Button, Dialog, etc.)
+├── lib/
+│   ├── tracker/                    # Core scheduling, statistics, and date engines
+│   └── supabase.ts                 # Supabase client configuration
+└── store/
+    └── tracker-store.ts            # Zustand global state & snapshot handlers
 
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Deployment & Hosting Guide
 
-### Prerequisites
+### 1. Live Application & Source Code
 
-* Node.js (v18.0 or higher)
-* npm / yarn / pnpm
+* 🌐 **Live Web App**: [Access the Live App Here](https://my-tracker-kappa-nine.vercel.app/)
+* 📂 **GitHub Source Code**: [View Repository on GitHub](https://github.com/aelgiar00/My-Tracker)
 
-### Installation
+### 2. Vercel Deployment (Frontend & Serverless)
 
-1. **Clone the repository:**
-```bash
-git clone [https://github.com/aelgiar00/My-Tracker.git](https://github.com/aelgiar00/My-Tracker.git)
-cd My-Tracker
+The application is optimized for deployment on **Vercel**:
+
+1. Connect your GitHub repository to Vercel.
+2. Configure build settings:
+* **Framework Preset**: Vite
+* **Build Command**: `npm run build`
+* **Output Directory**: `dist`
+
+
+3. Add your environment variables in the Vercel dashboard:
+* `VITE_SUPABASE_URL`
+* `VITE_SUPABASE_ANON_KEY`
+
+
+4. Deploy!
+
+### 3. Supabase Backend Setup
+
+To enable cloud state synchronization:
+
+1. Create a new project on [Supabase](https://supabase.com).
+2. Create the primary sync table `user_tracker_data`:
+```sql
+create table user_tracker_data (
+  user_id uuid references auth.users not null primary key,
+  snapshot jsonb not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
 ```
 
 
-2. **Install dependencies:**
+3. Enable Row Level Security (RLS) and policies allowing users to read/write only their own rows.
+4. Copy your project API keys into your `.env` file locally and on Vercel.
+
+---
+
+## 💻 Local Development Setup
+
+1. **Clone the repository**:
+```bash
+git clone [https://github.com/your-username/habit-tracker.git](https://github.com/your-username/habit-tracker.git)
+cd habit-tracker
+
+```
+
+
+2. **Install dependencies**:
 ```bash
 npm install
 
 ```
 
 
-3. **Configure Environment Variables:**
+3. **Configure environment variables**:
 Create a `.env` file in the root directory:
 ```env
-VITE_AUTH_ENABLED=false
-BETTER_AUTH_URL=http://localhost:8080
-# DATABASE_URL=your_supabase_postgres_connection_string
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ```
 
 
-4. **Run the development server:**
+4. **Run the development server**:
 ```bash
 npm run dev
 
 ```
 
 
-Open `http://localhost:8080` in your browser.
-
----
-
-## 🌐 Deployment Configuration
-
-### Vercel Deployment Note
-
-To ensure rapid edge builds and avoid Serverless function bundle limits, the ML inference engine is embedded client-side, with Python artifacts filtered via `.vercelignore`:
-
-```text
-requirements.txt
-*.py
-
-```
-
-Deploy using standard Vercel GitHub integration or via CLI:
-
+5. **Build for production**:
 ```bash
 npm run build
-vercel --prod
 
 ```
 
+
+
 ---
 
-## 👨‍💻 Author
+## 📄 License
 
-**Ahmed Elgiar**
-
-* GitHub: https://github.com/aelgiar00
+This project is proprietary and built as an advanced high-performance personal execution system.
 
 ```
 
