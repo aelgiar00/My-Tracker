@@ -20,22 +20,32 @@ export function AnalyticsPanel() {
     [selectedYear, selectedMonth, trackingStart]
   );
 
+  // حساب إحصائيات كل عادة مع دعم الجدولة الشهرية بالعدد المستهدف
   const habitsBreakdown = useMemo(() => {
     return habits.map((habit) => {
       let expected = 0;
       let completed = 0;
 
-      allMonthDays.forEach((date) => {
-        const schedule = scheduleForMonth(habit, selectedYear, selectedMonth) || habit.schedule;
-        if (isDayExpected(schedule, date)) {
-          expected++;
+      const schedule = scheduleForMonth(habit, selectedYear, selectedMonth) || habit.schedule;
+
+      if (schedule && schedule.type === "monthlyTarget") {
+        expected = schedule.targetDays;
+        allMonthDays.forEach((date) => {
           const iso = format(date, "yyyy-MM-dd");
           if (completions[completionKey(habit.id, iso)]) completed++;
-        }
-      });
+        });
+      } else {
+        allMonthDays.forEach((date) => {
+          if (isDayExpected(schedule, date)) {
+            expected++;
+            const iso = format(date, "yyyy-MM-dd");
+            if (completions[completionKey(habit.id, iso)]) completed++;
+          }
+        });
+      }
 
       const rate = expected > 0 ? (completed / expected) * 100 : 0;
-      return { habit, expected, completed, rate };
+      return { habit, expected, completed, rate: Math.min(100, rate) };
     });
   }, [habits, completions, allMonthDays, selectedYear, selectedMonth]);
 
@@ -61,7 +71,7 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  // إحداثيات الرادار المتوافقة مع ألوان الثيم
+  // إحداثيات الرادار المتوافقة مع ألوان الثيم وعناوين الأطراف
   const radarData = useMemo(() => {
     const list = habitsBreakdown.slice(0, 6);
     const total = Math.max(3, list.length);
@@ -72,7 +82,7 @@ export function AnalyticsPanel() {
     const points = list.map((item, i) => {
       const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
       const score = Math.max(0.15, Math.min(1, (item.rate || 10) / 100));
-      
+
       const r = maxRadius * score;
       const x = center + r * Math.cos(angle);
       const y = center + r * Math.sin(angle);
@@ -125,7 +135,7 @@ export function AnalyticsPanel() {
           variant="outline"
           size="sm"
           onClick={() => setFullScreen(!fullScreen)}
-          className="h-8 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] hover:border-[var(--primary)]/50"
+          className="h-8 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] hover:border-[var(--primary)]/50 cursor-pointer"
         >
           {fullScreen ? <Minimize2 className="mr-1.5 size-3.5" /> : <Maximize2 className="mr-1.5 size-3.5" />}
           {fullScreen ? "Exit Full-Screen" : "Full-Screen Charts"}
@@ -174,7 +184,7 @@ export function AnalyticsPanel() {
         {/* 1. Daily Execution Bar Chart */}
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
           <h3 className="text-xs font-semibold text-[var(--fg)]">Daily execution</h3>
-          
+
           <div className="mt-6 flex h-48 gap-2">
             <div className="flex flex-col justify-between text-[9px] font-mono text-[var(--muted)] pr-1 select-none text-right">
               <span>100%</span>
