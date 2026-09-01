@@ -11,43 +11,28 @@ interface TodayPanelProps {
   todayDate: Date;
 }
 
-interface HabitWeight {
-  durationMinutes: number;
-  durationLabel: string;
-  baseFriction: number;
-  priority: number;
-  priorityLabel: string;
-}
+// قراءة الوقت الفعلي والأولوية المحددة من قبل المستخدم
+function getHabitSpecs(habit: Habit) {
+  const durationMinutes = typeof habit.durationMinutes === "number" && habit.durationMinutes > 0
+    ? habit.durationMinutes
+    : 30;
 
-function parseHabitSpecs(name: string): HabitWeight {
-  const lower = name.toLowerCase();
+  const isCritical = habit.priority === "critical";
 
-  if (lower.includes("pray") || lower.includes("صلاة")) {
-    return { durationMinutes: 20, durationLabel: "20m", baseFriction: 0.1, priority: 1, priorityLabel: "Critical" };
-  }
-  if (lower.includes("touch") || lower.includes("typing")) {
-    return { durationMinutes: 30, durationLabel: "30m", baseFriction: 0.25, priority: 2, priorityLabel: "Medium" };
-  }
-  if (lower.includes("nti") || lower.includes("notebook")) {
-    return { durationMinutes: 120, durationLabel: "2h", baseFriction: 0.7, priority: 1, priorityLabel: "Critical" };
-  }
-  if (lower.includes("ml") || lower.includes("machine") || lower.includes("learning")) {
-    return { durationMinutes: 150, durationLabel: "2.5h", baseFriction: 0.85, priority: 1, priorityLabel: "Critical" };
-  }
-  if (lower.includes("depi")) {
-    return { durationMinutes: 120, durationLabel: "2h", baseFriction: 0.65, priority: 1, priorityLabel: "Critical" };
-  }
-  if (lower.includes("deep") || lower.includes("work")) {
-    return { durationMinutes: 90, durationLabel: "1.5h", baseFriction: 0.75, priority: 1, priorityLabel: "Critical" };
-  }
-  if (lower.includes("read") || lower.includes("قراءة")) {
-    return { durationMinutes: 30, durationLabel: "30m", baseFriction: 0.3, priority: 2, priorityLabel: "Medium" };
-  }
-  if (lower.includes("workout") || lower.includes("تمرين")) {
-    return { durationMinutes: 45, durationLabel: "45m", baseFriction: 0.5, priority: 2, priorityLabel: "Medium" };
+  // تحويل الدقائق إلى صيغة مقروءة بالإنجليزية
+  let durationLabel = `${durationMinutes}m`;
+  if (durationMinutes >= 60) {
+    const hours = durationMinutes / 60;
+    durationLabel = Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
   }
 
-  return { durationMinutes: 45, durationLabel: "45m", baseFriction: 0.4, priority: 3, priorityLabel: "Standard" };
+  return {
+    durationMinutes,
+    durationLabel,
+    priority: isCritical ? 1 : 2,
+    priorityLabel: isCritical ? "Critical" : "Standard",
+    baseFriction: Math.min(0.85, durationMinutes / 180),
+  };
 }
 
 export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
@@ -63,6 +48,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const availableHours = Math.max(0, 24 - totalOccupied);
   const availableMinutes = availableHours * 60;
 
+  // درجة الجاهزية العامة لليوم
   const readinessScore = useMemo(() => {
     if (availableHours <= 0) return 15;
     const sleepFactor = sleepHours >= 7 && sleepHours <= 9 ? 1.0 : sleepHours < 6 ? 0.7 : 0.85;
@@ -70,17 +56,19 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
     return Math.round(Math.min(100, (loadFactor * 0.65 + sleepFactor * 0.35) * 100));
   }, [availableHours, sleepHours]);
 
+  // العادات المجدولة لليوم المختار
   const todayHabits = useMemo(() => {
     return habits
       .filter((h) => !h.archived)
       .filter((h) => isDayExpected(h.schedule, todayDate));
   }, [habits, todayDate]);
 
+  // حساب توزيع الوقت والفرص لكل عادة وفق أولويتها ومدتها الزمنية
   const habitPredictions = useMemo(() => {
     let accumulatedTime = 0;
 
     const mapped = todayHabits.map((habit) => {
-      const specs = parseHabitSpecs(habit.name);
+      const specs = getHabitSpecs(habit);
       const isDone = Boolean(completions[completionKey(habit.id, todayIso)]);
 
       let streakCount = 0;
@@ -108,7 +96,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
       accumulatedTime += item.specs.durationMinutes;
 
       let score = Math.round(
-        readinessScore * 0.5 +
+        readinessScore * 0.45 +
         (1 - item.specs.baseFriction) * 35 +
         (item.streakCount * 4) +
         (item.specs.durationMinutes <= 30 ? 12 : item.specs.durationMinutes <= 60 ? 4 : -8) -
@@ -119,7 +107,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         score = Math.max(20, score - 35);
       }
 
-      const finalChance = Math.min(96, Math.max(25, score));
+      const finalChance = Math.min(97, Math.max(25, score));
 
       return {
         ...item,
@@ -153,7 +141,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       </div>
 
-      {/* Inputs / Sliders */}
+      {/* Sliders */}
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-[var(--surface-elevated)] p-2 border border-[var(--border)]">
           <div className="flex justify-between text-[11px] text-[var(--fg)] font-medium mb-1">
@@ -201,7 +189,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       </div>
 
-      {/* Available Time Summary */}
+      {/* Time Balance Bar */}
       <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5">
         <span>Net Available: <strong className="text-[var(--fg)] font-mono">{availableHours}h</strong></span>
         <button
@@ -219,42 +207,52 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
           <p className="font-semibold text-[var(--fg)] mb-2 flex items-center gap-1.5 text-[11px]">
             🎯 Non-Negotiables Today:
           </p>
-          <ul className="space-y-1.5 text-[11px] text-[var(--fg)]">
-            {nonNegotiables.map(({ habit, specs }) => (
-              <li key={habit.id} className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1 last:border-0 last:pb-0">
-                <span className="truncate max-w-[140px]">• {habit.name}</span>
-                <span className="text-[9.5px] font-mono text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded border border-[var(--primary)]/20">
-                  {specs.durationLabel}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {nonNegotiables.length === 0 ? (
+            <p className="text-[10px] text-[var(--muted)]">No critical habits scheduled today.</p>
+          ) : (
+            <ul className="space-y-1.5 text-[11px] text-[var(--fg)]">
+              {nonNegotiables.map(({ habit, specs }) => (
+                <li key={habit.id} className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1 last:border-0 last:pb-0">
+                  <span className="truncate max-w-[140px]">• {habit.name}</span>
+                  <span className="text-[9.5px] font-mono text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded border border-[var(--primary)]/20">
+                    {specs.durationLabel}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
-      {/* Individual Habit Predictions List (No Scrollbar Glitches) */}
+      {/* Habit Predictions List */}
       <div className="space-y-1.5 pt-1">
-        {habitPredictions.map(({ habit, chance, isDone, feasible, statusLabel }) => (
-          <div
-            key={habit.id}
-            className={cn(
-              "flex items-center justify-between rounded-xl px-3 py-2 border transition-all duration-150",
-              isDone
-                ? "bg-[var(--primary-muted)]/20 border-[var(--primary)]/40 text-[var(--primary)]"
-                : feasible
-                ? "bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--fg)] hover:border-[var(--muted)]"
-                : "bg-[var(--surface-elevated)]/50 border-[var(--border)] text-[var(--muted)] opacity-60"
-            )}
-          >
-            <div>
-              <p className="text-xs font-medium text-[var(--fg)] truncate max-w-[140px]">{habit.name}</p>
-              <span className="text-[9.5px] text-[var(--muted)] block">{statusLabel}</span>
+        {habitPredictions.length === 0 ? (
+          <p className="text-xs text-[var(--muted)] text-center py-4">No habits added yet.</p>
+        ) : (
+          habitPredictions.map(({ habit, chance, isDone, feasible, statusLabel }) => (
+            <div
+              key={habit.id}
+              className={cn(
+                "flex items-center justify-between rounded-xl px-3 py-2 border transition-all duration-150",
+                isDone
+                  ? "bg-[var(--primary-muted)]/20 border-[var(--primary)]/40 text-[var(--primary)]"
+                  : feasible
+                  ? "bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--fg)] hover:border-[var(--muted)]"
+                  : "bg-[var(--surface-elevated)]/50 border-[var(--border)] text-[var(--muted)] opacity-60"
+              )}
+            >
+              <div>
+                <p className={cn("text-xs font-medium truncate max-w-[140px]", isDone && "line-through opacity-70")}>
+                  {habit.name}
+                </p>
+                <span className="text-[9.5px] text-[var(--muted)] block">{statusLabel}</span>
+              </div>
+              <div className="font-serif-title text-xs font-bold text-[var(--fg)]">
+                {isDone ? "✓" : `${chance}%`}
+              </div>
             </div>
-            <div className="font-serif-title text-xs font-bold text-[var(--fg)]">
-              {isDone ? "✓" : `${chance}%`}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
