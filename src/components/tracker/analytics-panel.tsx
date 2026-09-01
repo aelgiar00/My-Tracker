@@ -5,12 +5,14 @@ import { isDayExpected, completionKey, scheduleForMonth } from "@/lib/tracker/sc
 import { monthDays } from "@/lib/tracker/stats";
 import { Button } from "@/components/ui/button";
 import { Maximize2, Minimize2, Grid3X3 } from "lucide-react";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { cn } from "@/lib/utils";
 
 export function AnalyticsPanel() {
   const [fullScreen, setFullScreen] = useState(false);
   const habits = useTrackerStore((s) => s.habits.filter((h) => !h.archived));
   const completions = useTrackerStore((s) => s.completions);
+  const restDays = useTrackerStore((s) => s.restDays || {});
   const selectedYear = useTrackerStore((s) => s.selectedYear);
   const selectedMonth = useTrackerStore((s) => s.selectedMonth);
   const trackingStart = useTrackerStore((s) => s.trackingStart);
@@ -35,9 +37,10 @@ export function AnalyticsPanel() {
         });
       } else {
         allMonthDays.forEach((date) => {
-          if (isDayExpected(schedule, date)) {
+          const iso = format(date, "yyyy-MM-dd");
+          const isRest = restDays[`${habit.id}_${iso}`];
+          if (isDayExpected(schedule, date) && !isRest) {
             expected++;
-            const iso = format(date, "yyyy-MM-dd");
             if (completions[completionKey(habit.id, iso)]) completed++;
           }
         });
@@ -46,7 +49,7 @@ export function AnalyticsPanel() {
       const rate = expected > 0 ? (completed / expected) * 100 : 0;
       return { habit, expected, completed, rate: Math.min(100, rate) };
     });
-  }, [habits, completions, allMonthDays, selectedYear, selectedMonth]);
+  }, [habits, completions, allMonthDays, selectedYear, selectedMonth, restDays]);
 
   const daysBreakdown = useMemo(() => {
     return allMonthDays.map((date) => {
@@ -56,7 +59,8 @@ export function AnalyticsPanel() {
 
       habits.forEach((habit) => {
         const schedule = scheduleForMonth(habit, selectedYear, selectedMonth) || habit.schedule;
-        if (isDayExpected(schedule, date)) {
+        const isRest = restDays[`${habit.id}_${iso}`];
+        if (isDayExpected(schedule, date) && !isRest) {
           expected++;
           if (completions[completionKey(habit.id, iso)]) completed++;
         }
@@ -64,75 +68,41 @@ export function AnalyticsPanel() {
 
       return { iso, expected, completed, date };
     });
-  }, [allMonthDays, habits, completions, selectedYear, selectedMonth]);
+  }, [allMonthDays, habits, completions, selectedYear, selectedMonth, restDays]);
 
   const totalCompleted = habitsBreakdown.reduce((sum, h) => sum + h.completed, 0);
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  // Radar Data - مصفوفة شعاعية دائرية متطورة مطابقة للصورة 4
-  const radarData = useMemo(() => {
-    const list = habitsBreakdown.slice(0, 12); // حتى 12 عادة لتمثيل رادار واسع
-    const totalAxes = Math.max(6, list.length);
-    const viewBoxSize = fullScreen ? 480 : 340;
-    const center = viewBoxSize / 2;
-    const maxRadius = fullScreen ? 170 : 115;
-    const labelRadius = fullScreen ? 205 : 142;
-
-    const circles = [0.2, 0.4, 0.6, 0.8, 1.0];
-
-    const axes = Array.from({ length: totalAxes }, (_, i) => {
-      const angle = (Math.PI * 2 / totalAxes) * i - Math.PI / 2;
-      const x = center + maxRadius * Math.cos(angle);
-      const y = center + maxRadius * Math.sin(angle);
-
-      const labelX = center + labelRadius * Math.cos(angle);
-      const labelY = center + labelRadius * Math.sin(angle);
-
-      const item = list[i];
-      const name = item ? item.habit.name : "";
-      const rate = item ? Math.round(item.rate) : 0;
-      const score = item ? Math.max(0.12, Math.min(1, item.rate / 100)) : 0.12;
-
-      const pointX = center + (maxRadius * score) * Math.cos(angle);
-      const pointY = center + (maxRadius * score) * Math.sin(angle);
-
-      let textAnchor = "middle";
-      if (Math.cos(angle) > 0.25) textAnchor = "start";
-      else if (Math.cos(angle) < -0.25) textAnchor = "end";
-
-      return {
-        angle,
-        x,
-        y,
-        labelX,
-        labelY,
-        pointX,
-        pointY,
-        name,
-        rate,
-        textAnchor,
-        hasHabit: Boolean(item),
-      };
+  // Radar Data (Recharts specific format mapping)
+  const radarDataRecharts = useMemo(() => {
+    const activeHabits = habits.slice(0, 10);
+    if (activeHabits.length === 0) return [];
+    const past30 = Array.from({length: 30}, (_,i) => {
+       const d = new Date(); d.setDate(d.getDate()-i); return d;
     });
 
-    const polygonPoints = axes
-      .filter((a) => a.hasHabit)
-      .map((a) => `${a.pointX},${a.pointY}`)
-      .join(" ");
+    return activeHabits.map(h => {
+       let expected = 0;
+       let C = 0;
+       past30.forEach(date => {
+           const iso = format(date, "yyyy-MM-dd");
+           const sched = scheduleForMonth(h, date.getFullYear(), date.getMonth()+1) || h.schedule;
+           if (!restDays[`${h.id}_${iso}`] && isDayExpected(sched, date)) {
+               expected++;
+               if (completions[completionKey(h.id, iso)]) C++;
+           }
+       });
+       const score = expected > 0 ? Math.round((C/expected)*100) : 0;
+       return {
+           subject: h.name.length > 12 ? h.name.slice(0,10)+'..' : h.name,
+           score,
+           fullMark: 100
+       };
+    });
+  }, [habits, completions, restDays]);
 
-    return {
-      axes,
-      circles,
-      polygonPoints,
-      center,
-      maxRadius,
-      viewBoxSize,
-      hasData: list.length > 0,
-    };
-  }, [habitsBreakdown, fullScreen]);
-
-  // Correlation Matrix
+  // Confusion / Correlation Matrix
   const correlationMatrix = useMemo(() => {
     const topHabits = habits.slice(0, 8);
     const size = topHabits.length;
@@ -195,7 +165,7 @@ export function AnalyticsPanel() {
         <div>
           <h3 className="text-xs font-semibold text-[var(--fg)]">Chart view</h3>
           <p className="text-[11px] text-[var(--muted)]">
-            Performance analytics, correlation matrix, and trajectory tracking.
+            Performance analytics, Recharts habit radar, and trajectory tracking.
           </p>
         </div>
         <Button
@@ -209,56 +179,66 @@ export function AnalyticsPanel() {
         </Button>
       </div>
 
-      {/* 4 KPI Cards */}
+      {/* 4 KPI Cards (Hidden in fullScreen) */}
       {!fullScreen && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div className="relative flex size-16 items-center justify-center">
-                <svg className="size-full -rotate-90" viewBox="0 0 72 72">
-                  <circle cx="36" cy="36" r="30" className="stroke-[var(--surface-pill)]" strokeWidth="5" fill="none" />
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col items-center justify-center text-center">
+            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase mb-4 block w-full text-left">Pace</span>
+            <div className="relative flex size-36 sm:size-40 items-center justify-center select-none my-auto">
+              <svg className="size-full -rotate-90 p-1" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" className="stroke-[var(--surface-pill)] opacity-40" strokeWidth="8" fill="none" />
+                {paceScore > 0 && (
                   <circle
-                    cx="36"
-                    cy="36"
-                    r="30"
-                    className="stroke-[var(--primary)] transition-all duration-500"
-                    strokeWidth="5"
-                    strokeDasharray={2 * Math.PI * 30}
-                    strokeDashoffset={2 * Math.PI * 30 * (1 - paceScore / 100)}
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    className="stroke-[var(--primary)] transition-all duration-700 ease-out"
+                    strokeWidth="8"
+                    strokeDasharray={2 * Math.PI * 50}
+                    strokeDashoffset={2 * Math.PI * 50 * (1 - paceScore / 100)}
                     strokeLinecap="round"
                     fill="none"
+                    style={{ filter: "drop-shadow(0 0 6px var(--glow))" }}
                   />
-                </svg>
-                <div className="absolute flex flex-col items-center justify-center text-center">
-                  <span className="text-base font-bold text-[var(--fg)] font-serif-title leading-none">{paceScore}%</span>
-                  <span className="text-[8px] font-semibold text-[var(--muted)] uppercase tracking-wider mt-0.5">PACE</span>
-                </div>
+                )}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
+                <span className="text-4xl font-normal text-[var(--fg)] leading-none" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                  {paceScore}%
+                </span>
+                <span className="text-[10px] font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2">PACE</span>
               </div>
             </div>
-            <p className="mt-3 text-xs text-[var(--muted)]">Current monthly velocity</p>
+            <p className="mt-4 text-xs text-[var(--muted)]">Current monthly velocity</p>
           </div>
 
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TO TARGET DATE</span>
-            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-              {totalCompleted}/{totalExpected}
-            </p>
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
+            <div>
+              <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TO TARGET DATE</span>
+              <p className="mt-2 text-4xl font-normal text-[var(--fg)]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                {totalCompleted}/{totalExpected}
+              </p>
+            </div>
             <p className="mt-1 text-xs text-[var(--muted)]">Completed vs scheduled up to the selected active date.</p>
           </div>
 
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TRACKED HABITS</span>
-            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-              {habits.length}
-            </p>
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
+            <div>
+              <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TRACKED HABITS</span>
+              <p className="mt-2 text-4xl font-normal text-[var(--fg)]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                {habits.length}
+              </p>
+            </div>
             <p className="mt-1 text-xs text-[var(--muted)]">Active habit rows in the matrix.</p>
           </div>
 
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">PERFECT STREAK</span>
-            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-              {totalCompleted > 0 ? "1" : "0"}
-            </p>
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
+            <div>
+              <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">PERFECT STREAK</span>
+              <p className="mt-2 text-4xl font-normal text-[var(--fg)]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                {totalCompleted > 0 ? "1" : "0"}
+              </p>
+            </div>
             <p className="mt-1 text-xs text-[var(--muted)]">Consecutive 100% days leading up to the target date.</p>
           </div>
         </div>
@@ -266,7 +246,7 @@ export function AnalyticsPanel() {
 
       {/* 2x2 Core Visualizations Grid */}
       <div className={cn("grid gap-6 transition-all duration-300", fullScreen ? "grid-cols-1" : "lg:grid-cols-2")}>
-        {/* 1. Daily Execution */}
+        {/* 1. Daily Execution (Fixed Rendering & Scaling) */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Daily execution</h3>
 
@@ -347,82 +327,31 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 3. Mastery Radar (Exact Image 4 Radial Style) */}
+        {/* 3. Recharts Habit Mastery Radar */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Habit Mastery Radar</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
             <span className="text-[10px] text-[var(--muted)]">Coverage</span>
           </div>
 
-          <div className={cn("relative my-auto flex items-center justify-center py-2", fullScreen && "h-[50vh]")}>
-            <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className="w-full max-w-[340px] aspect-square overflow-visible">
-              {/* الدوائر المتراكزة (Concentric Circles) */}
-              {radarData.circles.map((rPct, idx) => (
-                <circle
-                  key={idx}
-                  cx={radarData.center}
-                  cy={radarData.center}
-                  r={radarData.maxRadius * rPct}
-                  className="stroke-[var(--border)] opacity-35"
-                  strokeWidth="0.75"
-                  fill="none"
-                />
-              ))}
-
-              {/* خطوط المحاور الشعاعية (Radial Axis Rays) */}
-              {radarData.axes.map((axis, idx) => (
-                <line
-                  key={idx}
-                  x1={radarData.center}
-                  y1={radarData.center}
-                  x2={axis.x}
-                  y2={axis.y}
-                  className="stroke-[var(--border)] opacity-35"
-                  strokeWidth="0.75"
-                />
-              ))}
-
-              {/* شكل التغطية المتوهج (Glow Fill Polygon) */}
-              {radarData.hasData && (
-                <polygon
-                  points={radarData.polygonPoints}
-                  fill="var(--primary-muted)"
-                  stroke="var(--primary)"
-                  strokeWidth="1.75"
-                  className="transition-all duration-500"
-                  style={{ filter: "drop-shadow(0 0 6px var(--glow))" }}
-                />
-              )}
-
-              {/* نقاط التقاطع */}
-              {radarData.axes.filter((a) => a.hasHabit).map((axis, idx) => (
-                <circle
-                  key={idx}
-                  cx={axis.pointX}
-                  cy={axis.pointY}
-                  r="2.5"
-                  fill="var(--primary)"
-                  className="transition-all duration-500"
-                />
-              ))}
-
-              {/* أسماء العادات المحيطة بالرادار */}
-              {radarData.axes.filter((a) => a.hasHabit).map((axis, idx) => (
-                <text
-                  key={idx}
-                  x={axis.labelX}
-                  y={axis.labelY}
-                  textAnchor={axis.textAnchor}
-                  dominantBaseline="central"
-                  className={cn(
-                    "fill-[var(--fg)] text-[10px] font-medium select-none transition-all duration-300",
-                    fullScreen && "text-[12px] font-semibold"
-                  )}
-                >
-                  {axis.name.length > 12 ? `${axis.name.slice(0, 10)}..` : axis.name}
-                </text>
-              ))}
-            </svg>
+          <div className={cn("relative my-auto flex w-full items-center justify-center py-2", fullScreen ? "h-[55vh]" : "h-64")}>
+            {radarDataRecharts.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius={fullScreen ? "75%" : "65%"} data={radarDataRecharts}>
+                  <PolarGrid stroke="var(--border)" strokeOpacity={0.6} />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--fg)", fontSize: fullScreen ? 14 : 11, fontWeight: 500, fontFamily: "inherit" }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Radar name="Mastery" dataKey="score" stroke="var(--primary)" strokeWidth={2} fill="var(--primary-muted)" fillOpacity={0.7} />
+                  <RechartsTooltip
+                    contentStyle={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border)", borderRadius: "12px", color: "var(--fg)" }}
+                    itemStyle={{ color: "var(--primary)", fontWeight: "bold" }}
+                    formatter={(val) => [`${val}%`, "Score"]}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-xs text-[var(--muted)] m-auto">No data available.</p>
+            )}
           </div>
         </div>
 
