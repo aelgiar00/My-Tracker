@@ -35,7 +35,7 @@ const MONTHS = [
 type MainTab = "daily" | "matrix" | "stats";
 type StatsSubTab = "analytics" | "audit" | "manage" | "ml";
 
-export function TrackerApp() {
+export default function TrackerApp() {
   const [today] = useState(() => new Date());
   const [newOpen, setNewOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -170,15 +170,22 @@ export function TrackerApp() {
       });
   }, [habits, inspectDateObj, restDays, selectedInspectDate]);
 
+  // حساب المهام والعادات معاً لتحديد النسبة الكلية لليوم
+  const currentDayTasks = dailyTasks[selectedInspectDate] || [];
+  
   const inspectDayDoneCount = activeHabitsForDay.filter(
     (h) => Boolean(completions[completionKey(h.id, selectedInspectDate)])
   ).length;
+  
+  const completedTasksCount = currentDayTasks.filter((t) => t.done).length;
 
-  const inspectDayScore = activeHabitsForDay.length > 0
-    ? Math.round((inspectDayDoneCount / activeHabitsForDay.length) * 100)
+  const totalDailyItems = activeHabitsForDay.length + currentDayTasks.length;
+  const totalDailyCompleted = inspectDayDoneCount + completedTasksCount;
+
+  // النسبة المئوية المجمعة (عادات + مهام فردية)
+  const inspectDayScore = totalDailyItems > 0
+    ? Math.round((totalDailyCompleted / totalDailyItems) * 100)
     : 0;
-
-  const currentDayTasks = dailyTasks[selectedInspectDate] || [];
 
   const restingHabitsForDay = habits
     .filter((h) => !h.archived)
@@ -398,9 +405,9 @@ export function TrackerApp() {
                       {format(inspectDateObj, "d EEE")}
                     </h3>
                     <p className="text-sm text-[var(--muted)] mt-2 max-w-sm">
-                      {inspectDayDoneCount === activeHabitsForDay.length && activeHabitsForDay.length > 0
-                        ? "All scheduled habits completed! Outstanding."
-                        : `${activeHabitsForDay.length - inspectDayDoneCount} habits remaining to check off.`}
+                      {totalDailyCompleted === totalDailyItems && totalDailyItems > 0
+                        ? "All scheduled habits and tasks completed! Outstanding."
+                        : `${totalDailyItems - totalDailyCompleted} items remaining to check off.`}
                     </p>
                   </div>
 
@@ -671,5 +678,3 @@ export function TrackerApp() {
     </div>
   );
 }
-
-export default TrackerApp;
