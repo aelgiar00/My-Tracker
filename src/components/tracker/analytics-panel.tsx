@@ -70,18 +70,18 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  // Radar Data - تكبير القطر وتصغير النقاط لملء المساحة
+  // Radar Data مع توسيع القطر وتنسيق المحاور عند وجود عدد قليل من العادات
   const radarData = useMemo(() => {
     const list = habitsBreakdown.slice(0, 6);
     const total = Math.max(3, list.length);
     const viewBoxSize = fullScreen ? 400 : 280;
     const center = viewBoxSize / 2;
-    const maxRadius = fullScreen ? 145 : 95;
-    const labelRadius = fullScreen ? 175 : 120;
+    const maxRadius = fullScreen ? 140 : 90;
+    const labelRadius = fullScreen ? 170 : 115;
 
     const points = list.map((item, i) => {
       const angle = ((Math.PI * 2) / total) * i - Math.PI / 2;
-      const score = Math.max(0.18, Math.min(1, (item.rate || 10) / 100));
+      const score = Math.max(0.08, Math.min(1, item.rate / 100));
 
       const r = maxRadius * score;
       const x = center + r * Math.cos(angle);
@@ -181,7 +181,7 @@ export function AnalyticsPanel() {
         <div>
           <h3 className="text-xs font-semibold text-[var(--fg)]">Chart view</h3>
           <p className="text-[11px] text-[var(--muted)]">
-            Compact keeps charts contained. Full view gives every chart its own canvas.
+            Performance analytics, correlation matrix, and trajectory tracking.
           </p>
         </div>
         <Button
@@ -257,7 +257,7 @@ export function AnalyticsPanel() {
 
       {/* 2x2 Core Visualizations Grid */}
       <div className={cn("grid gap-6 transition-all duration-300", fullScreen ? "grid-cols-1" : "lg:grid-cols-2")}>
-        {/* 1. Daily Execution (Top Left) */}
+        {/* 1. Daily Execution (Accurate Heights & Baseline) */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Daily execution</h3>
 
@@ -280,7 +280,7 @@ export function AnalyticsPanel() {
 
               <div className="flex flex-1 items-end justify-between gap-1 z-10 border-b border-[var(--border)] pb-0.5">
                 {daysBreakdown.slice(fullScreen ? -30 : -14).map((d) => {
-                  const pct = d.expected > 0 ? (d.completed / d.expected) * 100 : 0;
+                  const pct = d.expected > 0 ? Math.round((d.completed / d.expected) * 100) : 0;
                   return (
                     <div key={d.iso} className="flex flex-1 flex-col items-center justify-end h-full">
                       <div
@@ -289,10 +289,10 @@ export function AnalyticsPanel() {
                           fullScreen && "max-w-[22px]",
                           pct > 0
                             ? "bg-[var(--primary)] hover:opacity-85 shadow-xs"
-                            : "bg-[var(--primary-muted)]/30 hover:bg-[var(--primary-muted)]/50"
+                            : "bg-[var(--surface-pill)]/40 hover:bg-[var(--surface-pill)]"
                         )}
-                        style={{ height: `${Math.max(4, pct)}%` }}
-                        title={`${d.iso}: ${Math.round(pct)}% (${d.completed}/${d.expected})`}
+                        style={{ height: pct > 0 ? `${pct}%` : "3px" }}
+                        title={`${d.iso}: ${pct}% (${d.completed}/${d.expected})`}
                       />
                     </div>
                   );
@@ -310,7 +310,7 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 2. Habit Completion (Top Right) */}
+        {/* 2. Habit Completion */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col", fullScreen && "p-8 md:p-10")}>
           <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm mb-4")}>Habit completion</h3>
           <div className={cn("mt-5 space-y-3 max-h-48 overflow-y-auto pr-1", fullScreen && "max-h-none space-y-4 mt-0")}>
@@ -338,7 +338,7 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 3. Mastery Radar (Bottom Left - Max Size & Fine Dots) */}
+        {/* 3. Mastery Radar (Spacious & Scaled) */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <div className="flex items-center justify-between mb-2">
             <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
@@ -371,7 +371,7 @@ export function AnalyticsPanel() {
                 />
               ))}
 
-              {radarData.points.length >= 3 && (
+              {radarData.points.length >= 3 ? (
                 <polygon
                   points={radarData.polygonPath}
                   fill="var(--primary-muted)"
@@ -379,11 +379,22 @@ export function AnalyticsPanel() {
                   strokeWidth="1.5"
                   className="transition-all duration-500"
                 />
-              )}
+              ) : radarData.points.length > 0 ? (
+                radarData.points.map((p, idx) => (
+                  <line
+                    key={idx}
+                    x1={radarData.center}
+                    y1={radarData.center}
+                    x2={p.x}
+                    y2={p.y}
+                    stroke="var(--primary)"
+                    strokeWidth="2"
+                  />
+                ))
+              ) : null}
 
-              {/* دوت صغيرة وأنيقة */}
               {radarData.points.map((p, idx) => (
-                <circle key={idx} cx={p.x} cy={p.y} r="2" fill="var(--primary)" className="transition-all duration-500" />
+                <circle key={idx} cx={p.x} cy={p.y} r="2.5" fill="var(--primary)" className="transition-all duration-500" />
               ))}
 
               {radarData.points.map((p, idx) => (
@@ -402,7 +413,7 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 4. Month Heatmap (Bottom Right) */}
+        {/* 4. Month Heatmap */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <div className="flex items-center justify-between">
             <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Month heatmap</h3>
