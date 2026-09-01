@@ -11,7 +11,6 @@ interface TodayPanelProps {
   todayDate: Date;
 }
 
-// قراءة الوقت الفعلي والأولوية المحددة من قبل المستخدم
 function getHabitSpecs(habit: Habit) {
   const durationMinutes = typeof habit.durationMinutes === "number" && habit.durationMinutes > 0
     ? habit.durationMinutes
@@ -19,7 +18,6 @@ function getHabitSpecs(habit: Habit) {
 
   const isCritical = habit.priority === "critical";
 
-  // تحويل الدقائق إلى صيغة مقروءة بالإنجليزية
   let durationLabel = `${durationMinutes}m`;
   if (durationMinutes >= 60) {
     const hours = durationMinutes / 60;
@@ -48,7 +46,6 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const availableHours = Math.max(0, 24 - totalOccupied);
   const availableMinutes = availableHours * 60;
 
-  // درجة الجاهزية العامة لليوم
   const readinessScore = useMemo(() => {
     if (availableHours <= 0) return 15;
     const sleepFactor = sleepHours >= 7 && sleepHours <= 9 ? 1.0 : sleepHours < 6 ? 0.7 : 0.85;
@@ -56,14 +53,12 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
     return Math.round(Math.min(100, (loadFactor * 0.65 + sleepFactor * 0.35) * 100));
   }, [availableHours, sleepHours]);
 
-  // العادات المجدولة لليوم المختار
   const todayHabits = useMemo(() => {
     return habits
       .filter((h) => !h.archived)
       .filter((h) => isDayExpected(h.schedule, todayDate));
   }, [habits, todayDate]);
 
-  // حساب توزيع الوقت والفرص لكل عادة وفق أولويتها ومدتها الزمنية
   const habitPredictions = useMemo(() => {
     let accumulatedTime = 0;
 
@@ -127,7 +122,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[var(--border)] pb-3.5">
         <div className="flex items-center gap-2.5">
-          <span className="size-2 rounded-full bg-[var(--primary)] animate-pulse"></span>
+          <span className="size-2.5 rounded-full bg-[var(--primary)] shadow-sm animate-pulse"></span>
           <div>
             <h2 className="text-xs font-semibold tracking-wider uppercase text-[var(--fg)]">
               Personal AI
@@ -141,61 +136,70 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       </div>
 
-      {/* Sliders */}
+      {/* Interactive Input Sliders (High Contrast Across All Themes) */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-[var(--surface-elevated)] p-2 border border-[var(--border)]">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-medium mb-1">
-            <span className="text-[var(--muted)]">Sleep</span>
-            <span>{sleepHours}h</span>
+        {/* Sleep Slider */}
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-2">
+            <span className="text-[var(--muted)] font-medium">Sleep</span>
+            <span className="font-mono">{sleepHours}h</span>
           </div>
-          <input
-            type="range"
-            min="4"
-            max="12"
-            value={sleepHours}
-            onChange={(e) => setSleepHours(Number(e.target.value))}
-            className="h-1 w-full appearance-none rounded-lg bg-white/10 accent-[var(--primary)] cursor-pointer"
-          />
+          <div className="relative flex items-center">
+            <input
+              type="range"
+              min="4"
+              max="12"
+              value={sleepHours}
+              onChange={(e) => setSleepHours(Number(e.target.value))}
+              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer focus:outline-none"
+            />
+          </div>
         </div>
 
-        <div className="rounded-xl bg-[var(--surface-elevated)] p-2 border border-[var(--border)]">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-medium mb-1">
-            <span className="text-[var(--muted)]">College</span>
-            <span>{collegeHours}h</span>
+        {/* College Slider */}
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-2">
+            <span className="text-[var(--muted)] font-medium">College</span>
+            <span className="font-mono">{collegeHours}h</span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="10"
-            value={collegeHours}
-            onChange={(e) => setCollegeHours(Number(e.target.value))}
-            className="h-1 w-full appearance-none rounded-lg bg-white/10 accent-[var(--primary)] cursor-pointer"
-          />
+          <div className="relative flex items-center">
+            <input
+              type="range"
+              min="0"
+              max="10"
+              value={collegeHours}
+              onChange={(e) => setCollegeHours(Number(e.target.value))}
+              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer focus:outline-none"
+            />
+          </div>
         </div>
 
-        <div className="rounded-xl bg-[var(--surface-elevated)] p-2 border border-[var(--border)]">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-medium mb-1">
-            <span className="text-[var(--muted)]">Work</span>
-            <span>{workHours}h</span>
+        {/* Work Slider */}
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-2">
+            <span className="text-[var(--muted)] font-medium">Work</span>
+            <span className="font-mono">{workHours}h</span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="12"
-            value={workHours}
-            onChange={(e) => setWorkHours(Number(e.target.value))}
-            className="h-1 w-full appearance-none rounded-lg bg-white/10 accent-[var(--primary)] cursor-pointer"
-          />
+          <div className="relative flex items-center">
+            <input
+              type="range"
+              min="0"
+              max="12"
+              value={workHours}
+              onChange={(e) => setWorkHours(Number(e.target.value))}
+              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Time Balance Bar */}
+      {/* Available Time Summary */}
       <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5">
-        <span>Net Available: <strong className="text-[var(--fg)] font-mono">{availableHours}h</strong></span>
+        <span>Net Available: <strong className="text-[var(--fg)] font-mono text-sm">{availableHours}h</strong></span>
         <button
           type="button"
           onClick={() => setShowDetails(!showDetails)}
-          className="text-[11px] text-[var(--primary)] hover:underline cursor-pointer"
+          className="text-[11px] font-medium text-[var(--primary)] hover:underline cursor-pointer"
         >
           {showDetails ? "Hide Focus" : "Show Focus"}
         </button>
@@ -203,7 +207,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
 
       {/* Non-Negotiables Focus Card */}
       {showDetails && (
-        <div className="rounded-xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs">
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs shadow-xs">
           <p className="font-semibold text-[var(--fg)] mb-2 flex items-center gap-1.5 text-[11px]">
             🎯 Non-Negotiables Today:
           </p>
@@ -212,9 +216,9 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
           ) : (
             <ul className="space-y-1.5 text-[11px] text-[var(--fg)]">
               {nonNegotiables.map(({ habit, specs }) => (
-                <li key={habit.id} className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1 last:border-0 last:pb-0">
-                  <span className="truncate max-w-[140px]">• {habit.name}</span>
-                  <span className="text-[9.5px] font-mono text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded border border-[var(--primary)]/20">
+                <li key={habit.id} className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1.5 last:border-0 last:pb-0">
+                  <span className="truncate max-w-[140px] font-medium">• {habit.name}</span>
+                  <span className="text-[9.5px] font-mono text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded-md border border-[var(--primary)]/20 font-semibold">
                     {specs.durationLabel}
                   </span>
                 </li>
@@ -224,8 +228,8 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       )}
 
-      {/* Habit Predictions List */}
-      <div className="space-y-1.5 pt-1">
+      {/* Individual Habit Predictions List */}
+      <div className="space-y-1.5 pt-0.5">
         {habitPredictions.length === 0 ? (
           <p className="text-xs text-[var(--muted)] text-center py-4">No habits added yet.</p>
         ) : (
@@ -233,19 +237,19 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
             <div
               key={habit.id}
               className={cn(
-                "flex items-center justify-between rounded-xl px-3 py-2 border transition-all duration-150",
+                "flex items-center justify-between rounded-2xl px-3.5 py-2.5 border transition-all duration-150",
                 isDone
-                  ? "bg-[var(--primary-muted)]/20 border-[var(--primary)]/40 text-[var(--primary)]"
+                  ? "bg-[var(--primary-muted)]/25 border-[var(--primary)]/40 text-[var(--primary)] shadow-xs"
                   : feasible
                   ? "bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--fg)] hover:border-[var(--muted)]"
                   : "bg-[var(--surface-elevated)]/50 border-[var(--border)] text-[var(--muted)] opacity-60"
               )}
             >
               <div>
-                <p className={cn("text-xs font-medium truncate max-w-[140px]", isDone && "line-through opacity-70")}>
+                <p className={cn("text-xs font-semibold truncate max-w-[140px]", isDone && "line-through opacity-70")}>
                   {habit.name}
                 </p>
-                <span className="text-[9.5px] text-[var(--muted)] block">{statusLabel}</span>
+                <span className="text-[9.5px] text-[var(--muted)] block mt-0.5">{statusLabel}</span>
               </div>
               <div className="font-serif-title text-xs font-bold text-[var(--fg)]">
                 {isDone ? "✓" : `${chance}%`}
