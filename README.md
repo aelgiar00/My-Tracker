@@ -1,11 +1,13 @@
 
 # 🚀 Habit Mastery & Personal AI Tracker
 
+[![Live App Status](https://img.shields.io/badge/Live-App-brightgreen?style=for-the-badge&logo=vercel)](https://my-tracker-kappa-nine.vercel.app/)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/aelgiar00/My-Tracker)
+
 > An elite, AI-driven habit-tracking and life execution platform engineered for high-performance personal analytics, dynamic workflow personalization, and machine learning behavioral insights.
 
-* 🌐 **Live Web App**: [https://my-tracker-kappa-nine.vercel.app/](https://your-live-app-url.vercel.app)
-[![GitHub Repository](https://github.com/aelgiar00/My-Tracker)
-
+* 🌐 **Live Web App**: [Access Live App](https://my-tracker-kappa-nine.vercel.app/)
+* 📂 **GitHub Source**: [View Repository](https://github.com/aelgiar00/My-Tracker)
 ---
 
 ## 🌟 What We Built Today (Key Features & Overhauls)
