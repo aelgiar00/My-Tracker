@@ -3,7 +3,11 @@ export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6; // Monday = 0
 export type Schedule =
   | { type: "preset"; id: string }
   | { type: "custom"; days: Weekday[] }
-  | { type: "only"; day: number };
+  | { type: "only"; day: number }
+  | { type: "weekly"; days: number[] }
+  | { type: "monthlyDate"; day: number };
+
+export type HabitPriority = "critical" | "standard";
 
 export type Habit = {
   id: string;
@@ -11,6 +15,10 @@ export type Habit = {
   schedule: Schedule;
   archived: boolean;
   createdAt: string;
+  /** Estimated execution duration in minutes (e.g., 20, 30, 90, 120) */
+  durationMinutes?: number;
+  /** Habit execution priority for AI time-budget allocation */
+  priority?: HabitPriority;
   /** Per-month schedule overrides. null means the habit is disabled for that month. */
   monthOverrides?: Record<string, Schedule | null>;
   /** New habits can be scoped to the month they were created in. */
@@ -78,4 +86,9 @@ export type MonthStats = {
   weakestHabit: { name: string; score: number } | null;
   daily: DayStat[];
   habits: HabitStat[];
+};
+
+export type StatsResult = MonthStats & {
+  habitsBreakdown?: HabitStat[];
+  daysBreakdown?: DayStat[];
 };
