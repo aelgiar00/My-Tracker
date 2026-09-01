@@ -17,6 +17,7 @@
     --primary-foreground: #0d0e12;
     --primary-muted: rgba(203, 181, 146, 0.16);
     --glow: rgba(203, 181, 146, 0.25);
+    color-scheme: dark;
   }
 
   /* 2. Ink */
@@ -32,6 +33,7 @@
     --primary-foreground: #090a0d;
     --primary-muted: rgba(255, 255, 255, 0.14);
     --glow: rgba(255, 255, 255, 0.18);
+    color-scheme: dark;
   }
 
   /* 3. Paper */
@@ -47,6 +49,7 @@
     --primary-foreground: #ffffff;
     --primary-muted: rgba(135, 109, 70, 0.15);
     --glow: rgba(135, 109, 70, 0.2);
+    color-scheme: light;
   }
 
   /* 4. Slate */
@@ -62,6 +65,7 @@
     --primary-foreground: #0c121e;
     --primary-muted: rgba(88, 166, 255, 0.16);
     --glow: rgba(88, 166, 255, 0.25);
+    color-scheme: dark;
   }
 
   /* 5. Lavender */
@@ -77,13 +81,25 @@
     --primary-foreground: #110e1a;
     --primary-muted: rgba(183, 148, 244, 0.16);
     --glow: rgba(183, 148, 244, 0.25);
+    color-scheme: dark;
   }
 
   * {
     border-color: var(--border);
   }
 
-  /* تخصيص السكرول بار ليطابق الثيم دائماً */
+  /* تخصيص مظهر الـ select والـ option */
+  select {
+    background-color: var(--surface) !important;
+    color: var(--fg) !important;
+  }
+
+  select option {
+    background-color: var(--surface-elevated) !important;
+    color: var(--fg) !important;
+  }
+
+  /* تخصيص السكرول بار */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
