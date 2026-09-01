@@ -35,7 +35,7 @@ const MONTHS = [
 type MainTab = "daily" | "matrix" | "stats";
 type StatsSubTab = "analytics" | "audit" | "manage" | "ml";
 
-export function TrackerApp() {
+export default function TrackerApp() {
   const [today] = useState(() => new Date());
   const [newOpen, setNewOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -67,6 +67,7 @@ export function TrackerApp() {
   const markAllToday = useTrackerStore((s) => s.markAllToday);
   const importSnapshot = useTrackerStore((s) => s.importSnapshot);
   const resetToSeed = useTrackerStore((s) => s.resetToSeed);
+  const restDays = useTrackerStore((s) => s.restDays || {});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -158,14 +159,16 @@ export function TrackerApp() {
   const years = Array.from({ length: 8 }, (_, i) => 2025 + i);
 
   const inspectDateObj = parseISO(selectedInspectDate);
+  
   const activeHabitsForDay = useMemo(() => {
     return habits
       .filter((h) => !h.archived)
       .filter((h) => {
         const sched = scheduleForMonth(h, inspectDateObj.getFullYear(), inspectDateObj.getMonth() + 1) || h.schedule;
-        return isDayExpected(sched, inspectDateObj);
+        const isRest = restDays[`${h.id}_${selectedInspectDate}`];
+        return isDayExpected(sched, inspectDateObj) && !isRest;
       });
-  }, [habits, inspectDateObj]);
+  }, [habits, inspectDateObj, restDays, selectedInspectDate]);
 
   const inspectDayDoneCount = activeHabitsForDay.filter(
     (h) => Boolean(completions[completionKey(h.id, selectedInspectDate)])
@@ -181,7 +184,8 @@ export function TrackerApp() {
     .filter((h) => !h.archived)
     .filter((h) => {
       const sched = scheduleForMonth(h, inspectDateObj.getFullYear(), inspectDateObj.getMonth() + 1) || h.schedule;
-      return !isDayExpected(sched, inspectDateObj);
+      const isRest = restDays[`${h.id}_${selectedInspectDate}`];
+      return (!isDayExpected(sched, inspectDateObj) || isRest);
     });
 
   if (loadingAuth) {
@@ -356,6 +360,7 @@ export function TrackerApp() {
 
             <section className="min-w-0">
               <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl space-y-6">
+                
                 {/* Week Day Header Navigation */}
                 <div className="grid grid-cols-7 gap-2 pb-5 border-b border-[var(--border)]">
                   {weekDaysList.map((d) => {
@@ -383,60 +388,56 @@ export function TrackerApp() {
                   })}
                 </div>
 
-                {/* Day Header with High-Definition Luxury Radial Progress Gauge */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">
+                {/* EXCLUSIVE ENLARGED DAILY PROGRESS GAUGE */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--surface-elevated)]/20 p-6 rounded-3xl border border-[var(--border)]">
+                  <div className="text-center sm:text-left flex-1">
+                    <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-[0.2em]">
                       {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
                     </span>
-                    <h3 className="font-serif-title text-3xl font-normal text-[var(--fg)] mt-0.5">
+                    <h3 className="font-serif-title text-4xl sm:text-5xl font-normal text-[var(--fg)] mt-1">
                       {format(inspectDateObj, "d EEE")}
                     </h3>
-                    <p className="text-xs text-[var(--muted)] mt-1">
+                    <p className="text-sm text-[var(--muted)] mt-2 max-w-sm">
                       {inspectDayDoneCount === activeHabitsForDay.length && activeHabitsForDay.length > 0
-                        ? "All scheduled habits completed for this day!"
+                        ? "All scheduled habits completed! Outstanding."
                         : `${activeHabitsForDay.length - inspectDayDoneCount} habits remaining to check off.`}
                     </p>
                   </div>
 
-                  {/* Luxury Circular Progress Ring */}
-                  <div className="relative flex size-28 items-center justify-center select-none">
-                    <svg className="size-full -rotate-90 p-1" viewBox="0 0 92 92">
+                  <div className="relative flex size-36 sm:size-40 items-center justify-center select-none shrink-0">
+                    <svg className="size-full -rotate-90 p-2" viewBox="0 0 120 120">
                       <circle
-                        cx="46"
-                        cy="46"
-                        r="38"
+                        cx="60"
+                        cy="60"
+                        r="50"
                         stroke="currentColor"
-                        className="text-[var(--surface-pill)] opacity-50"
-                        strokeWidth="7"
+                        className="text-[var(--surface-pill)] opacity-40"
+                        strokeWidth="8"
                         fill="none"
                       />
                       {inspectDayScore > 0 && (
                         <circle
-                          cx="46"
-                          cy="46"
-                          r="38"
+                          cx="60"
+                          cy="60"
+                          r="50"
                           stroke="var(--primary)"
-                          strokeWidth="7"
-                          strokeDasharray={2 * Math.PI * 38}
-                          strokeDashoffset={2 * Math.PI * 38 * (1 - inspectDayScore / 100)}
+                          strokeWidth="8"
+                          strokeDasharray={2 * Math.PI * 50}
+                          strokeDashoffset={2 * Math.PI * 50 * (1 - inspectDayScore / 100)}
                           strokeLinecap="round"
                           fill="none"
-                          style={{
-                            filter: "drop-shadow(0 0 6px var(--glow))",
-                          }}
+                          style={{ filter: "drop-shadow(0 0 8px var(--glow))" }}
                         />
                       )}
                     </svg>
-
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
                       <span
-                        className="text-3xl font-bold tracking-tight text-[var(--fg)] leading-none"
+                        className="text-4xl sm:text-5xl font-normal text-[var(--fg)] tracking-tight leading-none"
                         style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
                       >
                         {inspectDayScore}%
                       </span>
-                      <span className="text-[9.5px] font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-1 leading-none">
+                      <span className="text-[10px] sm:text-xs font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2 leading-none">
                         DAILY
                       </span>
                     </div>
@@ -670,5 +671,3 @@ export function TrackerApp() {
     </div>
   );
 }
-
-export default TrackerApp;
