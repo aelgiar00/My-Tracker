@@ -136,59 +136,77 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       </div>
 
-      {/* Interactive Input Sliders (High Contrast Across All Themes) */}
+      {/* Sliders with Explicit Scale Ticks (Min to Max) */}
       <div className="grid grid-cols-3 gap-2">
         {/* Sleep Slider */}
-        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-2">
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
             <span className="text-[var(--muted)] font-medium">Sleep</span>
-            <span className="font-mono">{sleepHours}h</span>
+            <span className="font-mono text-[var(--primary)]">{sleepHours}h</span>
           </div>
-          <div className="relative flex items-center">
+          <div className="py-1">
             <input
               type="range"
               min="4"
               max="12"
+              step="1"
               value={sleepHours}
               onChange={(e) => setSleepHours(Number(e.target.value))}
-              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer focus:outline-none"
+              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
+          </div>
+          <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
+            <span>4h</span>
+            <span>8h</span>
+            <span>12h</span>
           </div>
         </div>
 
         {/* College Slider */}
-        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-2">
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
             <span className="text-[var(--muted)] font-medium">College</span>
-            <span className="font-mono">{collegeHours}h</span>
+            <span className="font-mono text-[var(--primary)]">{collegeHours}h</span>
           </div>
-          <div className="relative flex items-center">
+          <div className="py-1">
             <input
               type="range"
               min="0"
               max="10"
+              step="1"
               value={collegeHours}
               onChange={(e) => setCollegeHours(Number(e.target.value))}
-              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer focus:outline-none"
+              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
+          </div>
+          <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
+            <span>0h</span>
+            <span>5h</span>
+            <span>10h</span>
           </div>
         </div>
 
         {/* Work Slider */}
-        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs">
-          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-2">
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
+          <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
             <span className="text-[var(--muted)] font-medium">Work</span>
-            <span className="font-mono">{workHours}h</span>
+            <span className="font-mono text-[var(--primary)]">{workHours}h</span>
           </div>
-          <div className="relative flex items-center">
+          <div className="py-1">
             <input
               type="range"
               min="0"
               max="12"
+              step="1"
               value={workHours}
               onChange={(e) => setWorkHours(Number(e.target.value))}
-              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer focus:outline-none"
+              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
+          </div>
+          <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
+            <span>0h</span>
+            <span>6h</span>
+            <span>12h</span>
           </div>
         </div>
       </div>
