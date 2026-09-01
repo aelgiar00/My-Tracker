@@ -136,7 +136,7 @@ export function TrackerApp() {
   );
 
   const weekDaysList = useMemo(() => {
-    const start = startOfWeek(today, { weekStartsOn: 6 });
+    const start = startOfWeek(today, { weekStartsOn: 1 }); // يبدأ من الإثنين مثل الصورة
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, [today]);
 
@@ -157,7 +157,6 @@ export function TrackerApp() {
 
   const years = Array.from({ length: 8 }, (_, i) => 2025 + i);
 
-  // حساب مهام وعادات اليوم المختار
   const inspectDateObj = parseISO(selectedInspectDate);
   const activeHabitsForDay = useMemo(() => {
     return habits
@@ -177,6 +176,14 @@ export function TrackerApp() {
     : 0;
 
   const currentDayTasks = dailyTasks[selectedInspectDate] || [];
+
+  // عادات الراحة لليوم المختار
+  const restingHabitsForDay = habits
+    .filter((h) => !h.archived)
+    .filter((h) => {
+      const sched = scheduleForMonth(h, inspectDateObj.getFullYear(), inspectDateObj.getMonth() + 1) || h.schedule;
+      return !isDayExpected(sched, inspectDateObj);
+    });
 
   if (loadingAuth) {
     return (
@@ -264,7 +271,7 @@ export function TrackerApp() {
               setMonth(today.getFullYear(), today.getMonth() + 1);
               setSelectedInspectDate(format(today, "yyyy-MM-dd"));
             }}
-            className="h-10 rounded-xl border border-[var(--primary)]/30 bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[var(--primary)]"
+            className="h-10 rounded-xl border border-[var(--primary)]/30 bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
           >
             <CalendarDays className="mr-1.5 size-3.5 text-[var(--primary)]" />
             Today
@@ -278,7 +285,7 @@ export function TrackerApp() {
               else toast("Nothing to undo.");
             }}
             disabled={undoCount === 0}
-            className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"
+            className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] cursor-pointer"
           >
             <Undo2 className="size-4" />
           </Button>
@@ -286,14 +293,14 @@ export function TrackerApp() {
             variant="outline"
             size="icon-sm"
             onClick={() => setSettingsOpen(true)}
-            className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"
+            className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] cursor-pointer"
           >
             <Settings className="size-4" />
           </Button>
           <Button
             size="sm"
             onClick={() => setNewOpen(true)}
-            className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs font-medium text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50"
+            className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs font-semibold text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50 cursor-pointer"
           >
             <Plus className="mr-1.5 size-4 text-[var(--primary)]" />
             Habit
@@ -308,7 +315,7 @@ export function TrackerApp() {
                 setSession(null);
                 toast("تم تسجيل الخروج");
               }}
-              className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-rose-400"
+              className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-rose-400 cursor-pointer"
             >
               <LogOut className="size-4" />
             </Button>
@@ -339,20 +346,18 @@ export function TrackerApp() {
 
       {/* Main Content Area */}
       <main>
-        {/* Daily View: Side-by-Side (AI Coach on Left + Daily Checklist Card on Right) */}
+        {/* Daily View: Clean Layout with Perfect Ring and Week Navigation */}
         {mainTab === "daily" && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
-            {/* 1. Left Column: Personal AI Coach */}
             <section className="min-w-0">
               <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-xl">
                 <TodayPanel habits={habits} stats={stats} todayDate={today} />
               </div>
             </section>
 
-            {/* 2. Right Column: Daily Performance & Interactive Checklist Card */}
             <section className="min-w-0">
               <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl space-y-6">
-                {/* Day Selector Pills Bar */}
+                {/* Week Day Header Navigation (Exact Match to Image 1 & 3) */}
                 <div className="grid grid-cols-7 gap-2 pb-5 border-b border-[var(--border)]">
                   {weekDaysList.map((d) => {
                     const dIso = format(d, "yyyy-MM-dd");
@@ -363,20 +368,23 @@ export function TrackerApp() {
                         type="button"
                         onClick={() => setSelectedInspectDate(dIso)}
                         className={cn(
-                          "flex flex-col items-center justify-center rounded-2xl py-2.5 border transition-all cursor-pointer",
+                          "flex flex-col items-center justify-center rounded-2xl py-3 border transition-all cursor-pointer relative",
                           isSelected
-                            ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--fg)] font-semibold shadow-xs"
-                            : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)]"
+                            ? "border-[var(--primary)] bg-[var(--surface-elevated)] text-[var(--fg)] font-semibold shadow-xs"
+                            : "border-[var(--border)] bg-[var(--surface-elevated)]/50 text-[var(--muted)] hover:text-[var(--fg)]"
                         )}
                       >
-                        <span className="text-[10px] uppercase font-mono">{format(d, "EEE")}</span>
+                        <span className="text-[10px] uppercase font-mono tracking-wider">{format(d, "EEE").slice(0, 2)}</span>
                         <span className="text-sm font-bold mt-0.5">{format(d, "d")}</span>
+                        {isSelected && (
+                          <span className="absolute bottom-1.5 w-5 h-0.5 rounded-full bg-[var(--primary)]" />
+                        )}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Day Header with Radial Score */}
+                {/* Day Header with High-Definition Circular Progress Ring */}
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">
@@ -392,17 +400,41 @@ export function TrackerApp() {
                     </p>
                   </div>
 
-                  <div className="flex size-16 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary-muted)] text-center">
-                    <div>
-                      <span className="text-base font-bold text-[var(--fg)] font-serif-title block leading-none">
+                  {/* Circular Ring Gauge (SVG) */}
+                  <div className="relative flex size-20 items-center justify-center">
+                    <svg className="size-full -rotate-90" viewBox="0 0 72 72">
+                      <circle
+                        cx="36"
+                        cy="36"
+                        r="30"
+                        className="stroke-[var(--surface-pill)]"
+                        strokeWidth="5"
+                        fill="none"
+                      />
+                      <circle
+                        cx="36"
+                        cy="36"
+                        r="30"
+                        className="stroke-[var(--primary)] transition-all duration-500"
+                        strokeWidth="5"
+                        strokeDasharray={2 * Math.PI * 30}
+                        strokeDashoffset={2 * Math.PI * 30 * (1 - inspectDayScore / 100)}
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                    </svg>
+                    <div className="absolute flex flex-col items-center justify-center text-center">
+                      <span className="text-lg font-bold text-[var(--fg)] font-serif-title leading-none">
                         {inspectDayScore}%
                       </span>
-                      <span className="text-[9px] text-[var(--muted)] uppercase font-semibold">DAILY</span>
+                      <span className="text-[8.5px] font-semibold text-[var(--muted)] uppercase tracking-wider mt-0.5">
+                        DAILY
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Scheduled Habit Cards */}
+                {/* Scheduled Habits Cards */}
                 <div className="space-y-2.5">
                   {activeHabitsForDay.length === 0 ? (
                     <p className="text-xs text-[var(--muted)] py-4 text-center">No habits scheduled on this day.</p>
@@ -511,6 +543,21 @@ export function TrackerApp() {
                       <Plus className="size-4" />
                     </Button>
                   </div>
+
+                  {/* Rest Section (Exact Match to Images) */}
+                  {restingHabitsForDay.length > 0 && (
+                    <div className="pt-2 space-y-1 text-xs text-[var(--muted)]">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5">REST</span>
+                      {restingHabitsForDay.map((h) => (
+                        <div key={h.id} className="flex justify-between py-1 border-b border-[var(--border)]/40 last:border-0">
+                          <span>{h.name}</span>
+                          <span className="font-mono text-[10px] capitalize">
+                            {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <Button
                     type="button"
