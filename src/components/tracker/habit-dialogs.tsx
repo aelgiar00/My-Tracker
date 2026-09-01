@@ -134,9 +134,9 @@ export function NewHabitDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--fg)] shadow-2xl transition-colors">
+      <DialogContent className="max-w-md w-full rounded-[2rem] border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-3xl p-6 sm:p-8 text-[var(--fg)] shadow-2xl shadow-black/40 transition-all duration-300">
         <DialogHeader className="space-y-1">
-          <DialogTitle className="font-serif-title text-2xl font-normal tracking-tight text-[var(--fg)]">
+          <DialogTitle className="font-serif-title text-3xl font-normal tracking-tight text-[var(--fg)]">
             New habit
           </DialogTitle>
           <DialogDescription className="text-xs text-[var(--muted)]">
@@ -144,25 +144,25 @@ export function NewHabitDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Habit Name</label>
+            <label className="text-xs font-semibold text-[var(--fg)] opacity-90 tracking-wide">Habit Name</label>
             <input
               type="text"
               placeholder="e.g. Deep work 90m, Pray, ML Learning..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-4 text-xs font-medium text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/50 px-4 text-sm font-medium text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)] transition-colors"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Estimated Duration</label>
+              <label className="text-xs font-semibold text-[var(--fg)] opacity-90 tracking-wide">Estimated Duration</label>
               <NativeSelect
                 value={durationMinutes}
                 onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                className="h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs font-medium text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
+                className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/50 px-3 text-xs font-medium text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)] transition-colors"
               >
                 <option value={15}>15 Minutes</option>
                 <option value={20}>20 Minutes</option>
@@ -177,11 +177,11 @@ export function NewHabitDialog({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Priority Level</label>
+              <label className="text-xs font-semibold text-[var(--fg)] opacity-90 tracking-wide">Priority Level</label>
               <NativeSelect
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as HabitPriority)}
-                className="h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs font-medium text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
+                className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/50 px-3 text-xs font-medium text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)] transition-colors"
               >
                 <option value="critical">Important</option>
                 <option value="standard">Standard Habit</option>
@@ -190,33 +190,33 @@ export function NewHabitDialog({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Bulk add habits (Optional)</label>
+            <label className="text-xs font-semibold text-[var(--fg)] opacity-90 tracking-wide">Bulk add habits (Optional)</label>
             <textarea
               rows={2}
               placeholder={"One habit per line\nRead 20 pages\nPractice C++\nWorkout"}
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
-              className="w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-3 text-xs font-medium text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/50 p-4 text-xs font-medium text-[var(--fg)] placeholder:text-[var(--muted)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)] transition-colors"
             />
-            <p className="text-[10.5px] text-[var(--muted)]">
+            <p className="text-[10px] text-[var(--muted)]">
               Paste multiple habit names at once. Blank lines are ignored.
             </p>
           </div>
 
-          <label className="flex items-center gap-2.5 pt-0.5 text-xs font-medium text-[var(--fg)] cursor-pointer select-none">
+          <label className="flex items-center gap-3 pt-1 text-xs font-medium text-[var(--fg)] cursor-pointer select-none group">
             <input
               type="checkbox"
               checked={thisMonthOnly}
               onChange={(e) => setThisMonthOnly(e.target.checked)}
-              className="size-4 rounded border-[var(--border)] bg-[var(--surface-elevated)] accent-[var(--primary)] cursor-pointer"
+              className="size-4.5 rounded border-[var(--border)] bg-[var(--surface-elevated)]/50 accent-[var(--primary)] cursor-pointer transition-all group-hover:ring-1 group-hover:ring-[var(--primary)]/50"
             />
-            <span>Add to this month only</span>
+            <span className="opacity-90 group-hover:opacity-100 transition-opacity">Add to this month only</span>
           </label>
 
-          <div className="space-y-2.5 pt-1">
-            <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Schedule</label>
+          <div className="space-y-3 pt-2">
+            <label className="text-xs font-semibold text-[var(--fg)] opacity-90 tracking-wide">Schedule</label>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {(
                 [
                   ["daily", "Daily"],
@@ -230,10 +230,10 @@ export function NewHabitDialog({
                   type="button"
                   onClick={() => handleModeChange(id)}
                   className={cn(
-                    "rounded-xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer border",
+                    "rounded-[0.85rem] px-4 py-2.5 text-xs font-semibold transition-all duration-200 cursor-pointer border",
                     scheduleMode === id
-                      ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--fg)] shadow-xs"
-                      : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
+                      ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[0_0_12px_var(--primary-muted)]"
+                      : "border-[var(--border)] bg-[var(--surface-elevated)]/40 text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--muted)] hover:bg-[var(--surface-elevated)]"
                   )}
                 >
                   {label}
@@ -242,7 +242,7 @@ export function NewHabitDialog({
             </div>
 
             {scheduleMode !== "onedate" && scheduleMode !== "monthly" && (
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex items-center gap-2 pt-2">
                 {weekDays.map((d) => {
                   const isSelected = selectedDays.includes(d.idx);
                   return (
@@ -251,10 +251,10 @@ export function NewHabitDialog({
                       type="button"
                       onClick={() => toggleDay(d.idx)}
                       className={cn(
-                        "flex size-8 items-center justify-center rounded-xl border text-xs font-bold transition-all cursor-pointer",
+                        "flex size-9 items-center justify-center rounded-[0.85rem] border text-xs font-bold transition-all duration-200 cursor-pointer",
                         isSelected
-                          ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
-                          : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
+                          ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[0_0_10px_var(--primary-muted)]"
+                          : "border-[var(--border)] bg-[var(--surface-elevated)]/40 text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--muted)] hover:bg-[var(--surface-elevated)]"
                       )}
                     >
                       {d.label}
@@ -265,7 +265,7 @@ export function NewHabitDialog({
             )}
 
             {(scheduleMode === "onedate" || scheduleMode === "monthly") && (
-              <div className="flex items-center gap-2.5 pt-1">
+              <div className="flex items-center gap-3 pt-2">
                 <span className="text-xs font-medium text-[var(--muted)]">
                   {scheduleMode === "monthly" ? "Target days this month:" : "Day of month:"}
                 </span>
@@ -275,24 +275,24 @@ export function NewHabitDialog({
                   max={31}
                   value={targetDayOfMonth}
                   onChange={(e) => setTargetDayOfMonth(Number(e.target.value))}
-                  className="h-9 w-20 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-2.5 text-center text-xs font-bold text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                  className="h-10 w-20 rounded-[0.85rem] border border-[var(--border)] bg-[var(--surface-elevated)]/50 px-2.5 text-center text-sm font-bold text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)] transition-colors"
                 />
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border)]">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-10 rounded-2xl px-5 text-xs font-semibold text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] cursor-pointer"
+              className="h-11 rounded-2xl px-5 text-xs font-bold text-[var(--muted)] hover:bg-[var(--surface-elevated)]/50 hover:text-[var(--fg)] cursor-pointer transition-colors"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="h-10 rounded-2xl bg-[var(--primary)] px-6 text-xs font-bold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+              className="h-11 rounded-2xl bg-[var(--primary)] px-8 text-sm font-bold text-[var(--primary-foreground)] hover:opacity-90 transition-all duration-200 cursor-pointer shadow-[0_0_20px_var(--primary-muted)]"
             >
               Add habit
             </Button>
@@ -501,21 +501,21 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--fg)] shadow-2xl transition-colors">
-        <DialogHeader>
-          <DialogTitle className="font-serif-title text-2xl font-normal text-[var(--fg)]">Settings</DialogTitle>
+      <DialogContent className="max-w-md w-full rounded-[2rem] border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-3xl p-6 sm:p-8 text-[var(--fg)] shadow-2xl shadow-black/40 transition-all duration-300">
+        <DialogHeader className="mb-2">
+          <DialogTitle className="font-serif-title text-3xl font-normal tracking-tight text-[var(--fg)]">Settings</DialogTitle>
           <DialogDescription className="text-xs text-[var(--muted)]">
             Tracking window, backup, sample data, and theme engine.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-5 space-y-5">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Color theme</label>
+            <label className="text-xs font-semibold text-[var(--fg)] opacity-90 tracking-wide">Color theme</label>
             <NativeSelect
               value={theme}
               onChange={(e) => setTheme(e.target.value as ThemeId)}
-              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs font-semibold text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/50 px-4 text-xs font-medium text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)] transition-colors"
             >
               <option value="obsidian">✨ Obsidian Gold</option>
               <option value="ink">Ink</option>
@@ -526,53 +526,53 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Tracking start</label>
+            <label className="text-xs font-semibold text-[var(--fg)] opacity-90 tracking-wide">Tracking start</label>
             <input
               type="date"
               value={trackingStart}
               onChange={(e) => setTrackingStart(e.target.value)}
-              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs font-semibold text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/50 px-4 text-xs font-medium text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)] transition-colors"
             />
-            <p className="text-[10px] text-[var(--muted)]">
+            <p className="text-[10px] text-[var(--muted)] px-1">
               Days before this date are hidden from every month grid.
             </p>
           </div>
 
-          <div className="space-y-2 pt-1">
-            <label className="flex items-center gap-2 text-xs font-medium text-[var(--fg)] cursor-pointer select-none">
+          <div className="space-y-3 pt-2">
+            <label className="flex items-center gap-3 text-xs font-medium text-[var(--fg)] cursor-pointer select-none group">
               <input
                 type="checkbox"
                 checked={enableMl}
                 onChange={(e) => setEnableMl(e.target.checked)}
-                className="size-4 rounded border-[var(--border)] bg-[var(--surface-elevated)] accent-[var(--primary)] cursor-pointer"
+                className="size-4.5 rounded border-[var(--border)] bg-[var(--surface-elevated)]/50 accent-[var(--primary)] cursor-pointer transition-all group-hover:ring-1 group-hover:ring-[var(--primary)]/50"
               />
-              Enable ML insights
+              <span className="opacity-90 group-hover:opacity-100 transition-opacity">Enable ML insights</span>
             </label>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-[var(--muted)]">Service URL</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wide">Service URL</label>
               <input
                 type="text"
                 placeholder="Leave empty for the built-in engine"
                 value={serviceUrl}
                 onChange={(e) => setServiceUrl(e.target.value)}
-                className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)]/40 px-4 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)] transition-colors"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[var(--border)]">
             <Button
               type="button"
               variant="outline"
               onClick={handleExport}
-              className="h-10 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] text-xs font-semibold text-[var(--fg)] hover:bg-[var(--surface-pill)] cursor-pointer"
+              className="h-12 rounded-2xl border-[var(--border)] bg-[var(--surface-elevated)]/30 text-xs font-bold text-[var(--fg)] hover:bg-[var(--surface-elevated)] cursor-pointer transition-all hover:border-[var(--muted)]"
             >
-              <Download className="mr-1.5 size-3.5" />
+              <Download className="mr-2 size-4" />
               Export JSON
             </Button>
-            <label className="flex h-10 cursor-pointer items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] text-xs font-semibold text-[var(--fg)] hover:bg-[var(--surface-pill)] transition-colors">
-              <Upload className="mr-1.5 size-3.5" />
+            <label className="flex h-12 cursor-pointer items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/30 text-xs font-bold text-[var(--fg)] hover:bg-[var(--surface-elevated)] transition-all hover:border-[var(--muted)]">
+              <Upload className="mr-2 size-4" />
               Import JSON
               <input type="file" accept=".json" onChange={handleImport} className="hidden" />
             </label>
