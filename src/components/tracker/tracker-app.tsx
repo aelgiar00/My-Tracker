@@ -35,7 +35,7 @@ const MONTHS = [
 type MainTab = "daily" | "matrix" | "stats";
 type StatsSubTab = "analytics" | "audit" | "manage" | "ml";
 
-export default function TrackerApp() {
+export function TrackerApp() {
   const [today] = useState(() => new Date());
   const [newOpen, setNewOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -678,3 +678,5 @@ export default function TrackerApp() {
     </div>
   );
 }
+
+export default TrackerApp;
