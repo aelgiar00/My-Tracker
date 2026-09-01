@@ -3,7 +3,7 @@
 
 > An elite, AI-driven habit-tracking and life execution platform engineered for high-performance personal analytics, dynamic workflow personalization, and machine learning behavioral insights.
 
-[![Live App Status](https://my-tracker-kappa-nine.vercel.app/)
+[![Live App Status](https://my-tracker-elgiar.vercel.app/)
 [![GitHub Repository](https://github.com/aelgiar00/My-Tracker)
 
 ---
@@ -89,7 +89,7 @@ src/
 
 ### 1. Live Application & Source Code
 
-* 🌐 **Live Web App**: [Access the Live App Here](https://my-tracker-kappa-nine.vercel.app/)
+* 🌐 **Live Web App**: [Access the Live App Here](https://my-tracker-elgiar.vercel.app/)
 * 📂 **GitHub Source Code**: [View Repository on GitHub](https://github.com/aelgiar00/My-Tracker)
 
 ### 2. Vercel Deployment (Frontend & Serverless)
