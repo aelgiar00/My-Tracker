@@ -383,7 +383,7 @@ export function TrackerApp() {
                   })}
                 </div>
 
-                {/* Day Header with High-Definition Luxury Circular Gauge */}
+                {/* Day Header with High-Definition Luxury Radial Progress Gauge */}
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">
@@ -399,35 +399,34 @@ export function TrackerApp() {
                     </p>
                   </div>
 
-                  {/* SVG Daily Percentage Ring */}
+                  {/* SVG Gauge Matching Reference Image 2 */}
                   <div className="relative flex size-24 items-center justify-center select-none">
-                    <svg className="size-full -rotate-90 p-1" viewBox="0 0 84 84">
+                    <svg className="size-full -rotate-90 p-1" viewBox="0 0 88 88">
                       <circle
-                        cx="42"
-                        cy="42"
-                        r="34"
-                        className="stroke-[var(--surface-pill)] opacity-60"
-                        strokeWidth="5.5"
+                        cx="44"
+                        cy="44"
+                        r="36"
+                        className="stroke-[var(--surface-pill)]"
+                        strokeWidth="5"
                         fill="none"
                       />
-                      <circle
-                        cx="42"
-                        cy="42"
-                        r="34"
-                        className="stroke-[var(--primary)] transition-all duration-700 ease-out"
-                        strokeWidth="5.5"
-                        strokeDasharray={2 * Math.PI * 34}
-                        strokeDashoffset={2 * Math.PI * 34 * (1 - inspectDayScore / 100)}
-                        strokeLinecap="round"
-                        fill="none"
-                        style={{
-                          filter: inspectDayScore > 0 ? "drop-shadow(0 0 4px var(--glow))" : "none",
-                        }}
-                      />
+                      {inspectDayScore > 0 && (
+                        <circle
+                          cx="44"
+                          cy="44"
+                          r="36"
+                          className="stroke-[var(--primary)] transition-all duration-700 ease-out"
+                          strokeWidth="5"
+                          strokeDasharray={2 * Math.PI * 36}
+                          strokeDashoffset={2 * Math.PI * 36 * (1 - inspectDayScore / 100)}
+                          strokeLinecap="round"
+                          fill="none"
+                        />
+                      )}
                     </svg>
 
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="font-serif-title text-[22px] font-normal tracking-tight text-[var(--fg)] leading-none">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                      <span className="font-serif-title text-[24px] font-normal tracking-tight text-[var(--fg)] leading-none">
                         {inspectDayScore}%
                       </span>
                       <span className="text-[8.5px] font-semibold font-mono tracking-[0.2em] text-[var(--muted)] uppercase mt-1.5 leading-none">
