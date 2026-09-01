@@ -88,7 +88,6 @@
     border-color: var(--border);
   }
 
-  /* تخصيص مظهر الـ select والـ option */
   select {
     background-color: var(--surface) !important;
     color: var(--fg) !important;
@@ -99,7 +98,6 @@
     color: var(--fg) !important;
   }
 
-  /* تخصيص السكرول بار */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -124,5 +122,13 @@
 
   .font-serif-title {
     font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  }
+
+  /* جعل خلفية النوافذ المنبثقة (Settings) شفافة ومموّهة (Glassmorphism) */
+  .fixed.inset-0.z-50.bg-black\/80,
+  .fixed.inset-0.z-50.bg-background\/80 {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
   }
 }
