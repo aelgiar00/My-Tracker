@@ -48,6 +48,7 @@ export function AnalyticsPanel() {
     });
   }, [habits, completions, allMonthDays, selectedYear, selectedMonth]);
 
+  // حساب دقيق لكل أيام الشهر المعروض
   const daysBreakdown = useMemo(() => {
     return allMonthDays.map((date) => {
       const iso = format(date, "yyyy-MM-dd");
@@ -62,7 +63,7 @@ export function AnalyticsPanel() {
         }
       });
 
-      return { iso, expected, completed };
+      return { iso, expected, completed, date };
     });
   }, [allMonthDays, habits, completions, selectedYear, selectedMonth]);
 
@@ -70,7 +71,7 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  // Radar Data مع توسيع القطر وتنسيق المحاور عند وجود عدد قليل من العادات
+  // Radar Data
   const radarData = useMemo(() => {
     const list = habitsBreakdown.slice(0, 6);
     const total = Math.max(3, list.length);
@@ -81,7 +82,7 @@ export function AnalyticsPanel() {
 
     const points = list.map((item, i) => {
       const angle = ((Math.PI * 2) / total) * i - Math.PI / 2;
-      const score = Math.max(0.08, Math.min(1, item.rate / 100));
+      const score = Math.max(0.1, Math.min(1, item.rate / 100));
 
       const r = maxRadius * score;
       const x = center + r * Math.cos(angle);
@@ -122,7 +123,7 @@ export function AnalyticsPanel() {
     };
   }, [habitsBreakdown, fullScreen]);
 
-  // Confusion / Correlation Matrix
+  // Correlation Matrix
   const correlationMatrix = useMemo(() => {
     const topHabits = habits.slice(0, 8);
     const size = topHabits.length;
@@ -168,6 +169,11 @@ export function AnalyticsPanel() {
     return { habits: topHabits, matrix };
   }, [habits, completions, allMonthDays, selectedYear, selectedMonth]);
 
+  // اختيار آخر 14 يوم من الشهر المختار للعرض السليم
+  const displayDays = useMemo(() => {
+    return daysBreakdown.slice(0, fullScreen ? 31 : 14);
+  }, [daysBreakdown, fullScreen]);
+
   return (
     <div
       className={cn(
@@ -193,11 +199,6 @@ export function AnalyticsPanel() {
           {fullScreen ? <Minimize2 className="mr-1.5 size-3.5" /> : <Maximize2 className="mr-1.5 size-3.5" />}
           {fullScreen ? "Exit Full-Screen" : "Full-screen charts"}
         </Button>
-      </div>
-
-      {/* Insight Banner */}
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-xs text-[var(--muted)]">
-        <span className="font-semibold text-[var(--fg)]">Insight.</span> Highest weekday is typically <strong className="text-[var(--fg)]">Thu</strong> (86% hit rate). Weakest recurring habit: <strong className="text-[var(--fg)]">Deep work 90m</strong> (70%).
       </div>
 
       {/* 4 KPI Cards */}
@@ -257,7 +258,7 @@ export function AnalyticsPanel() {
 
       {/* 2x2 Core Visualizations Grid */}
       <div className={cn("grid gap-6 transition-all duration-300", fullScreen ? "grid-cols-1" : "lg:grid-cols-2")}>
-        {/* 1. Daily Execution (Accurate Heights & Baseline) */}
+        {/* 1. Daily Execution (Fixed Rendering & Scaling) */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Daily execution</h3>
 
@@ -279,7 +280,7 @@ export function AnalyticsPanel() {
               </div>
 
               <div className="flex flex-1 items-end justify-between gap-1 z-10 border-b border-[var(--border)] pb-0.5">
-                {daysBreakdown.slice(fullScreen ? -30 : -14).map((d) => {
+                {displayDays.map((d) => {
                   const pct = d.expected > 0 ? Math.round((d.completed / d.expected) * 100) : 0;
                   return (
                     <div key={d.iso} className="flex flex-1 flex-col items-center justify-end h-full">
@@ -300,7 +301,7 @@ export function AnalyticsPanel() {
               </div>
 
               <div className="flex justify-between gap-1 pt-1 z-10">
-                {daysBreakdown.slice(fullScreen ? -30 : -14).map((d) => (
+                {displayDays.map((d) => (
                   <span key={d.iso} className={cn("flex-1 text-center text-[9px] font-mono text-[var(--muted)]", fullScreen && "text-[11px]")}>
                     {d.iso.slice(8)}
                   </span>
@@ -338,7 +339,7 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 3. Mastery Radar (Spacious & Scaled) */}
+        {/* 3. Mastery Radar */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <div className="flex items-center justify-between mb-2">
             <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
@@ -379,7 +380,7 @@ export function AnalyticsPanel() {
                   strokeWidth="1.5"
                   className="transition-all duration-500"
                 />
-              ) : radarData.points.length > 0 ? (
+              ) : (
                 radarData.points.map((p, idx) => (
                   <line
                     key={idx}
@@ -391,7 +392,7 @@ export function AnalyticsPanel() {
                     strokeWidth="2"
                   />
                 ))
-              ) : null}
+              )}
 
               {radarData.points.map((p, idx) => (
                 <circle key={idx} cx={p.x} cy={p.y} r="2.5" fill="var(--primary)" className="transition-all duration-500" />
