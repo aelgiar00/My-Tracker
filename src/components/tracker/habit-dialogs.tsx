@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/tracker/native-select";
 import { useTrackerStore, exportSnapshot, ThemeId } from "@/store/tracker-store";
-import { Schedule } from "@/lib/tracker/types";
+import { Schedule, HabitPriority } from "@/lib/tracker/types";
 import { toast } from "sonner";
 import { Download, Upload, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,8 @@ export function NewHabitDialog({
   selectedMonth,
 }: NewHabitDialogProps) {
   const [name, setName] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState<number>(30);
+  const [priority, setPriority] = useState<HabitPriority>("critical");
   const [bulkText, setBulkText] = useState("");
   const [thisMonthOnly, setThisMonthOnly] = useState(false);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("weekdays");
@@ -99,6 +101,8 @@ export function NewHabitDialog({
     }
 
     const options = {
+      durationMinutes,
+      priority,
       monthKey: thisMonthOnly ? monthKeyStr : undefined,
       monthlyOnly: thisMonthOnly,
     };
@@ -119,7 +123,7 @@ export function NewHabitDialog({
 
     const trimmed = name.trim();
     if (!trimmed) {
-      toast.error("Please enter a habit name or paste multiple lines.");
+      toast.error("Please enter a habit name.");
       return;
     }
 
@@ -137,36 +141,73 @@ export function NewHabitDialog({
             New habit
           </DialogTitle>
           <DialogDescription className="text-xs text-[var(--muted)]">
-            Stable IDs keep history if you rename later.
+            Set your target habit, estimated duration, and scheduling.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Name */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[var(--muted)]">Name</label>
+            <label className="text-xs font-medium text-[var(--muted)]">Habit Name</label>
             <input
               type="text"
-              placeholder="e.g. Evening review"
+              placeholder="e.g. Deep work 90m, Pray, ML Learning..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-4 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/40 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
             />
           </div>
 
+          {/* Time Estimate & Priority */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--muted)]">Estimated Duration</label>
+              <NativeSelect
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                className="h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] shadow-none"
+              >
+                <option value={15}>15 Minutes</option>
+                <option value={20}>20 Minutes</option>
+                <option value={30}>30 Minutes</option>
+                <option value={45}>45 Minutes</option>
+                <option value={60}>1 Hour</option>
+                <option value={90}>1.5 Hours</option>
+                <option value={120}>2 Hours</option>
+                <option value={150}>2.5 Hours</option>
+                <option value={180}>3+ Hours</option>
+              </NativeSelect>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--muted)]">Priority Level</label>
+              <NativeSelect
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as HabitPriority)}
+                className="h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] shadow-none"
+              >
+                <option value="critical">🎯 Critical (Non-Negotiable)</option>
+                <option value="standard">Standard Habit</option>
+              </NativeSelect>
+            </div>
+          </div>
+
+          {/* Bulk Textarea */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[var(--muted)]">Bulk add habits</label>
+            <label className="text-xs font-medium text-[var(--muted)]">Bulk add habits (Optional)</label>
             <textarea
-              rows={3}
+              rows={2}
               placeholder={"One habit per line\nRead 20 pages\nPractice C++\nWorkout"}
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
-              className="w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-3.5 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/40 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/40 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
             />
             <p className="text-[10.5px] text-[var(--muted)]">
               Paste multiple habit names at once. Blank lines are ignored.
             </p>
           </div>
 
+          {/* Add to this month only Checkbox */}
           <label className="flex items-center gap-2.5 pt-0.5 text-xs text-[var(--fg)] cursor-pointer select-none">
             <input
               type="checkbox"
@@ -177,6 +218,7 @@ export function NewHabitDialog({
             <span>Add to this month only</span>
           </label>
 
+          {/* Schedule Section */}
           <div className="space-y-2.5 pt-1">
             <label className="text-xs font-medium text-[var(--muted)]">Schedule</label>
 
@@ -243,6 +285,7 @@ export function NewHabitDialog({
             )}
           </div>
 
+          {/* Footer Buttons */}
           <div className="flex items-center justify-end gap-3 pt-3">
             <Button
               type="button"
@@ -334,7 +377,7 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
             <button
               type="button"
               onClick={handleSelectAll}
-              className="text-[11px] font-medium text-[var(--primary)] hover:underline"
+              className="text-[11px] font-medium text-[var(--primary)] hover:underline cursor-pointer"
             >
               Select all
             </button>
@@ -342,7 +385,7 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
             <button
               type="button"
               onClick={handleClearAll}
-              className="text-[11px] font-medium text-[var(--muted)] hover:underline"
+              className="text-[11px] font-medium text-[var(--muted)] hover:underline cursor-pointer"
             >
               Clear
             </button>
@@ -361,7 +404,7 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
                   type="button"
                   onClick={() => toggleHabitSelect(habit.id)}
                   className={cn(
-                    "rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all duration-150 border",
+                    "rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all duration-150 border cursor-pointer",
                     isSelected
                       ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--fg)] shadow-xs"
                       : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
@@ -411,7 +454,7 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
         <Button
           type="button"
           onClick={handleApply}
-          className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-5 text-xs font-medium text-[var(--fg)] hover:border-[var(--primary)]/60 transition-colors"
+          className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-5 text-xs font-medium text-[var(--fg)] hover:border-[var(--primary)]/60 transition-colors cursor-pointer"
         >
           Apply
         </Button>
@@ -421,7 +464,7 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
 }
 
 /* =========================================================================
-   3. SettingsDialog
+   3. SettingsDialog (Strict 6 Themes Palette)
    ========================================================================= */
 export interface SettingsDialogProps {
   open: boolean;
