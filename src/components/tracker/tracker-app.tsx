@@ -136,7 +136,7 @@ export function TrackerApp() {
   );
 
   const weekDaysList = useMemo(() => {
-    const start = startOfWeek(today, { weekStartsOn: 1 }); // يبدأ من الإثنين مثل الصورة
+    const start = startOfWeek(today, { weekStartsOn: 1 });
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, [today]);
 
@@ -177,7 +177,6 @@ export function TrackerApp() {
 
   const currentDayTasks = dailyTasks[selectedInspectDate] || [];
 
-  // عادات الراحة لليوم المختار
   const restingHabitsForDay = habits
     .filter((h) => !h.archived)
     .filter((h) => {
@@ -346,7 +345,7 @@ export function TrackerApp() {
 
       {/* Main Content Area */}
       <main>
-        {/* Daily View: Clean Layout with Perfect Ring and Week Navigation */}
+        {/* Daily View */}
         {mainTab === "daily" && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
             <section className="min-w-0">
@@ -357,7 +356,7 @@ export function TrackerApp() {
 
             <section className="min-w-0">
               <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl space-y-6">
-                {/* Week Day Header Navigation (Exact Match to Image 1 & 3) */}
+                {/* Week Day Header Navigation */}
                 <div className="grid grid-cols-7 gap-2 pb-5 border-b border-[var(--border)]">
                   {weekDaysList.map((d) => {
                     const dIso = format(d, "yyyy-MM-dd");
@@ -384,7 +383,7 @@ export function TrackerApp() {
                   })}
                 </div>
 
-                {/* Day Header with High-Definition Circular Progress Ring */}
+                {/* Day Header with High-Definition Luxury Circular Gauge */}
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">
@@ -400,34 +399,38 @@ export function TrackerApp() {
                     </p>
                   </div>
 
-                  {/* Circular Ring Gauge (SVG) */}
-                  <div className="relative flex size-20 items-center justify-center">
-                    <svg className="size-full -rotate-90" viewBox="0 0 72 72">
+                  {/* SVG Daily Percentage Ring */}
+                  <div className="relative flex size-24 items-center justify-center select-none">
+                    <svg className="size-full -rotate-90 p-1" viewBox="0 0 84 84">
                       <circle
-                        cx="36"
-                        cy="36"
-                        r="30"
-                        className="stroke-[var(--surface-pill)]"
-                        strokeWidth="5"
+                        cx="42"
+                        cy="42"
+                        r="34"
+                        className="stroke-[var(--surface-pill)] opacity-60"
+                        strokeWidth="5.5"
                         fill="none"
                       />
                       <circle
-                        cx="36"
-                        cy="36"
-                        r="30"
-                        className="stroke-[var(--primary)] transition-all duration-500"
-                        strokeWidth="5"
-                        strokeDasharray={2 * Math.PI * 30}
-                        strokeDashoffset={2 * Math.PI * 30 * (1 - inspectDayScore / 100)}
+                        cx="42"
+                        cy="42"
+                        r="34"
+                        className="stroke-[var(--primary)] transition-all duration-700 ease-out"
+                        strokeWidth="5.5"
+                        strokeDasharray={2 * Math.PI * 34}
+                        strokeDashoffset={2 * Math.PI * 34 * (1 - inspectDayScore / 100)}
                         strokeLinecap="round"
                         fill="none"
+                        style={{
+                          filter: inspectDayScore > 0 ? "drop-shadow(0 0 4px var(--glow))" : "none",
+                        }}
                       />
                     </svg>
-                    <div className="absolute flex flex-col items-center justify-center text-center">
-                      <span className="text-lg font-bold text-[var(--fg)] font-serif-title leading-none">
+
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                      <span className="font-serif-title text-[22px] font-normal tracking-tight text-[var(--fg)] leading-none">
                         {inspectDayScore}%
                       </span>
-                      <span className="text-[8.5px] font-semibold text-[var(--muted)] uppercase tracking-wider mt-0.5">
+                      <span className="text-[8.5px] font-semibold font-mono tracking-[0.2em] text-[var(--muted)] uppercase mt-1.5 leading-none">
                         DAILY
                       </span>
                     </div>
@@ -544,7 +547,7 @@ export function TrackerApp() {
                     </Button>
                   </div>
 
-                  {/* Rest Section (Exact Match to Images) */}
+                  {/* Rest Section */}
                   {restingHabitsForDay.length > 0 && (
                     <div className="pt-2 space-y-1 text-xs text-[var(--muted)]">
                       <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5">REST</span>
