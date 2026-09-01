@@ -73,7 +73,6 @@ export function HabitMatrix({
     return days.filter((d) => !isFuture(d) || format(d, "yyyy-MM-dd") >= todayIso);
   }, [days, hidePast, todayIso]);
 
-  // تعديل الجدول أو تجميده للشهر الحالي فقط
   const handleScheduleChange = (habit: Habit, value: string) => {
     if (value === "paused") {
       setScheduleForMonth(habit.id, selectedYear, selectedMonth, null);
@@ -114,7 +113,7 @@ export function HabitMatrix({
       <div className="mb-6">
         <h2 className="font-serif-title text-2xl font-normal tracking-tight text-[var(--fg)]">Matrix</h2>
         <p className="mt-1 text-xs text-[var(--muted)]">
-          Dashes are rest days. Use the pause button to skip a habit for the current month without deleting it.
+          Dashes are rest days. Use the action buttons on the right to toggle Rest, Pause for this month, Archive, or Delete.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -183,7 +182,7 @@ export function HabitMatrix({
                   </div>
                 </th>
               ))}
-              <th className="min-w-[100px] px-2 text-center font-normal">Actions</th>
+              <th className="min-w-[110px] px-3 text-center font-normal">Actions</th>
             </tr>
           </thead>
 
@@ -199,6 +198,7 @@ export function HabitMatrix({
                 const schedule = scheduleForMonth(habit, selectedYear, selectedMonth);
                 const isPausedThisMonth = schedule === null;
                 const currentScheduleValue = getSelectedScheduleValue(schedule);
+                const isTodayRest = isRestDay(habit, todayIso);
 
                 return (
                   <tr
@@ -252,12 +252,45 @@ export function HabitMatrix({
                       const isPast = iso < todayIso;
                       const isCurrentToday = iso === todayIso;
 
-                      // إذا كانت العادة مجمدة للشهر الحالي أو يوم غير مجدول
-                      if (isPausedThisMonth || isRest || !expected) {
+                      // حالة التجميد للشهر
+                      if (isPausedThisMonth) {
                         return (
                           <td key={iso} className="px-1 text-center">
                             <div
-                              title={isPausedThisMonth ? "Paused for this month" : isRest ? "Rest day" : "Not scheduled on this day"}
+                              title="Paused for this month"
+                              className="flex size-7 items-center justify-center text-xs text-[var(--muted)]/20 select-none"
+                            >
+                              —
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // حالة الـ Rest Day (الضغط عليها يلغي الـ Rest مباشرة)
+                      if (isRest) {
+                        return (
+                          <td key={iso} className="px-1 text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRestDay(habit.id, iso, false);
+                                toast.info(`Activated "${habit.name}" for ${iso}`);
+                              }}
+                              title="Rest day (Click to activate)"
+                              className="flex size-7 items-center justify-center rounded-lg text-xs font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 hover:bg-amber-400/20 transition-all cursor-pointer"
+                            >
+                              —
+                            </button>
+                          </td>
+                        );
+                      }
+
+                      // يوم غير مجدول في الأسبوع
+                      if (!expected) {
+                        return (
+                          <td key={iso} className="px-1 text-center">
+                            <div
+                              title="Unscheduled day"
                               className="flex size-7 items-center justify-center text-xs text-[var(--muted)]/30 select-none"
                             >
                               —
@@ -266,6 +299,7 @@ export function HabitMatrix({
                         );
                       }
 
+                      // خلية عادية
                       return (
                         <td key={iso} className="px-1 text-center">
                           <button
@@ -291,10 +325,10 @@ export function HabitMatrix({
                       );
                     })}
 
-                    {/* Actions Column */}
-                    <td className="px-2 text-center">
-                      <div className="flex items-center justify-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                        {/* Pause/Resume for this month toggle */}
+                    {/* 4 Action Buttons on the Right */}
+                    <td className="px-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                        {/* 1. Pause / Resume Month */}
                         <button
                           type="button"
                           onClick={() => {
@@ -306,29 +340,40 @@ export function HabitMatrix({
                               toast.info(`Paused "${habit.name}" for this month`);
                             }
                           }}
-                          title={isPausedThisMonth ? "Resume this month" : "Pause for this month"}
+                          title={isPausedThisMonth ? "Resume for this month" : "Pause for this month"}
                           className={cn(
-                            "flex size-7 items-center justify-center rounded-lg transition-colors cursor-pointer",
+                            "flex size-7 items-center justify-center rounded-lg border transition-colors cursor-pointer",
                             isPausedThisMonth
-                              ? "text-amber-400 bg-amber-400/10 hover:bg-amber-400/20"
-                              : "text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)]"
+                              ? "border-amber-500/40 text-amber-400 bg-amber-400/10 hover:bg-amber-400/20"
+                              : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
                           )}
                         >
                           {isPausedThisMonth ? <PlayCircle className="size-3.5" /> : <PauseCircle className="size-3.5" />}
                         </button>
 
+                        {/* 2. Toggle Rest Day for Today */}
                         <button
                           type="button"
                           onClick={() => {
-                            setRestDay(habit.id, todayIso, true);
-                            toast.info(`Set rest for "${habit.name}" today`);
+                            setRestDay(habit.id, todayIso, !isTodayRest);
+                            if (isTodayRest) {
+                              toast.info(`Activated "${habit.name}" for today`);
+                            } else {
+                              toast.success(`Set rest day for "${habit.name}" today`);
+                            }
                           }}
-                          title="Rest Today"
-                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] cursor-pointer"
+                          title={isTodayRest ? "Cancel Today's Rest" : "Set Rest Today"}
+                          className={cn(
+                            "flex size-7 items-center justify-center rounded-lg border transition-colors cursor-pointer",
+                            isTodayRest
+                              ? "border-amber-400/50 text-amber-400 bg-amber-400/15"
+                              : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
+                          )}
                         >
                           <CalendarOff className="size-3.5" />
                         </button>
 
+                        {/* 3. Archive Habit */}
                         <button
                           type="button"
                           onClick={() => {
@@ -336,11 +381,12 @@ export function HabitMatrix({
                             toast.success(`Archived "${habit.name}"`);
                           }}
                           title="Archive Habit"
-                          className="flex size-7 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] cursor-pointer"
+                          className="flex size-7 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] hover:border-[var(--muted)] transition-colors cursor-pointer"
                         >
                           <Archive className="size-3.5" />
                         </button>
 
+                        {/* 4. Delete Habit */}
                         <button
                           type="button"
                           onClick={() => {
@@ -348,7 +394,7 @@ export function HabitMatrix({
                             toast.error(`Deleted "${habit.name}"`);
                           }}
                           title="Delete Habit"
-                          className="flex size-7 items-center justify-center rounded-lg text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                          className="flex size-7 items-center justify-center rounded-lg border border-[var(--border)] text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-colors cursor-pointer"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
