@@ -20,9 +20,8 @@ type EngineType = "gb" | "rf" | "lr";
 export function MlPanel({ habits, completions }: MlPanelProps) {
   const [testDate, setTestDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [engine, setEngine] = useState<EngineType>("gb");
-  const [threshold, setThreshold] = useState<number>(60);
   
-  // إعدادات الـ Confidence Classes
+  // إعدادات الـ Prediction Classes (High/Medium/Low)
   const [showConfSettings, setShowConfSettings] = useState(false);
   const [mediumStart, setMediumStart] = useState<number>(60);
   const [highStart, setHighStart] = useState<number>(80);
@@ -85,7 +84,6 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
           habit,
           isRest: true,
           probability: 0,
-          prediction: false,
           actual: Boolean(completions[`${habit.id}_${testDate}`] || completions[`${habit.id}|${testDate}`]),
           reason: "Unscheduled or explicit rest day.",
           history7,
@@ -135,26 +133,25 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
         habit,
         isRest: false,
         probability: prob,
-        prediction: prob >= threshold,
         actual: Boolean(completions[`${habit.id}_${testDate}`] || completions[`${habit.id}|${testDate}`]),
         reason,
         history7,
         trend
       };
     });
-  }, [habits, completions, restDays, testDate, engine, threshold]);
+  }, [habits, completions, restDays, testDate, engine]);
 
-  const renderConfidenceBadge = (prob: number) => {
+  // دالة رسم بادجات التوقع (High/Medium/Low)
+  const renderPredictionBadge = (prob: number) => {
     if (prob >= highStart) {
-      return <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase">High</span>;
+      return <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase">High</span>;
     }
     if (prob >= mediumStart) {
-      return <span className="bg-lime-500/15 text-lime-400 border border-lime-500/30 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase">Medium</span>;
+      return <span className="bg-lime-500/15 text-lime-400 border border-lime-500/30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase">Medium</span>;
     }
-    return <span className="bg-rose-500/15 text-rose-400 border border-rose-500/30 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase">Low</span>;
+    return <span className="bg-rose-500/15 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase">Low</span>;
   };
 
-  // بيانات الموديلات للمقارنة (Histogram)
   const modelPerformanceData = [
     { name: "Gradient Boosting", Accuracy: 89.4, F1_Score: 87.0 },
     { name: "Random Forest", Accuracy: 84.8, F1_Score: 83.0 },
@@ -202,37 +199,24 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
             </NativeSelect>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">Prediction Threshold (%)</label>
-            <input
-              type="number"
-              value={threshold}
-              onChange={(e) => setThreshold(Number(e.target.value))}
-              min={1}
-              max={99}
-              className="h-10 w-24 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] text-center"
-            />
-          </div>
-
-          {/* زر فتح إعدادات الـ Confidence */}
           <Button
             variant="outline"
             onClick={() => setShowConfSettings(true)}
             className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)] hover:bg-[var(--surface-elevated)] cursor-pointer"
           >
             <SlidersHorizontal className="mr-2 size-4 text-[var(--primary)]" />
-            Confidence Ranges
+            Prediction Ranges
           </Button>
         </div>
       </div>
 
-      {/* نافذة تعديل الـ Confidence Thresholds */}
+      {/* Settings Dialog for Prediction Classes */}
       <Dialog open={showConfSettings} onOpenChange={setShowConfSettings}>
         <DialogContent className="max-w-sm rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--fg)] shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="font-serif-title text-2xl font-normal text-[var(--fg)]">Confidence Ranges</DialogTitle>
+            <DialogTitle className="font-serif-title text-2xl font-normal text-[var(--fg)]">Prediction Ranges</DialogTitle>
             <DialogDescription className="text-xs text-[var(--muted)]">
-              Define the percentage boundaries for the Low, Medium, and High probability badges.
+              Define the probability boundaries for the Low, Medium, and High prediction classes.
             </DialogDescription>
           </DialogHeader>
 
@@ -281,13 +265,12 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
         </DialogContent>
       </Dialog>
 
-      {/* 2. Interactive Predictions Table (Accordion Style) */}
+      {/* 2. Interactive Predictions Table */}
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden">
         <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-[var(--border)] bg-[var(--surface-elevated)]/50">
-          <div className="col-span-4 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Habit</div>
-          <div className="col-span-2 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider text-center">Prediction</div>
+          <div className="col-span-5 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Habit</div>
+          <div className="col-span-3 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider text-center">Prediction</div>
           <div className="col-span-2 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider text-center">Probability</div>
-          <div className="col-span-2 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider text-center">Confidence</div>
           <div className="col-span-1 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider text-center">Actual</div>
           <div className="col-span-1"></div>
         </div>
@@ -298,35 +281,25 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
 
             return (
               <div key={p.habit.id} className="flex flex-col transition-colors hover:bg-[var(--surface-elevated)]/30">
-                {/* Main Row (Clickable) */}
+                {/* Main Row */}
                 <div 
                   onClick={() => setExpandedHabitId(isExpanded ? null : p.habit.id)}
                   className="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer"
                 >
-                  <div className="col-span-4 font-semibold text-xs text-[var(--fg)] truncate pr-2">
+                  <div className="col-span-5 font-semibold text-xs text-[var(--fg)] truncate pr-2">
                     {p.habit.name}
                   </div>
                   
-                  <div className="col-span-2 flex justify-center">
+                  <div className="col-span-3 flex justify-center items-center">
                     {p.isRest ? (
-                      <span className="text-[11px] font-medium text-[var(--muted)] px-2 py-1 rounded bg-[var(--surface-pill)]">Rest</span>
-                    ) : p.prediction ? (
-                      <span className="text-[11px] font-bold text-emerald-400">Yes</span>
+                      <span className="text-[11px] font-medium text-[var(--muted)] px-3 py-1.5 rounded-md bg-[var(--surface-pill)] border border-transparent">Rest</span>
                     ) : (
-                      <span className="text-[11px] font-bold text-rose-400">No</span>
+                      renderPredictionBadge(p.probability)
                     )}
                   </div>
 
                   <div className="col-span-2 text-center font-mono text-[11px] font-medium text-[var(--fg)]">
                     {p.isRest ? "0%" : `${p.probability}%`}
-                  </div>
-
-                  <div className="col-span-2 flex justify-center items-center">
-                    {p.isRest ? (
-                      <span className="text-[10px] text-[var(--muted)]">-</span>
-                    ) : (
-                      renderConfidenceBadge(p.probability)
-                    )}
                   </div>
 
                   <div className="col-span-1 flex justify-center">
@@ -434,7 +407,6 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
           </div>
         </div>
         
-        {/* The 3 Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className={cn("rounded-2xl p-5 border transition-all", engine === "gb" ? "bg-[var(--primary-muted)]/30 border-[var(--primary)] shadow-sm" : "bg-[var(--surface-elevated)] border-[var(--border)]")}>
             <div className="flex items-center justify-between mb-2">
@@ -467,7 +439,6 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
           </div>
         </div>
 
-        {/* Recharts Bar Chart (Histogram) */}
         <div className="h-72 w-full mt-4 bg-[var(--surface-elevated)]/30 rounded-2xl p-4 pt-6 border border-[var(--border)]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={modelPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -480,9 +451,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
               />
               <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', color: 'var(--muted)' }} />
               
-              {/* شريط الدقة */}
               <Bar dataKey="Accuracy" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={50} />
-              {/* شريط الـ F1 Score (مضروب في 100 ليتناسب مع المحور) */}
               <Bar dataKey="F1_Score" name="F1 Score (Scaled)" fill="var(--primary-muted)" radius={[4, 4, 0, 0]} maxBarSize={50} />
             </BarChart>
           </ResponsiveContainer>
