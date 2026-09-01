@@ -70,17 +70,18 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
+  // Radar Data - تكبير القطر وتصغير النقاط لملء المساحة
   const radarData = useMemo(() => {
     const list = habitsBreakdown.slice(0, 6);
     const total = Math.max(3, list.length);
-    const viewBoxSize = fullScreen ? 400 : 220;
+    const viewBoxSize = fullScreen ? 400 : 280;
     const center = viewBoxSize / 2;
-    const maxRadius = fullScreen ? 130 : 60;
-    const labelRadius = fullScreen ? 165 : 85;
+    const maxRadius = fullScreen ? 145 : 95;
+    const labelRadius = fullScreen ? 175 : 120;
 
     const points = list.map((item, i) => {
       const angle = ((Math.PI * 2) / total) * i - Math.PI / 2;
-      const score = Math.max(0.15, Math.min(1, (item.rate || 10) / 100));
+      const score = Math.max(0.18, Math.min(1, (item.rate || 10) / 100));
 
       const r = maxRadius * score;
       const x = center + r * Math.cos(angle);
@@ -121,7 +122,7 @@ export function AnalyticsPanel() {
     };
   }, [habitsBreakdown, fullScreen]);
 
-  // Confusion / Correlation Matrix Calculation
+  // Confusion / Correlation Matrix
   const correlationMatrix = useMemo(() => {
     const topHabits = habits.slice(0, 8);
     const size = topHabits.length;
@@ -199,7 +200,7 @@ export function AnalyticsPanel() {
         <span className="font-semibold text-[var(--fg)]">Insight.</span> Highest weekday is typically <strong className="text-[var(--fg)]">Thu</strong> (86% hit rate). Weakest recurring habit: <strong className="text-[var(--fg)]">Deep work 90m</strong> (70%).
       </div>
 
-      {/* 4 KPI Cards (Hidden in fullScreen) */}
+      {/* 4 KPI Cards */}
       {!fullScreen && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
@@ -254,7 +255,7 @@ export function AnalyticsPanel() {
         </div>
       )}
 
-      {/* 2x2 Grid Layout (Stacked vertically when in fullScreen) */}
+      {/* 2x2 Core Visualizations Grid */}
       <div className={cn("grid gap-6 transition-all duration-300", fullScreen ? "grid-cols-1" : "lg:grid-cols-2")}>
         {/* 1. Daily Execution (Top Left) */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
@@ -337,15 +338,15 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 3. Mastery Radar (Bottom Left) */}
+        {/* 3. Mastery Radar (Bottom Left - Max Size & Fine Dots) */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
             <span className="text-[10px] text-[var(--muted)]">Coverage</span>
           </div>
 
           <div className={cn("relative my-auto flex items-center justify-center py-2", fullScreen && "h-[45vh]")}>
-            <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className={cn("size-52 overflow-visible", fullScreen && "size-[80%]")}>
+            <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className="w-full max-w-[280px] aspect-square overflow-visible">
               {radarData.webLevels.map((poly, idx) => (
                 <polygon
                   key={idx}
@@ -375,13 +376,14 @@ export function AnalyticsPanel() {
                   points={radarData.polygonPath}
                   fill="var(--primary-muted)"
                   stroke="var(--primary)"
-                  strokeWidth="1.8"
+                  strokeWidth="1.5"
                   className="transition-all duration-500"
                 />
               )}
 
+              {/* دوت صغيرة وأنيقة */}
               {radarData.points.map((p, idx) => (
-                <circle key={idx} cx={p.x} cy={p.y} r="3" fill="var(--primary)" className="transition-all duration-500" />
+                <circle key={idx} cx={p.x} cy={p.y} r="2" fill="var(--primary)" className="transition-all duration-500" />
               ))}
 
               {radarData.points.map((p, idx) => (
@@ -391,9 +393,9 @@ export function AnalyticsPanel() {
                   y={p.labelY}
                   textAnchor={p.textAnchor}
                   dominantBaseline="central"
-                  className={cn("fill-[var(--fg)] text-[9.5px] font-medium select-none", fullScreen && "text-[12px] font-semibold")}
+                  className={cn("fill-[var(--fg)] text-[10px] font-medium select-none", fullScreen && "text-[12px] font-semibold")}
                 >
-                  {p.name.length > 11 ? `${p.name.slice(0, 10)}..` : p.name}
+                  {p.name.length > 13 ? `${p.name.slice(0, 11)}..` : p.name}
                 </text>
               ))}
             </svg>
