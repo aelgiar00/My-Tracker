@@ -12,9 +12,10 @@ interface TodayPanelProps {
 }
 
 function getHabitSpecs(habit: Habit) {
-  const durationMinutes = typeof habit.durationMinutes === "number" && habit.durationMinutes > 0
-    ? habit.durationMinutes
-    : 30;
+  const durationMinutes =
+    typeof habit.durationMinutes === "number" && habit.durationMinutes > 0
+      ? habit.durationMinutes
+      : 30;
 
   const isCritical = habit.priority === "critical";
 
@@ -62,20 +63,22 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const habitPredictions = useMemo(() => {
     let accumulatedTime = 0;
 
-    const mapped = todayHabits.map((habit) => {
-      const specs = getHabitSpecs(habit);
-      const isDone = Boolean(completions[completionKey(habit.id, todayIso)]);
+    const mapped = todayHabits
+      .map((habit) => {
+        const specs = getHabitSpecs(habit);
+        const isDone = Boolean(completions[completionKey(habit.id, todayIso)]);
 
-      let streakCount = 0;
-      for (let i = 1; i <= 7; i++) {
-        const d = new Date(todayDate);
-        d.setDate(d.getDate() - i);
-        const iso = format(d, "yyyy-MM-dd");
-        if (completions[completionKey(habit.id, iso)]) streakCount++;
-      }
+        let streakCount = 0;
+        for (let i = 1; i <= 7; i++) {
+          const d = new Date(todayDate);
+          d.setDate(d.getDate() - i);
+          const iso = format(d, "yyyy-MM-dd");
+          if (completions[completionKey(habit.id, iso)]) streakCount++;
+        }
 
-      return { habit, specs, isDone, streakCount };
-    }).sort((a, b) => a.specs.priority - b.specs.priority || a.specs.durationMinutes - b.specs.durationMinutes);
+        return { habit, specs, isDone, streakCount };
+      })
+      .sort((a, b) => a.specs.priority - b.specs.priority || a.specs.durationMinutes - b.specs.durationMinutes);
 
     return mapped.map((item, index) => {
       if (item.isDone) {
@@ -92,10 +95,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
 
       let score = Math.round(
         readinessScore * 0.45 +
-        (1 - item.specs.baseFriction) * 35 +
-        (item.streakCount * 4) +
-        (item.specs.durationMinutes <= 30 ? 12 : item.specs.durationMinutes <= 60 ? 4 : -8) -
-        (index * 3)
+          (1 - item.specs.baseFriction) * 35 +
+          item.streakCount * 4 +
+          (item.specs.durationMinutes <= 30 ? 12 : item.specs.durationMinutes <= 60 ? 4 : -8) -
+          index * 3
       );
 
       if (!fitsInTime) {
@@ -109,13 +112,20 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         chance: finalChance,
         feasible: fitsInTime,
         statusLabel: fitsInTime
-          ? finalChance >= 85 ? "High Confidence" : "Time Feasible"
+          ? finalChance >= 85
+            ? "High Confidence"
+            : "Time Feasible"
           : "Time Constrained",
       };
     });
   }, [todayHabits, availableMinutes, completions, todayIso, readinessScore, todayDate]);
 
   const nonNegotiables = habitPredictions.filter((h) => h.specs.priority === 1);
+
+  // حساب نسب التعبئة للسلايدرز
+  const sleepPercent = ((sleepHours - 4) / (12 - 4)) * 100;
+  const collegePercent = (collegeHours / 10) * 100;
+  const workPercent = (workHours / 12) * 100;
 
   return (
     <div className="flex flex-col gap-4 text-left font-sans">
@@ -136,7 +146,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       </div>
 
-      {/* Sliders with Explicit Scale Ticks (Min to Max) */}
+      {/* Sliders with Colored Active Fill Track */}
       <div className="grid grid-cols-3 gap-2">
         {/* Sleep Slider */}
         <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
@@ -152,7 +162,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
               step="1"
               value={sleepHours}
               onChange={(e) => setSleepHours(Number(e.target.value))}
-              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${sleepPercent}%, var(--surface-pill) ${sleepPercent}%, var(--surface-pill) 100%)`,
+              }}
+              className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
           </div>
           <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
@@ -176,7 +189,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
               step="1"
               value={collegeHours}
               onChange={(e) => setCollegeHours(Number(e.target.value))}
-              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${collegePercent}%, var(--surface-pill) ${collegePercent}%, var(--surface-pill) 100%)`,
+              }}
+              className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
           </div>
           <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
@@ -200,7 +216,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
               step="1"
               value={workHours}
               onChange={(e) => setWorkHours(Number(e.target.value))}
-              className="h-1.5 w-full appearance-none rounded-lg bg-[var(--surface-pill)] border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${workPercent}%, var(--surface-pill) ${workPercent}%, var(--surface-pill) 100%)`,
+              }}
+              className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
           </div>
           <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
@@ -213,7 +232,9 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
 
       {/* Available Time Summary */}
       <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5">
-        <span>Net Available: <strong className="text-[var(--fg)] font-mono text-sm">{availableHours}h</strong></span>
+        <span>
+          Net Available: <strong className="text-[var(--fg)] font-mono text-sm">{availableHours}h</strong>
+        </span>
         <button
           type="button"
           onClick={() => setShowDetails(!showDetails)}
@@ -234,7 +255,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
           ) : (
             <ul className="space-y-1.5 text-[11px] text-[var(--fg)]">
               {nonNegotiables.map(({ habit, specs }) => (
-                <li key={habit.id} className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1.5 last:border-0 last:pb-0">
+                <li
+                  key={habit.id}
+                  className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1.5 last:border-0 last:pb-0"
+                >
                   <span className="truncate max-w-[140px] font-medium">• {habit.name}</span>
                   <span className="text-[9.5px] font-mono text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded-md border border-[var(--primary)]/20 font-semibold">
                     {specs.durationLabel}
