@@ -31,6 +31,9 @@ export function isSingleDay(schedule: Schedule): boolean {
   if (schedule.type === "preset") {
     return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].includes(schedule.id);
   }
+  if (schedule.type === "only" || schedule.type === "monthlyDate") {
+    return true;
+  }
   return false;
 }
 
@@ -46,6 +49,31 @@ export function isDayExpected(schedule: Schedule, date: Date): boolean {
   if (!schedule) return false;
   const day = date.getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
 
+  // 1. المستهدف الشهري بالعدد (مثلاً 20 مرة في الشهر) - متاح للتسجيل في كل أيام الشهر
+  if (schedule.type === "monthlyTarget") {
+    return true;
+  }
+
+  // 2. يوم محدد في الشهر
+  if (schedule.type === "monthlyDate") {
+    return date.getDate() === schedule.day;
+  }
+
+  if (schedule.type === "only") {
+    return date.getDate() === schedule.day;
+  }
+
+  // 3. أيام الأسبوع المخصصة
+  if (schedule.type === "custom") {
+    const monIdx = mondayIndex(date);
+    return schedule.days.includes(monIdx as any);
+  }
+
+  if (schedule.type === "weekly") {
+    return schedule.days.includes(day);
+  }
+
+  // 4. القوالب الجاهزة (Presets)
   if (schedule.type === "preset") {
     switch (schedule.id) {
       case "daily":
@@ -75,10 +103,6 @@ export function isDayExpected(schedule: Schedule, date: Date): boolean {
       default:
         return true;
     }
-  }
-
-  if (schedule.type === "weekly") {
-    return schedule.days.includes(day);
   }
 
   return true;
