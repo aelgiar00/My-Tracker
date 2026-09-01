@@ -44,7 +44,6 @@ export function TrackerApp() {
   const [session, setSession] = useState<any>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // اختيار اليوم المراد تفقده في الكارت السفلي (الافتراضي هو اليوم)
   const [selectedInspectDate, setSelectedInspectDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [newCustomTask, setNewCustomTask] = useState("");
 
@@ -158,7 +157,7 @@ export function TrackerApp() {
 
   const years = Array.from({ length: 8 }, (_, i) => 2025 + i);
 
-  // حساب مهام وعادات اليوم المختار للكارت السفلي
+  // حساب مهام وعادات اليوم المختار
   const inspectDateObj = parseISO(selectedInspectDate);
   const activeHabitsForDay = useMemo(() => {
     return habits
@@ -338,206 +337,198 @@ export function TrackerApp() {
         </div>
       </div>
 
-      {/* Main Views */}
-      <main className="space-y-6">
+      {/* Main Content Area */}
+      <main>
+        {/* Daily View: Side-by-Side (AI Coach on Left + Daily Checklist Card on Right) */}
         {mainTab === "daily" && (
-          <div className="space-y-6">
-            {/* 1. Top Section: AI Coach on Left + Matrix on Right */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
-              <section className="min-w-0">
-                <div className="rounded-3xl border border-blue-500/25 bg-[var(--surface)] p-5 shadow-xl">
-                  <TodayPanel habits={habits} stats={stats} todayDate={today} />
-                </div>
-              </section>
-
-              <section className="min-w-0">
-                <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl">
-                  <HabitMatrix
-                    habits={habits}
-                    days={activeDays}
-                    todayIso={isoDate(today)}
-                    hidePast={hidePast}
-                    daysInMonth={daysInMonth}
-                    selectedYear={selectedYear}
-                    selectedMonth={selectedMonth}
-                  />
-                </div>
-              </section>
-            </div>
-
-            {/* 2. Bottom Blank Space Filled: Daily Interactive Checklist & Tasks */}
-            <section className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl">
-              {/* Day Selector Pills Header */}
-              <div className="grid grid-cols-7 gap-2 pb-6 border-b border-[var(--border)]">
-                {weekDaysList.map((d) => {
-                  const dIso = format(d, "yyyy-MM-dd");
-                  const isSelected = dIso === selectedInspectDate;
-                  return (
-                    <button
-                      key={dIso}
-                      type="button"
-                      onClick={() => setSelectedInspectDate(dIso)}
-                      className={cn(
-                        "flex flex-col items-center justify-center rounded-2xl py-2.5 border transition-all cursor-pointer",
-                        isSelected
-                          ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--fg)] shadow-xs"
-                          : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)]"
-                      )}
-                    >
-                      <span className="text-[10px] uppercase">{format(d, "EEE")}</span>
-                      <span className="text-sm font-bold mt-0.5">{format(d, "d")}</span>
-                    </button>
-                  );
-                })}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
+            {/* 1. Left Column: Personal AI Coach */}
+            <section className="min-w-0">
+              <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-xl">
+                <TodayPanel habits={habits} stats={stats} todayDate={today} />
               </div>
+            </section>
 
-              {/* Day Status & Radial Score */}
-              <div className="flex items-center justify-between py-6 border-b border-[var(--border)]">
-                <div>
-                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">
-                    {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
-                  </span>
-                  <h3 className="font-serif-title text-2xl font-bold text-[var(--fg)] mt-0.5">
-                    {format(inspectDateObj, "d EEE")}
-                  </h3>
-                  <p className="text-xs text-[var(--muted)] mt-1">
-                    {inspectDayDoneCount === activeHabitsForDay.length && activeHabitsForDay.length > 0
-                      ? "All scheduled habits completed for this day!"
-                      : `${activeHabitsForDay.length - inspectDayDoneCount} habits remaining to check off.`}
-                  </p>
-                </div>
-
-                <div className="flex size-16 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary-muted)] text-center">
-                  <div>
-                    <span className="text-base font-bold text-[var(--fg)] font-serif-title block leading-none">
-                      {inspectDayScore}%
-                    </span>
-                    <span className="text-[9px] text-[var(--muted)] uppercase font-semibold">DAILY</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Scheduled Habits Check List */}
-              <div className="py-4 space-y-2.5">
-                {activeHabitsForDay.length === 0 ? (
-                  <p className="text-xs text-[var(--muted)] py-3">No habits scheduled on this day.</p>
-                ) : (
-                  activeHabitsForDay.map((h) => {
-                    const isDone = Boolean(completions[completionKey(h.id, selectedInspectDate)]);
+            {/* 2. Right Column: Daily Performance & Interactive Checklist Card */}
+            <section className="min-w-0">
+              <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl space-y-6">
+                {/* Day Selector Pills Bar */}
+                <div className="grid grid-cols-7 gap-2 pb-5 border-b border-[var(--border)]">
+                  {weekDaysList.map((d) => {
+                    const dIso = format(d, "yyyy-MM-dd");
+                    const isSelected = dIso === selectedInspectDate;
                     return (
-                      <div
-                        key={h.id}
-                        onClick={() => toggleCompletion(h.id, selectedInspectDate)}
+                      <button
+                        key={dIso}
+                        type="button"
+                        onClick={() => setSelectedInspectDate(dIso)}
                         className={cn(
-                          "flex items-center justify-between rounded-2xl p-4 border transition-all cursor-pointer",
-                          isDone
-                            ? "border-[var(--primary)]/40 bg-[var(--primary-muted)]/20"
-                            : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
+                          "flex flex-col items-center justify-center rounded-2xl py-2.5 border transition-all cursor-pointer",
+                          isSelected
+                            ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--fg)] font-semibold shadow-xs"
+                            : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)]"
                         )}
                       >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "flex size-5 items-center justify-center rounded-lg border transition-colors",
-                              isDone
-                                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                                : "border-[var(--border)] bg-transparent"
-                            )}
-                          >
-                            {isDone && <Check className="size-3.5 stroke-[3]" />}
-                          </div>
-                          <div>
-                            <p className={cn("text-xs font-semibold", isDone && "line-through opacity-70")}>{h.name}</p>
-                            <span className="text-[10px] text-[var(--muted)] capitalize">{h.schedule.type}</span>
+                        <span className="text-[10px] uppercase font-mono">{format(d, "EEE")}</span>
+                        <span className="text-sm font-bold mt-0.5">{format(d, "d")}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Day Header with Radial Score */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
+                    </span>
+                    <h3 className="font-serif-title text-3xl font-bold text-[var(--fg)] mt-0.5">
+                      {format(inspectDateObj, "d EEE")}
+                    </h3>
+                    <p className="text-xs text-[var(--muted)] mt-1">
+                      {inspectDayDoneCount === activeHabitsForDay.length && activeHabitsForDay.length > 0
+                        ? "All scheduled habits completed for this day!"
+                        : `${activeHabitsForDay.length - inspectDayDoneCount} habits remaining to check off.`}
+                    </p>
+                  </div>
+
+                  <div className="flex size-16 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary-muted)] text-center">
+                    <div>
+                      <span className="text-base font-bold text-[var(--fg)] font-serif-title block leading-none">
+                        {inspectDayScore}%
+                      </span>
+                      <span className="text-[9px] text-[var(--muted)] uppercase font-semibold">DAILY</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scheduled Habit Cards */}
+                <div className="space-y-2.5">
+                  {activeHabitsForDay.length === 0 ? (
+                    <p className="text-xs text-[var(--muted)] py-4 text-center">No habits scheduled on this day.</p>
+                  ) : (
+                    activeHabitsForDay.map((h) => {
+                      const isDone = Boolean(completions[completionKey(h.id, selectedInspectDate)]);
+                      return (
+                        <div
+                          key={h.id}
+                          onClick={() => toggleCompletion(h.id, selectedInspectDate)}
+                          className={cn(
+                            "flex items-center justify-between rounded-2xl p-4 border transition-all cursor-pointer",
+                            isDone
+                              ? "border-[var(--primary)]/40 bg-[var(--primary-muted)]/20 shadow-xs"
+                              : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
+                          )}
+                        >
+                          <div className="flex items-center gap-3.5">
+                            <div
+                              className={cn(
+                                "flex size-5 items-center justify-center rounded-lg border transition-colors",
+                                isDone
+                                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                                  : "border-[var(--border)] bg-transparent"
+                              )}
+                            >
+                              {isDone && <Check className="size-3.5 stroke-[3]" />}
+                            </div>
+                            <div>
+                              <p className={cn("text-xs font-semibold text-[var(--fg)]", isDone && "line-through opacity-70")}>
+                                {h.name}
+                              </p>
+                              <span className="text-[10px] text-[var(--muted)] capitalize">
+                                {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+                      );
+                    })
+                  )}
+                </div>
 
-              {/* One-off Tasks Section */}
-              <div className="pt-4 border-t border-[var(--border)] space-y-3">
-                <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
-                  ONE-OFF TASKS
-                </span>
+                {/* One-off Tasks Section */}
+                <div className="pt-4 border-t border-[var(--border)] space-y-3">
+                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
+                    ONE-OFF TASKS
+                  </span>
 
-                {currentDayTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)]"
-                  >
+                  {currentDayTasks.map((task) => (
                     <div
-                      onClick={() => toggleTask(selectedInspectDate, task.id)}
-                      className="flex items-center gap-3 cursor-pointer flex-1"
+                      key={task.id}
+                      className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)]"
                     >
                       <div
-                        className={cn(
-                          "flex size-4 items-center justify-center rounded-md border",
-                          task.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-[var(--border)]"
-                        )}
+                        onClick={() => toggleTask(selectedInspectDate, task.id)}
+                        className="flex items-center gap-3 cursor-pointer flex-1"
                       >
-                        {task.done && <Check className="size-3 stroke-[3]" />}
+                        <div
+                          className={cn(
+                            "flex size-4 items-center justify-center rounded-md border",
+                            task.done ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]" : "border-[var(--border)]"
+                          )}
+                        >
+                          {task.done && <Check className="size-3 stroke-[3]" />}
+                        </div>
+                        <span className={cn("text-xs text-[var(--fg)]", task.done && "line-through text-[var(--muted)]")}>
+                          {task.name}
+                        </span>
                       </div>
-                      <span className={cn("text-xs text-[var(--fg)]", task.done && "line-through text-[var(--muted)]")}>
-                        {task.name}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => deleteTask(selectedInspectDate, task.id)}
+                        className="text-[var(--muted)] hover:text-rose-400 p-1 cursor-pointer"
+                      >
+                        <X className="size-3.5" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => deleteTask(selectedInspectDate, task.id)}
-                      className="text-[var(--muted)] hover:text-rose-400 p-1"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-                ))}
+                  ))}
 
-                {/* Add task input */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Add a task for this day..."
-                    value={newCustomTask}
-                    onChange={(e) => setNewCustomTask(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && newCustomTask.trim()) {
-                        addTask(selectedInspectDate, newCustomTask.trim());
-                        setNewCustomTask("");
-                      }
-                    }}
-                    className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
-                  />
+                  {/* Add Task Input */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Add a task for this day..."
+                      value={newCustomTask}
+                      onChange={(e) => setNewCustomTask(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && newCustomTask.trim()) {
+                          addTask(selectedInspectDate, newCustomTask.trim());
+                          setNewCustomTask("");
+                        }
+                      }}
+                      className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (newCustomTask.trim()) {
+                          addTask(selectedInspectDate, newCustomTask.trim());
+                          setNewCustomTask("");
+                        }
+                      }}
+                      className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
+                    >
+                      <Plus className="size-4" />
+                    </Button>
+                  </div>
+
                   <Button
                     type="button"
                     onClick={() => {
-                      if (newCustomTask.trim()) {
-                        addTask(selectedInspectDate, newCustomTask.trim());
-                        setNewCustomTask("");
-                      }
+                      markAllToday(selectedInspectDate, true);
+                      toast.success("Completed all habits for this day!");
                     }}
-                    className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)]"
+                    className="mt-4 h-11 w-full rounded-2xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
                   >
-                    <Plus className="size-4" />
+                    Complete this day
                   </Button>
                 </div>
-
-                <Button
-                  type="button"
-                  onClick={() => {
-                    markAllToday(selectedInspectDate, true);
-                    toast.success("Completed all habits for this day!");
-                  }}
-                  className="mt-4 h-11 w-full rounded-2xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90"
-                >
-                  Complete this day
-                </Button>
               </div>
             </section>
           </div>
         )}
 
+        {/* Matrix View Tab */}
         {mainTab === "matrix" && (
           <div className="rounded-3xl bg-[var(--surface)] p-6 sm:p-8 border border-[var(--border)] shadow-xl">
             <HabitMatrix
@@ -552,6 +543,7 @@ export function TrackerApp() {
           </div>
         )}
 
+        {/* Stats View Tab */}
         {mainTab === "stats" && (
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-2">
