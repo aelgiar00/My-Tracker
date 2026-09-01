@@ -383,7 +383,7 @@ export function TrackerApp() {
                   })}
                 </div>
 
-                {/* Day Header with High-Definition Luxury Radial Progress Gauge */}
+                {/* Day Header with High-Definition Luxury Radial Progress Gauge (Matching Image 3) */}
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">
@@ -399,31 +399,31 @@ export function TrackerApp() {
                     </p>
                   </div>
 
-                  {/* Luxury Radial Progress Ring */}
+                  {/* Luxury Circular Progress Ring */}
                   <div className="relative flex size-24 items-center justify-center select-none">
                     <svg className="size-full -rotate-90 p-1" viewBox="0 0 88 88">
                       <circle
                         cx="44"
                         cy="44"
-                        r="35"
+                        r="34"
                         stroke="currentColor"
-                        className="text-[var(--surface-pill)] opacity-50"
-                        strokeWidth="5"
+                        className="text-[var(--surface-pill)] opacity-40"
+                        strokeWidth="5.5"
                         fill="none"
                       />
                       {inspectDayScore > 0 && (
                         <circle
                           cx="44"
                           cy="44"
-                          r="35"
+                          r="34"
                           stroke="var(--primary)"
-                          strokeWidth="5"
-                          strokeDasharray={2 * Math.PI * 35}
-                          strokeDashoffset={2 * Math.PI * 35 * (1 - inspectDayScore / 100)}
+                          strokeWidth="5.5"
+                          strokeDasharray={2 * Math.PI * 34}
+                          strokeDashoffset={2 * Math.PI * 34 * (1 - inspectDayScore / 100)}
                           strokeLinecap="round"
                           fill="none"
                           style={{
-                            filter: "drop-shadow(0 0 4px var(--glow))",
+                            filter: "drop-shadow(0 0 5px var(--glow))",
                           }}
                         />
                       )}
@@ -431,12 +431,12 @@ export function TrackerApp() {
 
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
                       <span
-                        className="text-[26px] font-normal tracking-tight text-[var(--fg)] leading-none"
+                        className="text-[26px] font-bold text-[var(--fg)] tracking-tight leading-none"
                         style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
                       >
                         {inspectDayScore}%
                       </span>
-                      <span className="text-[9px] font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-1 leading-none">
+                      <span className="text-[8.5px] font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-1.5 leading-none">
                         DAILY
                       </span>
                     </div>
