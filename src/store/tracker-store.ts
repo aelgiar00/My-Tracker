@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { parseISO } from "date-fns";
-import type { Completion, DailyTask, Habit, Schedule, TrackerSnapshot } from "@/lib/tracker/types";
+import type { Completion, DailyTask, Habit, HabitPriority, Schedule, TrackerSnapshot } from "@/lib/tracker/types";
 import { completionKey, isDayExpected, isRestDay, monthKey, scheduleForMonth } from "@/lib/tracker/schedule";
 
 const UNDO_LIMIT = 30;
@@ -32,8 +32,26 @@ type TrackerState = TrackerSnapshot & {
   setHidePast: (value: boolean) => void;
   setTrackingStart: (iso: string) => void;
   setInspectIso: (iso: string | null) => void;
-  addHabit: (name: string, schedule: Schedule, options?: { monthKey?: string; monthlyOnly?: boolean }) => string;
-  addHabits: (names: string[], schedule?: Schedule, options?: { monthKey?: string; monthlyOnly?: boolean }) => number;
+  addHabit: (
+    name: string,
+    schedule: Schedule,
+    options?: {
+      durationMinutes?: number;
+      priority?: HabitPriority;
+      monthKey?: string;
+      monthlyOnly?: boolean;
+    }
+  ) => string;
+  addHabits: (
+    names: string[],
+    schedule?: Schedule,
+    options?: {
+      durationMinutes?: number;
+      priority?: HabitPriority;
+      monthKey?: string;
+      monthlyOnly?: boolean;
+    }
+  ) => number;
   renameHabit: (id: string, name: string) => void;
   setSchedule: (id: string, schedule: Schedule) => void;
   setScheduleForMonth: (id: string, year: number, month: number, schedule: Schedule | null) => void;
@@ -87,6 +105,8 @@ function parseImported(raw: unknown): TrackerSnapshot | null {
       id: item.id,
       name: item.name,
       schedule: item.schedule as Schedule,
+      durationMinutes: typeof item.durationMinutes === "number" ? item.durationMinutes : 30,
+      priority: item.priority === "critical" ? "critical" : "standard",
       archived: Boolean(item.archived),
       createdAt: typeof item.createdAt === "string" ? item.createdAt : new Date().toISOString(),
       monthOverrides: isRecord(item.monthOverrides) ? (item.monthOverrides as Record<string, Schedule | null>) : undefined,
@@ -125,47 +145,18 @@ function parseImported(raw: unknown): TrackerSnapshot | null {
     habits,
     completions,
     dailyTasks,
-    trackingStart: typeof raw.trackingStart === "string" ? raw.trackingStart : "2026-08-01",
+    trackingStart: typeof raw.trackingStart === "string" ? raw.trackingStart : new Date().toISOString().slice(0, 10),
     hidePast: Boolean(raw.hidePast),
     seeded: true,
   };
 }
 
-// داتا أولية مليانة وجاهزة
-const seedHabits: Habit[] = [
-  { id: "h-pray", name: "Pray", schedule: { type: "preset", id: "daily" }, archived: false, createdAt: new Date().toISOString() },
-  { id: "h-touch", name: "Touch Typing", schedule: { type: "preset", id: "daily" }, archived: false, createdAt: new Date().toISOString() },
-  { id: "h-nti", name: "Nti Notebooks", schedule: { type: "preset", id: "daily" }, archived: false, createdAt: new Date().toISOString() },
-  { id: "h-ml", name: "ML Learning", schedule: { type: "preset", id: "daily" }, archived: false, createdAt: new Date().toISOString() },
-  { id: "h-depi1", name: "Technical Depi 1", schedule: { type: "preset", id: "weekdays" }, archived: false, createdAt: new Date().toISOString() },
-  { id: "h-depi2", name: "Technical Depi 2", schedule: { type: "preset", id: "weekdays" }, archived: false, createdAt: new Date().toISOString() },
-];
-
-const seedCompletions: Record<string, Completion> = {
-  "h-pray|2026-08-25": { at: new Date().toISOString() },
-  "h-pray|2026-08-26": { at: new Date().toISOString() },
-  "h-pray|2026-08-27": { at: new Date().toISOString() },
-  "h-pray|2026-08-28": { at: new Date().toISOString() },
-  "h-pray|2026-08-29": { at: new Date().toISOString() },
-  "h-pray|2026-08-30": { at: new Date().toISOString() },
-  "h-touch|2026-08-26": { at: new Date().toISOString() },
-  "h-touch|2026-08-27": { at: new Date().toISOString() },
-  "h-touch|2026-08-28": { at: new Date().toISOString() },
-  "h-nti|2026-08-27": { at: new Date().toISOString() },
-  "h-nti|2026-08-29": { at: new Date().toISOString() },
-  "h-ml|2026-08-28": { at: new Date().toISOString() },
-  "h-ml|2026-08-29": { at: new Date().toISOString() },
-  "h-depi1|2026-08-26": { at: new Date().toISOString() },
-  "h-depi1|2026-08-28": { at: new Date().toISOString() },
-  "h-depi2|2026-08-27": { at: new Date().toISOString() },
-  "h-depi2|2026-08-28": { at: new Date().toISOString() },
-};
-
+// حالة أولية نظيفة فارغة تماماً
 const initialSnapshot: TrackerSnapshot = {
-  habits: seedHabits,
-  completions: seedCompletions,
+  habits: [],
+  completions: {},
   dailyTasks: {},
-  trackingStart: "2026-08-01",
+  trackingStart: new Date().toISOString().slice(0, 10),
   hidePast: false,
   seeded: true,
 };
@@ -175,8 +166,8 @@ export const useTrackerStore = create<TrackerState>()(
     (set, get) => ({
       ...initialSnapshot,
       undoStack: [],
-      selectedYear: 2026,
-      selectedMonth: 8,
+      selectedYear: new Date().getFullYear(),
+      selectedMonth: new Date().getMonth() + 1,
       inspectIso: null,
       theme: "default",
       matrixView: "month",
@@ -211,6 +202,8 @@ export const useTrackerStore = create<TrackerState>()(
               id,
               name: trimmed,
               schedule,
+              durationMinutes: options?.durationMinutes ?? 30,
+              priority: options?.priority ?? "standard",
               archived: false,
               createdAt: new Date().toISOString(),
               monthlyOnly: Boolean(options?.monthlyOnly),
@@ -233,6 +226,8 @@ export const useTrackerStore = create<TrackerState>()(
               id: newId(),
               name: name.trim(),
               schedule,
+              durationMinutes: options?.durationMinutes ?? 30,
+              priority: options?.priority ?? "standard",
               archived: false,
               createdAt: new Date().toISOString(),
               monthlyOnly: Boolean(options?.monthlyOnly),
@@ -358,10 +353,21 @@ export const useTrackerStore = create<TrackerState>()(
       toggleCompletion: (habitId, iso) => {
         const key = completionKey(habitId, iso);
         set((s) => {
+          const habit = s.habits.find((h) => h.id === habitId);
+          const restDays = { ...(habit?.restDays ?? {}) };
+          if (restDays[iso]) {
+            delete restDays[iso];
+          }
+
           const completions = { ...s.completions };
           if (completions[key]) delete completions[key];
           else completions[key] = { at: new Date().toISOString() };
-          return { ...pushUndo(s), completions };
+
+          return {
+            ...pushUndo(s),
+            habits: s.habits.map((h) => (h.id === habitId ? { ...h, restDays } : h)),
+            completions,
+          };
         });
       },
 
