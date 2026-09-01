@@ -40,7 +40,7 @@ export function NewHabitDialog({
   const [thisMonthOnly, setThisMonthOnly] = useState(false);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("weekdays");
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]); // Default: Mon-Fri
-  const [targetDayOfMonth, setTargetDayOfMonth] = useState<number>(1);
+  const [targetDayOfMonth, setTargetDayOfMonth] = useState<number>(20); // Default target days for monthly
 
   const addHabit = useTrackerStore((s) => s.addHabit);
   const addHabits = useTrackerStore((s) => s.addHabits);
@@ -63,8 +63,8 @@ export function NewHabitDialog({
       setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
     } else if (mode === "weekdays") {
       setSelectedDays([1, 2, 3, 4, 5]);
-    } else if (mode === "monthly") {
-      setSelectedDays([1]);
+    } else if (mode === "onedate" && targetDayOfMonth > 31) {
+      setTargetDayOfMonth(1);
     }
   };
 
@@ -94,8 +94,10 @@ export function NewHabitDialog({
       !selectedDays.includes(6)
     ) {
       schedule = { type: "preset", id: "weekdays" };
-    } else if (scheduleMode === "onedate" || scheduleMode === "monthly") {
-      schedule = { type: "monthlyDate", day: targetDayOfMonth };
+    } else if (scheduleMode === "monthly") {
+      schedule = { type: "monthlyTarget", targetDays: targetDayOfMonth || 20 };
+    } else if (scheduleMode === "onedate") {
+      schedule = { type: "monthlyDate", day: targetDayOfMonth || 1 };
     } else {
       schedule = { type: "weekly", days: selectedDays.length > 0 ? selectedDays : [1, 2, 3, 4, 5] };
     }
@@ -247,6 +249,7 @@ export function NewHabitDialog({
               ))}
             </div>
 
+            {/* S M T W T F S Interactive Buttons */}
             {scheduleMode !== "onedate" && scheduleMode !== "monthly" && (
               <div className="flex items-center gap-2 pt-1">
                 {weekDays.map((d) => {
@@ -270,9 +273,12 @@ export function NewHabitDialog({
               </div>
             )}
 
+            {/* One date / Monthly day picker */}
             {(scheduleMode === "onedate" || scheduleMode === "monthly") && (
               <div className="flex items-center gap-2.5 pt-1">
-                <span className="text-xs text-[var(--muted)]">Day of month:</span>
+                <span className="text-xs text-[var(--muted)]">
+                  {scheduleMode === "monthly" ? "Target days this month:" : "Day of month:"}
+                </span>
                 <input
                   type="number"
                   min={1}
@@ -291,13 +297,13 @@ export function NewHabitDialog({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="h-10 rounded-2xl px-5 text-xs text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)]"
+              className="h-10 rounded-2xl px-5 text-xs text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="h-10 rounded-2xl bg-[var(--primary)] px-6 text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+              className="h-10 rounded-2xl bg-[var(--primary)] px-6 text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
             >
               Add habit
             </Button>
@@ -579,7 +585,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               type="button"
               variant="outline"
               onClick={handleExport}
-              className="h-10 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] text-xs text-[var(--fg)] hover:bg-[var(--surface-pill)]"
+              className="h-10 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] text-xs text-[var(--fg)] hover:bg-[var(--surface-pill)] cursor-pointer"
             >
               <Download className="mr-1.5 size-3.5" />
               Export JSON
@@ -598,7 +604,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               toast.success("Sample data restored.");
               onOpenChange(false);
             }}
-            className="mt-2 h-11 w-full rounded-xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+            className="mt-2 h-11 w-full rounded-xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
           >
             <RotateCcw className="mr-1.5 size-3.5" />
             Restore sample data
