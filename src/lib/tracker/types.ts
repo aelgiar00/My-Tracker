@@ -5,7 +5,8 @@ export type Schedule =
   | { type: "custom"; days: Weekday[] }
   | { type: "only"; day: number }
   | { type: "weekly"; days: number[] }
-  | { type: "monthlyDate"; day: number };
+  | { type: "monthlyDate"; day: number }
+  | { type: "monthlyTarget"; targetDays: number };
 
 export type HabitPriority = "critical" | "standard";
 
