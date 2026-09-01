@@ -48,7 +48,6 @@ export function AnalyticsPanel() {
     });
   }, [habits, completions, allMonthDays, selectedYear, selectedMonth]);
 
-  // حساب دقيق لكل أيام الشهر المعروض
   const daysBreakdown = useMemo(() => {
     return allMonthDays.map((date) => {
       const iso = format(date, "yyyy-MM-dd");
@@ -71,55 +70,65 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  // Radar Data
+  // Radar Data - مصفوفة شعاعية دائرية متطورة مطابقة للصورة 4
   const radarData = useMemo(() => {
-    const list = habitsBreakdown.slice(0, 6);
-    const total = Math.max(3, list.length);
-    const viewBoxSize = fullScreen ? 400 : 280;
+    const list = habitsBreakdown.slice(0, 12); // حتى 12 عادة لتمثيل رادار واسع
+    const totalAxes = Math.max(6, list.length);
+    const viewBoxSize = fullScreen ? 480 : 340;
     const center = viewBoxSize / 2;
-    const maxRadius = fullScreen ? 140 : 90;
-    const labelRadius = fullScreen ? 170 : 115;
+    const maxRadius = fullScreen ? 170 : 115;
+    const labelRadius = fullScreen ? 205 : 142;
 
-    const points = list.map((item, i) => {
-      const angle = ((Math.PI * 2) / total) * i - Math.PI / 2;
-      const score = Math.max(0.1, Math.min(1, item.rate / 100));
+    const circles = [0.2, 0.4, 0.6, 0.8, 1.0];
 
-      const r = maxRadius * score;
-      const x = center + r * Math.cos(angle);
-      const y = center + r * Math.sin(angle);
+    const axes = Array.from({ length: totalAxes }, (_, i) => {
+      const angle = (Math.PI * 2 / totalAxes) * i - Math.PI / 2;
+      const x = center + maxRadius * Math.cos(angle);
+      const y = center + maxRadius * Math.sin(angle);
 
       const labelX = center + labelRadius * Math.cos(angle);
       const labelY = center + labelRadius * Math.sin(angle);
 
+      const item = list[i];
+      const name = item ? item.habit.name : "";
+      const rate = item ? Math.round(item.rate) : 0;
+      const score = item ? Math.max(0.12, Math.min(1, item.rate / 100)) : 0.12;
+
+      const pointX = center + (maxRadius * score) * Math.cos(angle);
+      const pointY = center + (maxRadius * score) * Math.sin(angle);
+
       let textAnchor = "middle";
-      if (Math.cos(angle) > 0.3) textAnchor = "start";
-      else if (Math.cos(angle) < -0.3) textAnchor = "end";
+      if (Math.cos(angle) > 0.25) textAnchor = "start";
+      else if (Math.cos(angle) < -0.25) textAnchor = "end";
 
       return {
+        angle,
         x,
         y,
         labelX,
         labelY,
+        pointX,
+        pointY,
+        name,
+        rate,
         textAnchor,
-        name: item.habit.name,
-        rate: Math.round(item.rate),
+        hasHabit: Boolean(item),
       };
     });
 
-    const webLevels = [0.33, 0.66, 1].map((level) => {
-      return Array.from({ length: total }, (_, i) => {
-        const angle = ((Math.PI * 2) / total) * i - Math.PI / 2;
-        const r = maxRadius * level;
-        return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
-      }).join(" ");
-    });
+    const polygonPoints = axes
+      .filter((a) => a.hasHabit)
+      .map((a) => `${a.pointX},${a.pointY}`)
+      .join(" ");
 
     return {
-      points,
-      polygonPath: points.map((p) => `${p.x},${p.y}`).join(" "),
-      webLevels,
+      axes,
+      circles,
+      polygonPoints,
       center,
+      maxRadius,
       viewBoxSize,
+      hasData: list.length > 0,
     };
   }, [habitsBreakdown, fullScreen]);
 
@@ -169,7 +178,6 @@ export function AnalyticsPanel() {
     return { habits: topHabits, matrix };
   }, [habits, completions, allMonthDays, selectedYear, selectedMonth]);
 
-  // اختيار آخر 14 يوم من الشهر المختار للعرض السليم
   const displayDays = useMemo(() => {
     return daysBreakdown.slice(0, fullScreen ? 31 : 14);
   }, [daysBreakdown, fullScreen]);
@@ -258,7 +266,7 @@ export function AnalyticsPanel() {
 
       {/* 2x2 Core Visualizations Grid */}
       <div className={cn("grid gap-6 transition-all duration-300", fullScreen ? "grid-cols-1" : "lg:grid-cols-2")}>
-        {/* 1. Daily Execution (Fixed Rendering & Scaling) */}
+        {/* 1. Daily Execution */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Daily execution</h3>
 
@@ -339,75 +347,79 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 3. Mastery Radar */}
+        {/* 3. Mastery Radar (Exact Image 4 Radial Style) */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <div className="flex items-center justify-between mb-2">
-            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
+            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Habit Mastery Radar</h3>
             <span className="text-[10px] text-[var(--muted)]">Coverage</span>
           </div>
 
-          <div className={cn("relative my-auto flex items-center justify-center py-2", fullScreen && "h-[45vh]")}>
-            <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className="w-full max-w-[280px] aspect-square overflow-visible">
-              {radarData.webLevels.map((poly, idx) => (
-                <polygon
+          <div className={cn("relative my-auto flex items-center justify-center py-2", fullScreen && "h-[50vh]")}>
+            <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className="w-full max-w-[340px] aspect-square overflow-visible">
+              {/* الدوائر المتراكزة (Concentric Circles) */}
+              {radarData.circles.map((rPct, idx) => (
+                <circle
                   key={idx}
-                  points={poly}
+                  cx={radarData.center}
+                  cy={radarData.center}
+                  r={radarData.maxRadius * rPct}
+                  className="stroke-[var(--border)] opacity-35"
+                  strokeWidth="0.75"
                   fill="none"
-                  stroke="currentColor"
-                  className="text-[var(--border)] opacity-60"
-                  strokeWidth="1"
                 />
               ))}
 
-              {radarData.points.map((p, idx) => (
+              {/* خطوط المحاور الشعاعية (Radial Axis Rays) */}
+              {radarData.axes.map((axis, idx) => (
                 <line
                   key={idx}
                   x1={radarData.center}
                   y1={radarData.center}
-                  x2={p.x}
-                  y2={p.y}
-                  stroke="currentColor"
-                  className="text-[var(--border)] opacity-40"
-                  strokeWidth="1"
+                  x2={axis.x}
+                  y2={axis.y}
+                  className="stroke-[var(--border)] opacity-35"
+                  strokeWidth="0.75"
                 />
               ))}
 
-              {radarData.points.length >= 3 ? (
+              {/* شكل التغطية المتوهج (Glow Fill Polygon) */}
+              {radarData.hasData && (
                 <polygon
-                  points={radarData.polygonPath}
+                  points={radarData.polygonPoints}
                   fill="var(--primary-muted)"
                   stroke="var(--primary)"
-                  strokeWidth="1.5"
+                  strokeWidth="1.75"
                   className="transition-all duration-500"
+                  style={{ filter: "drop-shadow(0 0 6px var(--glow))" }}
                 />
-              ) : (
-                radarData.points.map((p, idx) => (
-                  <line
-                    key={idx}
-                    x1={radarData.center}
-                    y1={radarData.center}
-                    x2={p.x}
-                    y2={p.y}
-                    stroke="var(--primary)"
-                    strokeWidth="2"
-                  />
-                ))
               )}
 
-              {radarData.points.map((p, idx) => (
-                <circle key={idx} cx={p.x} cy={p.y} r="2.5" fill="var(--primary)" className="transition-all duration-500" />
+              {/* نقاط التقاطع */}
+              {radarData.axes.filter((a) => a.hasHabit).map((axis, idx) => (
+                <circle
+                  key={idx}
+                  cx={axis.pointX}
+                  cy={axis.pointY}
+                  r="2.5"
+                  fill="var(--primary)"
+                  className="transition-all duration-500"
+                />
               ))}
 
-              {radarData.points.map((p, idx) => (
+              {/* أسماء العادات المحيطة بالرادار */}
+              {radarData.axes.filter((a) => a.hasHabit).map((axis, idx) => (
                 <text
                   key={idx}
-                  x={p.labelX}
-                  y={p.labelY}
-                  textAnchor={p.textAnchor}
+                  x={axis.labelX}
+                  y={axis.labelY}
+                  textAnchor={axis.textAnchor}
                   dominantBaseline="central"
-                  className={cn("fill-[var(--fg)] text-[10px] font-medium select-none", fullScreen && "text-[12px] font-semibold")}
+                  className={cn(
+                    "fill-[var(--fg)] text-[10px] font-medium select-none transition-all duration-300",
+                    fullScreen && "text-[12px] font-semibold"
+                  )}
                 >
-                  {p.name.length > 13 ? `${p.name.slice(0, 11)}..` : p.name}
+                  {axis.name.length > 12 ? `${axis.name.slice(0, 10)}..` : axis.name}
                 </text>
               ))}
             </svg>
