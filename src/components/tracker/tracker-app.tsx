@@ -193,7 +193,7 @@ export function TrackerApp() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6">
+    <div className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 font-sans">
       {!session && (
         <AuthDialog
           onSuccess={() => {
@@ -227,7 +227,7 @@ export function TrackerApp() {
               variant="ghost"
               size="icon-sm"
               onClick={() => shiftMonth(-1)}
-              className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)]"
+              className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
             >
               <ChevronLeft className="size-4" />
             </Button>
@@ -257,7 +257,7 @@ export function TrackerApp() {
               variant="ghost"
               size="icon-sm"
               onClick={() => shiftMonth(1)}
-              className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)]"
+              className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
             >
               <ChevronRight className="size-4" />
             </Button>
@@ -399,14 +399,14 @@ export function TrackerApp() {
                     </p>
                   </div>
 
-                  {/* SVG Gauge Matching Reference Image 2 */}
+                  {/* High-Definition Luxury Circular Progress Ring */}
                   <div className="relative flex size-24 items-center justify-center select-none">
                     <svg className="size-full -rotate-90 p-1" viewBox="0 0 88 88">
                       <circle
                         cx="44"
                         cy="44"
-                        r="36"
-                        className="stroke-[var(--surface-pill)]"
+                        r="35"
+                        className="stroke-[var(--surface-pill)] opacity-50"
                         strokeWidth="5"
                         fill="none"
                       />
@@ -414,11 +414,11 @@ export function TrackerApp() {
                         <circle
                           cx="44"
                           cy="44"
-                          r="36"
+                          r="35"
                           className="stroke-[var(--primary)] transition-all duration-700 ease-out"
                           strokeWidth="5"
-                          strokeDasharray={2 * Math.PI * 36}
-                          strokeDashoffset={2 * Math.PI * 36 * (1 - inspectDayScore / 100)}
+                          strokeDasharray={2 * Math.PI * 35}
+                          strokeDashoffset={2 * Math.PI * 35 * (1 - inspectDayScore / 100)}
                           strokeLinecap="round"
                           fill="none"
                         />
@@ -426,10 +426,13 @@ export function TrackerApp() {
                     </svg>
 
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                      <span className="font-serif-title text-[24px] font-normal tracking-tight text-[var(--fg)] leading-none">
+                      <span
+                        style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                        className="text-[26px] font-bold text-[var(--fg)] tracking-tight leading-none"
+                      >
                         {inspectDayScore}%
                       </span>
-                      <span className="text-[8.5px] font-semibold font-mono tracking-[0.2em] text-[var(--muted)] uppercase mt-1.5 leading-none">
+                      <span className="text-[9px] font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-1.5 leading-none">
                         DAILY
                       </span>
                     </div>
