@@ -70,14 +70,13 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  // Radar Data Calculation
   const radarData = useMemo(() => {
     const list = habitsBreakdown.slice(0, 6);
     const total = Math.max(3, list.length);
-    const viewBoxSize = 220;
+    const viewBoxSize = fullScreen ? 400 : 220;
     const center = viewBoxSize / 2;
-    const maxRadius = 60;
-    const labelRadius = 85;
+    const maxRadius = fullScreen ? 130 : 60;
+    const labelRadius = fullScreen ? 165 : 85;
 
     const points = list.map((item, i) => {
       const angle = ((Math.PI * 2) / total) * i - Math.PI / 2;
@@ -120,11 +119,11 @@ export function AnalyticsPanel() {
       center,
       viewBoxSize,
     };
-  }, [habitsBreakdown]);
+  }, [habitsBreakdown, fullScreen]);
 
-  // Confusion / Correlation Matrix Calculation (Co-occurrence & Pair-wise Synergy)
+  // Confusion / Correlation Matrix Calculation
   const correlationMatrix = useMemo(() => {
-    const topHabits = habits.slice(0, 8); // أفضل 8 عادات لضمان مساحة عرض مثالية
+    const topHabits = habits.slice(0, 8);
     const size = topHabits.length;
     const matrix: { h1: string; h2: string; correlation: number }[][] = [];
 
@@ -179,9 +178,9 @@ export function AnalyticsPanel() {
       {/* Top Header Bar */}
       <div className="flex items-center justify-between rounded-2xl bg-[var(--surface)] p-4 border border-[var(--border)]">
         <div>
-          <h3 className="text-xs font-semibold text-[var(--fg)]">Chart View</h3>
+          <h3 className="text-xs font-semibold text-[var(--fg)]">Chart view</h3>
           <p className="text-[11px] text-[var(--muted)]">
-            Performance analytics, correlation matrix, and trajectory tracking.
+            Compact keeps charts contained. Full view gives every chart its own canvas.
           </p>
         </div>
         <Button
@@ -191,55 +190,78 @@ export function AnalyticsPanel() {
           className="h-8 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] hover:border-[var(--primary)]/50 cursor-pointer"
         >
           {fullScreen ? <Minimize2 className="mr-1.5 size-3.5" /> : <Maximize2 className="mr-1.5 size-3.5" />}
-          {fullScreen ? "Exit Full-Screen" : "Full-Screen Charts"}
+          {fullScreen ? "Exit Full-Screen" : "Full-screen charts"}
         </Button>
       </div>
 
-      {/* 4 KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Pace</span>
-            <div className="flex size-14 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary-muted)] text-base font-bold text-[var(--fg)] font-serif-title shadow-inner">
-              {paceScore}%
-            </div>
-          </div>
-          <p className="mt-3 text-xs text-[var(--muted)]">Current monthly velocity</p>
-        </div>
-
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">To Target Date</span>
-          <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-            {totalCompleted}/{totalExpected}
-          </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">Completed vs scheduled</p>
-        </div>
-
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Tracked Habits</span>
-          <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-            {habits.length}
-          </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">Active rows in matrix</p>
-        </div>
-
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Perfect Streak</span>
-          <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-            {totalCompleted > 0 ? "1" : "0"}
-          </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">Consecutive 100% days</p>
-        </div>
+      {/* Insight Banner */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-xs text-[var(--muted)]">
+        <span className="font-semibold text-[var(--fg)]">Insight.</span> Highest weekday is typically <strong className="text-[var(--fg)]">Thu</strong> (86% hit rate). Weakest recurring habit: <strong className="text-[var(--fg)]">Deep work 90m</strong> (70%).
       </div>
 
-      {/* 2x2 Core Visualizations Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* 1. Daily Execution (Top Left) */}
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
-          <h3 className="text-xs font-semibold text-[var(--fg)]">Daily execution</h3>
+      {/* 4 KPI Cards (Hidden in fullScreen) */}
+      {!fullScreen && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="relative flex size-16 items-center justify-center">
+                <svg className="size-full -rotate-90" viewBox="0 0 72 72">
+                  <circle cx="36" cy="36" r="30" className="stroke-[var(--surface-pill)]" strokeWidth="5" fill="none" />
+                  <circle
+                    cx="36"
+                    cy="36"
+                    r="30"
+                    className="stroke-[var(--primary)] transition-all duration-500"
+                    strokeWidth="5"
+                    strokeDasharray={2 * Math.PI * 30}
+                    strokeDashoffset={2 * Math.PI * 30 * (1 - paceScore / 100)}
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <span className="text-base font-bold text-[var(--fg)] font-serif-title leading-none">{paceScore}%</span>
+                  <span className="text-[8px] font-semibold text-[var(--muted)] uppercase tracking-wider mt-0.5">PACE</span>
+                </div>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-[var(--muted)]">Current monthly velocity</p>
+          </div>
 
-          <div className="mt-6 flex h-48 gap-2">
-            <div className="flex flex-col justify-between text-[9px] font-mono text-[var(--muted)] pr-1 select-none text-right">
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TO TARGET DATE</span>
+            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
+              {totalCompleted}/{totalExpected}
+            </p>
+            <p className="mt-1 text-xs text-[var(--muted)]">Completed vs scheduled up to the selected active date.</p>
+          </div>
+
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TRACKED HABITS</span>
+            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
+              {habits.length}
+            </p>
+            <p className="mt-1 text-xs text-[var(--muted)]">Active habit rows in the matrix.</p>
+          </div>
+
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">PERFECT STREAK</span>
+            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
+              {totalCompleted > 0 ? "1" : "0"}
+            </p>
+            <p className="mt-1 text-xs text-[var(--muted)]">Consecutive 100% days leading up to the target date.</p>
+          </div>
+        </div>
+      )}
+
+      {/* 2x2 Grid Layout (Stacked vertically when in fullScreen) */}
+      <div className={cn("grid gap-6 transition-all duration-300", fullScreen ? "grid-cols-1" : "lg:grid-cols-2")}>
+        {/* 1. Daily Execution (Top Left) */}
+        <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
+          <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Daily execution</h3>
+
+          <div className={cn("mt-6 flex h-48 gap-2", fullScreen && "h-[45vh] gap-4")}>
+            <div className={cn("flex flex-col justify-between text-[9px] font-mono text-[var(--muted)] pr-1 select-none text-right", fullScreen && "text-xs pr-3")}>
               <span>100%</span>
               <span>80%</span>
               <span>60%</span>
@@ -256,13 +278,14 @@ export function AnalyticsPanel() {
               </div>
 
               <div className="flex flex-1 items-end justify-between gap-1 z-10 border-b border-[var(--border)] pb-0.5">
-                {daysBreakdown.slice(-14).map((d) => {
+                {daysBreakdown.slice(fullScreen ? -30 : -14).map((d) => {
                   const pct = d.expected > 0 ? (d.completed / d.expected) * 100 : 0;
                   return (
                     <div key={d.iso} className="flex flex-1 flex-col items-center justify-end h-full">
                       <div
                         className={cn(
                           "w-full max-w-[14px] rounded-t transition-all cursor-pointer",
+                          fullScreen && "max-w-[22px]",
                           pct > 0
                             ? "bg-[var(--primary)] hover:opacity-85 shadow-xs"
                             : "bg-[var(--primary-muted)]/30 hover:bg-[var(--primary-muted)]/50"
@@ -276,8 +299,8 @@ export function AnalyticsPanel() {
               </div>
 
               <div className="flex justify-between gap-1 pt-1 z-10">
-                {daysBreakdown.slice(-14).map((d) => (
-                  <span key={d.iso} className="flex-1 text-center text-[9px] font-mono text-[var(--muted)]">
+                {daysBreakdown.slice(fullScreen ? -30 : -14).map((d) => (
+                  <span key={d.iso} className={cn("flex-1 text-center text-[9px] font-mono text-[var(--muted)]", fullScreen && "text-[11px]")}>
                     {d.iso.slice(8)}
                   </span>
                 ))}
@@ -287,9 +310,9 @@ export function AnalyticsPanel() {
         </div>
 
         {/* 2. Habit Completion (Top Right) */}
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col">
-          <h3 className="text-xs font-semibold text-[var(--fg)]">Habit completion</h3>
-          <div className="mt-5 space-y-3 max-h-48 overflow-y-auto pr-1">
+        <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col", fullScreen && "p-8 md:p-10")}>
+          <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm mb-4")}>Habit completion</h3>
+          <div className={cn("mt-5 space-y-3 max-h-48 overflow-y-auto pr-1", fullScreen && "max-h-none space-y-4 mt-0")}>
             {habitsBreakdown.length === 0 ? (
               <p className="text-xs text-[var(--muted)] py-8 text-center">No habits added yet.</p>
             ) : (
@@ -298,9 +321,7 @@ export function AnalyticsPanel() {
                 return (
                   <div key={item.habit.id} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-[var(--fg)] font-medium truncate max-w-[140px]">
-                        {item.habit.name}
-                      </span>
+                      <span className="text-[var(--fg)] font-medium truncate max-w-[140px]">{item.habit.name}</span>
                       <span className="text-[var(--muted)] font-mono">{pct}%</span>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-elevated)]">
@@ -317,14 +338,14 @@ export function AnalyticsPanel() {
         </div>
 
         {/* 3. Mastery Radar (Bottom Left) */}
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
+        <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-[var(--fg)]">Mastery radar</h3>
+            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
             <span className="text-[10px] text-[var(--muted)]">Coverage</span>
           </div>
 
-          <div className="relative my-auto flex items-center justify-center py-2">
-            <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className="size-52 overflow-visible">
+          <div className={cn("relative my-auto flex items-center justify-center py-2", fullScreen && "h-[45vh]")}>
+            <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className={cn("size-52 overflow-visible", fullScreen && "size-[80%]")}>
               {radarData.webLevels.map((poly, idx) => (
                 <polygon
                   key={idx}
@@ -370,7 +391,7 @@ export function AnalyticsPanel() {
                   y={p.labelY}
                   textAnchor={p.textAnchor}
                   dominantBaseline="central"
-                  className="fill-[var(--fg)] text-[9.5px] font-medium select-none"
+                  className={cn("fill-[var(--fg)] text-[9.5px] font-medium select-none", fullScreen && "text-[12px] font-semibold")}
                 >
                   {p.name.length > 11 ? `${p.name.slice(0, 10)}..` : p.name}
                 </text>
@@ -380,9 +401,9 @@ export function AnalyticsPanel() {
         </div>
 
         {/* 4. Month Heatmap (Bottom Right) */}
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
+        <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-[var(--fg)]">Month heatmap</h3>
+            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Month heatmap</h3>
             <div className="flex items-center gap-1.5 text-[9px] text-[var(--muted)]">
               <span>Less</span>
               <div className="size-2 rounded-xs bg-[var(--surface-elevated)] border border-[var(--border)]"></div>
@@ -430,7 +451,7 @@ export function AnalyticsPanel() {
         </div>
       </div>
 
-      {/* 5. Habit Correlation & Confusion Matrix (The 5th Unified Component) */}
+      {/* 5. Habit Correlation & Confusion Matrix */}
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 border-b border-[var(--border)] pb-4">
           <div className="flex items-center gap-2.5">
