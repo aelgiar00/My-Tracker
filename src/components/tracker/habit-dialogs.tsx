@@ -14,9 +14,6 @@ import { toast } from "sonner";
 import { Download, Upload, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/* =========================================================================
-   1. NewHabitDialog (Fully Theme Adaptive Modal)
-   ========================================================================= */
 export interface NewHabitDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,7 +36,7 @@ export function NewHabitDialog({
   const [bulkText, setBulkText] = useState("");
   const [thisMonthOnly, setThisMonthOnly] = useState(false);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("weekdays");
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]); // Default: Mon-Fri
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]); 
   const [targetDayOfMonth, setTargetDayOfMonth] = useState<number>(20);
 
   const addHabit = useTrackerStore((s) => s.addHabit);
@@ -148,7 +145,6 @@ export function NewHabitDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Habit Name</label>
             <input
@@ -160,7 +156,6 @@ export function NewHabitDialog({
             />
           </div>
 
-          {/* Time Estimate & Priority */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Estimated Duration</label>
@@ -188,13 +183,13 @@ export function NewHabitDialog({
                 onChange={(e) => setPriority(e.target.value as HabitPriority)}
                 className="h-11 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs font-medium text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
               >
-                <option value="critical">🎯 Critical (Non-Negotiable)</option>
+                {/* تم استبدال الكلمة وإزالة الإيموجي هنا */}
+                <option value="critical">Important</option>
                 <option value="standard">Standard Habit</option>
               </NativeSelect>
             </div>
           </div>
 
-          {/* Bulk Textarea */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Bulk add habits (Optional)</label>
             <textarea
@@ -209,7 +204,6 @@ export function NewHabitDialog({
             </p>
           </div>
 
-          {/* Add to this month only Checkbox */}
           <label className="flex items-center gap-2.5 pt-0.5 text-xs font-medium text-[var(--fg)] cursor-pointer select-none">
             <input
               type="checkbox"
@@ -220,7 +214,6 @@ export function NewHabitDialog({
             <span>Add to this month only</span>
           </label>
 
-          {/* Schedule Section */}
           <div className="space-y-2.5 pt-1">
             <label className="text-xs font-semibold text-[var(--fg)] opacity-90">Schedule</label>
 
@@ -249,7 +242,6 @@ export function NewHabitDialog({
               ))}
             </div>
 
-            {/* S M T W T F S Interactive Buttons */}
             {scheduleMode !== "onedate" && scheduleMode !== "monthly" && (
               <div className="flex items-center gap-2 pt-1">
                 {weekDays.map((d) => {
@@ -273,7 +265,6 @@ export function NewHabitDialog({
               </div>
             )}
 
-            {/* One date / Monthly day picker */}
             {(scheduleMode === "onedate" || scheduleMode === "monthly") && (
               <div className="flex items-center gap-2.5 pt-1">
                 <span className="text-xs font-medium text-[var(--muted)]">
@@ -291,7 +282,6 @@ export function NewHabitDialog({
             )}
           </div>
 
-          {/* Footer Buttons */}
           <div className="flex items-center justify-end gap-3 pt-3">
             <Button
               type="button"
@@ -314,9 +304,6 @@ export function NewHabitDialog({
   );
 }
 
-/* =========================================================================
-   2. BulkUpdatePanel
-   ========================================================================= */
 export interface BulkUpdatePanelProps {
   days: { iso: string; label: string }[];
   todayIso: string;
@@ -469,9 +456,6 @@ export function BulkUpdatePanel({ days }: BulkUpdatePanelProps) {
   );
 }
 
-/* =========================================================================
-   3. SettingsDialog (Strict 5 Themes Palette)
-   ========================================================================= */
 export interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
