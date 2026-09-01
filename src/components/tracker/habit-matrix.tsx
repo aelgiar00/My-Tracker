@@ -113,7 +113,7 @@ export function HabitMatrix({
       <div className="mb-6">
         <h2 className="font-serif-title text-2xl font-normal tracking-tight text-[var(--fg)]">Matrix</h2>
         <p className="mt-1 text-xs text-[var(--muted)]">
-          Dashes are rest days. Use the action buttons on the right to toggle Rest, Pause for this month, Archive, or Delete.
+          Dashes are rest days. When monthly targets are met, remaining days automatically turn into rest.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -200,6 +200,18 @@ export function HabitMatrix({
                 const currentScheduleValue = getSelectedScheduleValue(schedule);
                 const isTodayRest = isRestDay(habit, todayIso);
 
+                // حساب عدد المرات المنجزة لهذا الشهر
+                const monthDoneCount = visibleDays.reduce((acc, date) => {
+                  const iso = format(date, "yyyy-MM-dd");
+                  return acc + (completions[completionKey(habit.id, iso)] ? 1 : 0);
+                }, 0);
+
+                // التحقق مما إذا كان المستهدف الشهري قد اكتمل بالكامل
+                const isMonthlyTargetReached =
+                  schedule &&
+                  schedule.type === "monthlyTarget" &&
+                  monthDoneCount >= schedule.targetDays;
+
                 return (
                   <tr
                     key={habit.id}
@@ -220,6 +232,11 @@ export function HabitMatrix({
                         {isPausedThisMonth && (
                           <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-mono">
                             Paused
+                          </span>
+                        )}
+                        {isMonthlyTargetReached && !isPausedThisMonth && (
+                          <span className="text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono font-medium">
+                            Target Met ({monthDoneCount}/{schedule.targetDays})
                           </span>
                         )}
                       </div>
@@ -252,7 +269,7 @@ export function HabitMatrix({
                       const isPast = iso < todayIso;
                       const isCurrentToday = iso === todayIso;
 
-                      // حالة التجميد للشهر
+                      // 1. حالة التجميد للشهر
                       if (isPausedThisMonth) {
                         return (
                           <td key={iso} className="px-1 text-center">
@@ -266,7 +283,21 @@ export function HabitMatrix({
                         );
                       }
 
-                      // حالة الـ Rest Day (الضغط عليها يلغي الـ Rest مباشرة)
+                      // 2. التحويل التلقائي إلى Rest عند اكتمال التارجت الشهري
+                      if (isMonthlyTargetReached && !isDone) {
+                        return (
+                          <td key={iso} className="px-1 text-center">
+                            <div
+                              title={`Target achieved (${schedule.targetDays}/${schedule.targetDays})! Auto-rest for remainder of month.`}
+                              className="flex size-7 items-center justify-center text-xs font-bold text-emerald-400/60 bg-emerald-500/5 rounded-lg border border-emerald-500/15 select-none cursor-default"
+                            >
+                              —
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // 3. حالة الـ Rest Day اليدوي
                       if (isRest) {
                         return (
                           <td key={iso} className="px-1 text-center">
@@ -285,7 +316,7 @@ export function HabitMatrix({
                         );
                       }
 
-                      // يوم غير مجدول في الأسبوع
+                      // 4. يوم غير مجدول في الأسبوع
                       if (!expected) {
                         return (
                           <td key={iso} className="px-1 text-center">
@@ -299,7 +330,7 @@ export function HabitMatrix({
                         );
                       }
 
-                      // خلية عادية
+                      // 5. الخلية التفاعلية العادية
                       return (
                         <td key={iso} className="px-1 text-center">
                           <button
