@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import { Habit } from "@/lib/tracker/types";
 import { isDayExpected, completionKey } from "@/lib/tracker/schedule";
 import { useTrackerStore } from "@/store/tracker-store";
+import { Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TodayPanelProps {
@@ -12,10 +13,9 @@ interface TodayPanelProps {
 }
 
 function getHabitSpecs(habit: Habit) {
-  const durationMinutes =
-    typeof habit.durationMinutes === "number" && habit.durationMinutes > 0
-      ? habit.durationMinutes
-      : 30;
+  const durationMinutes = typeof habit.durationMinutes === "number" && habit.durationMinutes > 0
+    ? habit.durationMinutes
+    : 30;
 
   const isCritical = habit.priority === "critical";
 
@@ -29,7 +29,7 @@ function getHabitSpecs(habit: Habit) {
     durationMinutes,
     durationLabel,
     priority: isCritical ? 1 : 2,
-    priorityLabel: isCritical ? "Critical" : "Standard",
+    priorityLabel: isCritical ? "Important" : "Standard",
     baseFriction: Math.min(0.85, durationMinutes / 180),
   };
 }
@@ -39,6 +39,26 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const [collegeHours, setCollegeHours] = useState(4);
   const [workHours, setWorkHours] = useState(0);
   const [showDetails, setShowDetails] = useState(true);
+
+  // حالة ديناميكية لأسماء السلايدرز يتم حفظها في المتصفح
+  const [labels, setLabels] = useState(() => {
+    try {
+      const saved = localStorage.getItem("personal_ai_labels");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return ["Sleep", "College", "Work"];
+  });
+
+  // حفظ الأسماء تلقائياً عند تغييرها
+  useEffect(() => {
+    localStorage.setItem("personal_ai_labels", JSON.stringify(labels));
+  }, [labels]);
+
+  const updateLabel = (idx: number, val: string) => {
+    const newLabels = [...labels];
+    newLabels[idx] = val;
+    setLabels(newLabels);
+  };
 
   const completions = useTrackerStore((s) => s.completions);
   const todayIso = format(todayDate, "yyyy-MM-dd");
@@ -63,22 +83,20 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const habitPredictions = useMemo(() => {
     let accumulatedTime = 0;
 
-    const mapped = todayHabits
-      .map((habit) => {
-        const specs = getHabitSpecs(habit);
-        const isDone = Boolean(completions[completionKey(habit.id, todayIso)]);
+    const mapped = todayHabits.map((habit) => {
+      const specs = getHabitSpecs(habit);
+      const isDone = Boolean(completions[completionKey(habit.id, todayIso)]);
 
-        let streakCount = 0;
-        for (let i = 1; i <= 7; i++) {
-          const d = new Date(todayDate);
-          d.setDate(d.getDate() - i);
-          const iso = format(d, "yyyy-MM-dd");
-          if (completions[completionKey(habit.id, iso)]) streakCount++;
-        }
+      let streakCount = 0;
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(todayDate);
+        d.setDate(d.getDate() - i);
+        const iso = format(d, "yyyy-MM-dd");
+        if (completions[completionKey(habit.id, iso)]) streakCount++;
+      }
 
-        return { habit, specs, isDone, streakCount };
-      })
-      .sort((a, b) => a.specs.priority - b.specs.priority || a.specs.durationMinutes - b.specs.durationMinutes);
+      return { habit, specs, isDone, streakCount };
+    }).sort((a, b) => a.specs.priority - b.specs.priority || a.specs.durationMinutes - b.specs.durationMinutes);
 
     return mapped.map((item, index) => {
       if (item.isDone) {
@@ -95,10 +113,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
 
       let score = Math.round(
         readinessScore * 0.45 +
-          (1 - item.specs.baseFriction) * 35 +
-          item.streakCount * 4 +
-          (item.specs.durationMinutes <= 30 ? 12 : item.specs.durationMinutes <= 60 ? 4 : -8) -
-          index * 3
+        (1 - item.specs.baseFriction) * 35 +
+        (item.streakCount * 4) +
+        (item.specs.durationMinutes <= 30 ? 12 : item.specs.durationMinutes <= 60 ? 4 : -8) -
+        (index * 3)
       );
 
       if (!fitsInTime) {
@@ -112,9 +130,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         chance: finalChance,
         feasible: fitsInTime,
         statusLabel: fitsInTime
-          ? finalChance >= 85
-            ? "High Confidence"
-            : "Time Feasible"
+          ? finalChance >= 85 ? "High Confidence" : "Time Feasible"
           : "Time Constrained",
       };
     });
@@ -122,7 +138,6 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
 
   const nonNegotiables = habitPredictions.filter((h) => h.specs.priority === 1);
 
-  // حساب نسب التعبئة للسلايدرز
   const sleepPercent = ((sleepHours - 4) / (12 - 4)) * 100;
   const collegePercent = (collegeHours / 10) * 100;
   const workPercent = (workHours / 12) * 100;
@@ -146,13 +161,22 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       </div>
 
-      {/* Sliders with Colored Active Fill Track */}
+      {/* Sliders with Editable Dynamic Labels */}
       <div className="grid grid-cols-3 gap-2">
-        {/* Sleep Slider */}
+        {/* Slider 1 (Sleep by default) */}
         <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
           <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
-            <span className="text-[var(--muted)] font-medium">Sleep</span>
-            <span className="font-mono text-[var(--primary)]">{sleepHours}h</span>
+            <div className="flex items-center gap-1 group relative">
+              <input
+                type="text"
+                value={labels[0]}
+                onChange={(e) => updateLabel(0, e.target.value)}
+                className="w-14 bg-transparent text-[var(--muted)] font-medium outline-none focus:text-[var(--fg)] focus:border-[var(--primary)] border-b border-transparent transition-colors"
+                title="Edit name"
+              />
+              <Pencil className="size-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted)] absolute -right-3 pointer-events-none" />
+            </div>
+            <span className="font-mono text-[var(--primary)] shrink-0">{sleepHours}h</span>
           </div>
           <div className="py-1">
             <input
@@ -162,9 +186,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
               step="1"
               value={sleepHours}
               onChange={(e) => setSleepHours(Number(e.target.value))}
-              style={{
-                background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${sleepPercent}%, var(--surface-pill) ${sleepPercent}%, var(--surface-pill) 100%)`,
-              }}
+              style={{ background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${sleepPercent}%, var(--surface-pill) ${sleepPercent}%, var(--surface-pill) 100%)` }}
               className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
           </div>
@@ -175,11 +197,20 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
           </div>
         </div>
 
-        {/* College Slider */}
+        {/* Slider 2 (College by default) */}
         <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
           <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
-            <span className="text-[var(--muted)] font-medium">College</span>
-            <span className="font-mono text-[var(--primary)]">{collegeHours}h</span>
+            <div className="flex items-center gap-1 group relative">
+              <input
+                type="text"
+                value={labels[1]}
+                onChange={(e) => updateLabel(1, e.target.value)}
+                className="w-14 bg-transparent text-[var(--muted)] font-medium outline-none focus:text-[var(--fg)] focus:border-[var(--primary)] border-b border-transparent transition-colors"
+                title="Edit name"
+              />
+              <Pencil className="size-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted)] absolute -right-3 pointer-events-none" />
+            </div>
+            <span className="font-mono text-[var(--primary)] shrink-0">{collegeHours}h</span>
           </div>
           <div className="py-1">
             <input
@@ -189,9 +220,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
               step="1"
               value={collegeHours}
               onChange={(e) => setCollegeHours(Number(e.target.value))}
-              style={{
-                background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${collegePercent}%, var(--surface-pill) ${collegePercent}%, var(--surface-pill) 100%)`,
-              }}
+              style={{ background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${collegePercent}%, var(--surface-pill) ${collegePercent}%, var(--surface-pill) 100%)` }}
               className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
           </div>
@@ -202,11 +231,20 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
           </div>
         </div>
 
-        {/* Work Slider */}
+        {/* Slider 3 (Work by default) */}
         <div className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between">
           <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1">
-            <span className="text-[var(--muted)] font-medium">Work</span>
-            <span className="font-mono text-[var(--primary)]">{workHours}h</span>
+            <div className="flex items-center gap-1 group relative">
+              <input
+                type="text"
+                value={labels[2]}
+                onChange={(e) => updateLabel(2, e.target.value)}
+                className="w-14 bg-transparent text-[var(--muted)] font-medium outline-none focus:text-[var(--fg)] focus:border-[var(--primary)] border-b border-transparent transition-colors"
+                title="Edit name"
+              />
+              <Pencil className="size-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted)] absolute -right-3 pointer-events-none" />
+            </div>
+            <span className="font-mono text-[var(--primary)] shrink-0">{workHours}h</span>
           </div>
           <div className="py-1">
             <input
@@ -216,9 +254,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
               step="1"
               value={workHours}
               onChange={(e) => setWorkHours(Number(e.target.value))}
-              style={{
-                background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${workPercent}%, var(--surface-pill) ${workPercent}%, var(--surface-pill) 100%)`,
-              }}
+              style={{ background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${workPercent}%, var(--surface-pill) ${workPercent}%, var(--surface-pill) 100%)` }}
               className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
           </div>
@@ -248,10 +284,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
       {showDetails && (
         <div className="rounded-2xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs shadow-xs">
           <p className="font-semibold text-[var(--fg)] mb-2 flex items-center gap-1.5 text-[11px]">
-            🎯 Non-Negotiables Today:
+            🎯 Important Today:
           </p>
           {nonNegotiables.length === 0 ? (
-            <p className="text-[10px] text-[var(--muted)]">No critical habits scheduled today.</p>
+            <p className="text-[10px] text-[var(--muted)]">No important habits scheduled today.</p>
           ) : (
             <ul className="space-y-1.5 text-[11px] text-[var(--fg)]">
               {nonNegotiables.map(({ habit, specs }) => (
