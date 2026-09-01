@@ -4,7 +4,7 @@ import { useTrackerStore } from "@/store/tracker-store";
 import { isDayExpected, completionKey, scheduleForMonth } from "@/lib/tracker/schedule";
 import { monthDays } from "@/lib/tracker/stats";
 import { Button } from "@/components/ui/button";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, Grid3X3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AnalyticsPanel() {
@@ -70,16 +70,17 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
+  // Radar Data Calculation
   const radarData = useMemo(() => {
     const list = habitsBreakdown.slice(0, 6);
     const total = Math.max(3, list.length);
-    const viewBoxSize = fullScreen ? 400 : 220;
+    const viewBoxSize = 220;
     const center = viewBoxSize / 2;
-    const maxRadius = fullScreen ? 140 : 60;
-    const labelRadius = fullScreen ? 175 : 85;
+    const maxRadius = 60;
+    const labelRadius = 85;
 
     const points = list.map((item, i) => {
-      const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+      const angle = ((Math.PI * 2) / total) * i - Math.PI / 2;
       const score = Math.max(0.15, Math.min(1, (item.rate || 10) / 100));
 
       const r = maxRadius * score;
@@ -106,7 +107,7 @@ export function AnalyticsPanel() {
 
     const webLevels = [0.33, 0.66, 1].map((level) => {
       return Array.from({ length: total }, (_, i) => {
-        const angle = (Math.PI * 2 / total) * i - Math.PI / 2;
+        const angle = ((Math.PI * 2) / total) * i - Math.PI / 2;
         const r = maxRadius * level;
         return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
       }).join(" ");
@@ -119,21 +120,68 @@ export function AnalyticsPanel() {
       center,
       viewBoxSize,
     };
-  }, [habitsBreakdown, fullScreen]);
+  }, [habitsBreakdown]);
+
+  // Confusion / Correlation Matrix Calculation (Co-occurrence & Pair-wise Synergy)
+  const correlationMatrix = useMemo(() => {
+    const topHabits = habits.slice(0, 8); // أفضل 8 عادات لضمان مساحة عرض مثالية
+    const size = topHabits.length;
+    const matrix: { h1: string; h2: string; correlation: number }[][] = [];
+
+    for (let i = 0; i < size; i++) {
+      const row: { h1: string; h2: string; correlation: number }[] = [];
+      const h1 = topHabits[i];
+
+      for (let j = 0; j < size; j++) {
+        const h2 = topHabits[j];
+
+        if (i === j) {
+          row.push({ h1: h1.name, h2: h2.name, correlation: 1.0 });
+          continue;
+        }
+
+        let bothDone = 0;
+        let eitherExpected = 0;
+
+        allMonthDays.forEach((date) => {
+          const iso = format(date, "yyyy-MM-dd");
+          const s1 = scheduleForMonth(h1, selectedYear, selectedMonth) || h1.schedule;
+          const s2 = scheduleForMonth(h2, selectedYear, selectedMonth) || h2.schedule;
+
+          const e1 = isDayExpected(s1, date);
+          const e2 = isDayExpected(s2, date);
+
+          if (e1 || e2) {
+            eitherExpected++;
+            const d1 = Boolean(completions[completionKey(h1.id, iso)]);
+            const d2 = Boolean(completions[completionKey(h2.id, iso)]);
+            if (d1 && d2) bothDone++;
+          }
+        });
+
+        const score = eitherExpected > 0 ? Number((bothDone / eitherExpected).toFixed(2)) : 0;
+        row.push({ h1: h1.name, h2: h2.name, correlation: score });
+      }
+      matrix.push(row);
+    }
+
+    return { habits: topHabits, matrix };
+  }, [habits, completions, allMonthDays, selectedYear, selectedMonth]);
 
   return (
     <div
       className={cn(
-        "space-y-6 transition-all duration-300",
-        fullScreen && "fixed inset-0 z-50 overflow-y-auto bg-[var(--bg)] p-6 md:p-10 shadow-2xl border-t border-[var(--border)]"
+        "space-y-6 transition-all duration-300 font-sans",
+        fullScreen &&
+          "fixed inset-0 z-50 overflow-y-auto bg-[var(--bg)] p-6 md:p-10 shadow-2xl border-t border-[var(--border)]"
       )}
     >
-      {/* Top Controls */}
-      <div className="flex items-center justify-between rounded-2xl bg-[var(--surface)] p-4 border border-[var(--border)] sticky top-0 z-20 shadow-sm">
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between rounded-2xl bg-[var(--surface)] p-4 border border-[var(--border)]">
         <div>
           <h3 className="text-xs font-semibold text-[var(--fg)]">Chart View</h3>
           <p className="text-[11px] text-[var(--muted)]">
-            Performance analytics and completion trajectory.
+            Performance analytics, correlation matrix, and trajectory tracking.
           </p>
         </div>
         <Button
@@ -147,53 +195,51 @@ export function AnalyticsPanel() {
         </Button>
       </div>
 
-      {/* KPI Cards (Hidden in fullScreen for uncluttered focus) */}
-      {!fullScreen && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Pace</span>
-              <div className="flex size-14 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary-muted)] text-base font-bold text-[var(--fg)] font-serif-title shadow-inner">
-                {paceScore}%
-              </div>
+      {/* 4 KPI Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Pace</span>
+            <div className="flex size-14 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary-muted)] text-base font-bold text-[var(--fg)] font-serif-title shadow-inner">
+              {paceScore}%
             </div>
-            <p className="mt-3 text-xs text-[var(--muted)]">Current monthly velocity</p>
           </div>
-
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">To Target Date</span>
-            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-              {totalCompleted}/{totalExpected}
-            </p>
-            <p className="mt-1 text-xs text-[var(--muted)]">Completed vs scheduled</p>
-          </div>
-
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Tracked Habits</span>
-            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-              {habits.length}
-            </p>
-            <p className="mt-1 text-xs text-[var(--muted)]">Active rows in matrix</p>
-          </div>
-
-          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Perfect Streak</span>
-            <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
-              {totalCompleted > 0 ? "1" : "0"}
-            </p>
-            <p className="mt-1 text-xs text-[var(--muted)]">Consecutive 100% days</p>
-          </div>
+          <p className="mt-3 text-xs text-[var(--muted)]">Current monthly velocity</p>
         </div>
-      )}
 
-      {/* Main Visuals Grid */}
-      <div className={cn("grid gap-6 transition-all duration-300", fullScreen ? "grid-cols-1" : "lg:grid-cols-3")}>
-        {/* 1. Daily Execution Bar Chart */}
-        <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg transition-all", fullScreen && "p-8 md:p-10")}>
-          <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Daily execution</h3>
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">To Target Date</span>
+          <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
+            {totalCompleted}/{totalExpected}
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">Completed vs scheduled</p>
+        </div>
 
-          <div className={cn("mt-6 flex h-48 gap-2", fullScreen && "h-[50vh] gap-4")}>
-            <div className={cn("flex flex-col justify-between text-[9px] font-mono text-[var(--muted)] pr-1 select-none text-right", fullScreen && "text-xs pr-3")}>
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Tracked Habits</span>
+          <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
+            {habits.length}
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">Active rows in matrix</p>
+        </div>
+
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
+          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">Perfect Streak</span>
+          <p className="mt-2 font-serif-title text-3xl font-normal text-[var(--fg)]">
+            {totalCompleted > 0 ? "1" : "0"}
+          </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">Consecutive 100% days</p>
+        </div>
+      </div>
+
+      {/* 2x2 Core Visualizations Grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* 1. Daily Execution (Top Left) */}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
+          <h3 className="text-xs font-semibold text-[var(--fg)]">Daily execution</h3>
+
+          <div className="mt-6 flex h-48 gap-2">
+            <div className="flex flex-col justify-between text-[9px] font-mono text-[var(--muted)] pr-1 select-none text-right">
               <span>100%</span>
               <span>80%</span>
               <span>60%</span>
@@ -209,35 +255,29 @@ export function AnalyticsPanel() {
                 ))}
               </div>
 
-              <div className="flex flex-1 items-end justify-between gap-1 z-10 border-b border-[var(--border)] pb-0.5 relative">
-                {daysBreakdown.slice(fullScreen ? -30 : -14).map((d) => {
+              <div className="flex flex-1 items-end justify-between gap-1 z-10 border-b border-[var(--border)] pb-0.5">
+                {daysBreakdown.slice(-14).map((d) => {
                   const pct = d.expected > 0 ? (d.completed / d.expected) * 100 : 0;
                   return (
-                    <div key={d.iso} className="flex flex-1 flex-col items-center justify-end h-full group">
+                    <div key={d.iso} className="flex flex-1 flex-col items-center justify-end h-full">
                       <div
                         className={cn(
-                          "w-full max-w-[12px] rounded-t transition-all cursor-pointer relative",
-                          fullScreen && "max-w-[24px] rounded-t-md",
+                          "w-full max-w-[14px] rounded-t transition-all cursor-pointer",
                           pct > 0
-                            ? "bg-[var(--primary)] hover:opacity-85"
-                            : "bg-[var(--primary)]/20 hover:bg-[var(--primary)]/30"
+                            ? "bg-[var(--primary)] hover:opacity-85 shadow-xs"
+                            : "bg-[var(--primary-muted)]/30 hover:bg-[var(--primary-muted)]/50"
                         )}
                         style={{ height: `${Math.max(4, pct)}%` }}
-                      >
-                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 min-w-max rounded-md bg-[var(--surface-elevated)] border border-[var(--border)] p-2 text-[10px] text-[var(--fg)] opacity-0 group-hover:opacity-100 transition-opacity z-30 pointer-events-none shadow-xl font-mono">
-                          {format(new Date(d.iso), "eee, MMM d")}<br />
-                          <span className="font-bold text-sm text-[var(--primary)]">{Math.round(pct)}%</span><br />
-                          ({d.completed}/{d.expected} habits)
-                        </div>
-                      </div>
+                        title={`${d.iso}: ${Math.round(pct)}% (${d.completed}/${d.expected})`}
+                      />
                     </div>
                   );
                 })}
               </div>
 
               <div className="flex justify-between gap-1 pt-1 z-10">
-                {daysBreakdown.slice(fullScreen ? -30 : -14).map((d) => (
-                  <span key={d.iso} className={cn("flex-1 text-center text-[9px] font-mono text-[var(--muted)]", fullScreen && "text-[11px]")}>
+                {daysBreakdown.slice(-14).map((d) => (
+                  <span key={d.iso} className="flex-1 text-center text-[9px] font-mono text-[var(--muted)]">
                     {d.iso.slice(8)}
                   </span>
                 ))}
@@ -246,39 +286,45 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 2. Habit Completion Bars */}
-        <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg transition-all", fullScreen && "p-8 md:p-10")}>
-          <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm mb-6")}>Habit completion</h3>
-          <div className={cn("mt-5 space-y-3 max-h-48 overflow-y-auto pr-1 flex-1", fullScreen && "max-h-none space-y-5 mt-0 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5")}>
-            {habitsBreakdown.map((item) => {
-              const pct = Math.round(item.rate);
-              return (
-                <div key={item.habit.id} className={cn("space-y-1", fullScreen && "space-y-2 mt-0")}>
-                  <div className={cn("flex justify-between text-xs", fullScreen && "text-sm")}>
-                    <span className="text-[var(--fg)] font-medium truncate max-w-[130px] md:max-w-[200px]">{item.habit.name}</span>
-                    <span className="text-[var(--muted)] font-mono">{pct}%</span>
+        {/* 2. Habit Completion (Top Right) */}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col">
+          <h3 className="text-xs font-semibold text-[var(--fg)]">Habit completion</h3>
+          <div className="mt-5 space-y-3 max-h-48 overflow-y-auto pr-1">
+            {habitsBreakdown.length === 0 ? (
+              <p className="text-xs text-[var(--muted)] py-8 text-center">No habits added yet.</p>
+            ) : (
+              habitsBreakdown.map((item) => {
+                const pct = Math.round(item.rate);
+                return (
+                  <div key={item.habit.id} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[var(--fg)] font-medium truncate max-w-[140px]">
+                        {item.habit.name}
+                      </span>
+                      <span className="text-[var(--muted)] font-mono">{pct}%</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-elevated)]">
+                      <div
+                        className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className={cn("h-2 w-full overflow-hidden rounded-full bg-[var(--surface-elevated)]", fullScreen && "h-3")}>
-                    <div className="h-full rounded-full bg-[var(--primary)] transition-all duration-500" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* 3. Mastery Radar */}
-        <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col transition-all", fullScreen ? "p-8 md:p-10" : "justify-between")}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
+        {/* 3. Mastery Radar (Bottom Left) */}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-[var(--fg)]">Mastery radar</h3>
             <span className="text-[10px] text-[var(--muted)]">Coverage</span>
           </div>
 
-          <div className={cn("relative my-auto flex items-center justify-center py-2 flex-1", fullScreen && "h-[50vh]")}>
-            <svg
-              viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`}
-              className={cn("size-52 overflow-visible transition-all duration-300", fullScreen && "size-[80%]")}
-            >
+          <div className="relative my-auto flex items-center justify-center py-2">
+            <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className="size-52 overflow-visible">
               {radarData.webLevels.map((poly, idx) => (
                 <polygon
                   key={idx}
@@ -308,20 +354,13 @@ export function AnalyticsPanel() {
                   points={radarData.polygonPath}
                   fill="var(--primary-muted)"
                   stroke="var(--primary)"
-                  strokeWidth={fullScreen ? "2.5" : "1.8"}
+                  strokeWidth="1.8"
                   className="transition-all duration-500"
                 />
               )}
 
               {radarData.points.map((p, idx) => (
-                <circle
-                  key={idx}
-                  cx={p.x}
-                  cy={p.y}
-                  r={fullScreen ? "4.5" : "3"}
-                  fill="var(--primary)"
-                  className="transition-all duration-500"
-                />
+                <circle key={idx} cx={p.x} cy={p.y} r="3" fill="var(--primary)" className="transition-all duration-500" />
               ))}
 
               {radarData.points.map((p, idx) => (
@@ -331,43 +370,37 @@ export function AnalyticsPanel() {
                   y={p.labelY}
                   textAnchor={p.textAnchor}
                   dominantBaseline="central"
-                  className={cn("fill-[var(--fg)] text-[9.5px] font-medium select-none transition-all duration-300", fullScreen && "text-[13px] font-semibold")}
+                  className="fill-[var(--fg)] text-[9.5px] font-medium select-none"
                 >
-                  {fullScreen ? p.name : (p.name.length > 11 ? `${p.name.slice(0, 10)}..` : p.name)}
+                  {p.name.length > 11 ? `${p.name.slice(0, 10)}..` : p.name}
                 </text>
               ))}
             </svg>
           </div>
         </div>
-      </div>
 
-      {/* Month Heatmap (Compact & Resilient) */}
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xs font-semibold text-[var(--fg)]">Month Heatmap</h3>
-            <p className="mt-0.5 text-xs text-[var(--muted)]">Daily completion density</p>
+        {/* 4. Month Heatmap (Bottom Right) */}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-[var(--fg)]">Month heatmap</h3>
+            <div className="flex items-center gap-1.5 text-[9px] text-[var(--muted)]">
+              <span>Less</span>
+              <div className="size-2 rounded-xs bg-[var(--surface-elevated)] border border-[var(--border)]"></div>
+              <div className="size-2 rounded-xs bg-[var(--primary-muted)]"></div>
+              <div className="size-2 rounded-xs bg-[var(--primary)]"></div>
+              <span>More</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-[var(--muted)]">
-            <span>Less</span>
-            <div className="size-2.5 rounded-sm bg-[var(--surface-elevated)] border border-[var(--border)]"></div>
-            <div className="size-2.5 rounded-sm bg-[var(--primary-muted)]/40"></div>
-            <div className="size-2.5 rounded-sm bg-[var(--primary-muted)] border border-[var(--primary)]/30"></div>
-            <div className="size-2.5 rounded-sm bg-[var(--primary)]"></div>
-            <span>More</span>
-          </div>
-        </div>
 
-        <div className="mt-5 flex justify-start">
-          <div className="inline-block max-w-full">
+          <div className="my-auto pt-3">
             <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-mono font-medium text-[var(--muted)] uppercase mb-2">
-              <span className="w-8">Mon</span>
-              <span className="w-8">Tue</span>
-              <span className="w-8">Wed</span>
-              <span className="w-8">Thu</span>
-              <span className="w-8">Fri</span>
-              <span className="w-8">Sat</span>
-              <span className="w-8">Sun</span>
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+              <span>Sun</span>
             </div>
 
             <div className="grid grid-cols-7 gap-1.5">
@@ -378,7 +411,7 @@ export function AnalyticsPanel() {
                     key={d.iso}
                     title={`${d.iso}: ${Math.round(pct * 100)}%`}
                     className={cn(
-                      "size-8 rounded-lg flex items-center justify-center text-[10px] font-mono transition-all duration-150 cursor-pointer select-none",
+                      "aspect-square rounded-xl flex items-center justify-center text-[10px] font-mono transition-all duration-150 cursor-pointer select-none",
                       pct >= 0.8
                         ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-bold shadow-xs scale-[0.98]"
                         : pct >= 0.4
@@ -395,6 +428,92 @@ export function AnalyticsPanel() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 5. Habit Correlation & Confusion Matrix (The 5th Unified Component) */}
+      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 border-b border-[var(--border)] pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 items-center justify-center rounded-xl bg-[var(--primary-muted)] text-[var(--primary)]">
+              <Grid3X3 className="size-4" />
+            </div>
+            <div>
+              <h3 className="font-serif-title text-xl text-[var(--fg)]">Confusion & Correlation Matrix</h3>
+              <p className="text-xs text-[var(--muted)]">
+                Cross-habit co-occurrence and execution alignment probability.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-[var(--muted)]">
+            <span>Low (0.0)</span>
+            <div className="size-3 rounded bg-[var(--surface-elevated)] border border-[var(--border)]"></div>
+            <div className="size-3 rounded bg-[var(--primary-muted)]"></div>
+            <div className="size-3 rounded bg-[var(--primary)]"></div>
+            <span>High (1.0)</span>
+          </div>
+        </div>
+
+        {correlationMatrix.habits.length === 0 ? (
+          <p className="text-xs text-[var(--muted)] py-6 text-center">Add habits to compute pairwise correlation.</p>
+        ) : (
+          <div className="overflow-x-auto pb-2">
+            <table className="min-w-full border-separate border-spacing-1.5">
+              <thead>
+                <tr>
+                  <th className="p-2 text-left text-[11px] font-medium text-[var(--muted)] max-w-[120px] truncate">
+                    Habit
+                  </th>
+                  {correlationMatrix.habits.map((h) => (
+                    <th
+                      key={h.id}
+                      className="p-2 text-center text-[10px] font-mono text-[var(--muted)] max-w-[90px] truncate"
+                      title={h.name}
+                    >
+                      {h.name.length > 8 ? `${h.name.slice(0, 7)}..` : h.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {correlationMatrix.matrix.map((row, i) => (
+                  <tr key={i}>
+                    <td
+                      className="p-2 text-xs font-medium text-[var(--fg)] max-w-[120px] truncate"
+                      title={correlationMatrix.habits[i].name}
+                    >
+                      {correlationMatrix.habits[i].name}
+                    </td>
+                    {row.map((cell, j) => {
+                      const val = cell.correlation;
+                      const isDiagonal = i === j;
+                      return (
+                        <td key={j} className="p-0 text-center">
+                          <div
+                            title={`${cell.h1} ↔ ${cell.h2}: ${Math.round(val * 100)}% Co-occurrence`}
+                            className={cn(
+                              "size-10 sm:size-11 mx-auto rounded-xl flex items-center justify-center text-[10.5px] font-mono transition-all select-none border",
+                              isDiagonal
+                                ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-bold border-[var(--primary)] shadow-xs"
+                                : val >= 0.75
+                                ? "bg-[var(--primary-muted)] text-[var(--fg)] font-semibold border-[var(--primary)]/40"
+                                : val >= 0.4
+                                ? "bg-[var(--primary-muted)]/40 text-[var(--fg)] border-[var(--border)]"
+                                : val > 0
+                                ? "bg-[var(--surface-elevated)] text-[var(--muted)] border-[var(--border)]"
+                                : "bg-[var(--surface-pill)]/40 text-[var(--muted)]/40 border-transparent"
+                            )}
+                          >
+                            {val.toFixed(2)}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
