@@ -1,216 +1,199 @@
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { NativeSelect } from "@/components/tracker/native-select";
-import { ProgressRing } from "@/components/tracker/progress-ring";
-import { Textarea } from "@/components/ui/textarea";
-import { completionKey, isDayExpected, isRestDay, scheduleForMonth } from "@/lib/tracker/schedule";
-import { cellStatus } from "@/lib/tracker/stats";
-import type { Habit, MonthStats } from "@/lib/tracker/types";
+import { Habit } from "@/lib/tracker/types";
+import { isDayExpected, isRestDay, completionKey, scheduleForMonth } from "@/lib/tracker/schedule";
 import { useTrackerStore } from "@/store/tracker-store";
+import { Calendar, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function AuditPanel({
-  habits,
-  stats,
-}: {
+interface AuditPanelProps {
   habits: Habit[];
-  stats: MonthStats;
-}) {
+  stats: any;
+}
+
+export function AuditPanel({ habits }: AuditPanelProps) {
+  const [inspectDate, setInspectDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const completions = useTrackerStore((s) => s.completions);
-  const setNote = useTrackerStore((s) => s.setNote);
   const setRestDay = useTrackerStore((s) => s.setRestDay);
-  const inspectIso = useTrackerStore((s) => s.inspectIso);
-  const setInspectIso = useTrackerStore((s) => s.setInspectIso);
-  const [editing, setEditing] = useState<string | null>(null);
+  const selectedYear = useTrackerStore((s) => s.selectedYear);
+  const selectedMonth = useTrackerStore((s) => s.selectedMonth);
 
-  const defaultIso = stats.daily.some((d) => d.iso === stats.todayIso)
-    ? stats.todayIso
-    : (stats.daily[stats.daily.length - 1]?.iso ?? stats.todayIso);
-  const iso = inspectIso && stats.daily.some((d) => d.iso === inspectIso) ? inspectIso : defaultIso;
-  const day = stats.daily.find((d) => d.iso === iso);
-  const dayDate = day?.date ?? parseISO(iso);
+  const dateObj = parseISO(inspectDate);
 
-  const rows = useMemo(() => {
-    const active = habits.filter((h) => !h.archived);
-    return active.map((habit) => {
-      const schedule = scheduleForMonth(habit, dayDate.getFullYear(), dayDate.getMonth() + 1);
-      const scheduledByRule = Boolean(schedule && isDayExpected(schedule, dayDate));
-      const restDay = scheduledByRule && isRestDay(habit, iso);
-      const expected = scheduledByRule && !restDay;
-      const entry = completions[completionKey(habit.id, iso)];
-      const status = cellStatus(expected, Boolean(entry), iso, stats.todayIso);
-      return { habit, expected, scheduledByRule, restDay, entry, status };
+  const activeHabits = useMemo(() => habits.filter((h) => !h.archived), [habits]);
+
+  // تصنيف العادات ليوم الفحص
+  const scheduledHabits = useMemo(() => {
+    return activeHabits.filter((h) => {
+      const schedule = scheduleForMonth(h, selectedYear, selectedMonth) || h.schedule;
+      return isDayExpected(schedule, dateObj) && !isRestDay(h, inspectDate);
     });
-  }, [habits, completions, dayDate, iso, stats.todayIso]);
+  }, [activeHabits, inspectDate, dateObj, selectedYear, selectedMonth]);
 
-  const scheduled = rows.filter((r) => r.expected);
-  const restDays = rows.filter((r) => r.restDay);
-  const notScheduled = rows.filter((r) => !r.scheduledByRule);
-  const pct = day && day.expected > 0 ? day.score : 0;
+  const restHabits = useMemo(() => {
+    return activeHabits.filter((h) => isRestDay(h, inspectDate));
+  }, [activeHabits, inspectDate]);
+
+  const completedCount = scheduledHabits.filter(
+    (h) => Boolean(completions[completionKey(h.id, inspectDate)])
+  ).length;
+
+  const totalCount = scheduledHabits.length;
+  const score = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-6 font-sans">
+      {/* Top Header Card with Date Selector */}
+      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-7 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-xl tracking-tight">Daily audit</h2>
-          <p className="text-sm text-muted">
+          <h2 className="font-serif-title text-2xl font-normal text-[var(--fg)]">Daily audit</h2>
+          <p className="mt-1 text-xs text-[var(--muted)]">
             Future days show as upcoming, not missed. Notes stay attached to the habit ID.
           </p>
         </div>
-        <NativeSelect value={iso} onChange={(e) => setInspectIso(e.target.value)}>
-          {stats.daily.map((d) => (
-            <option key={d.iso} value={d.iso}>
-              {d.label}
-              {d.iso === stats.todayIso ? " · today" : ""}
-            </option>
-          ))}
-        </NativeSelect>
+
+        {/* Date Selector Pill */}
+        <div className="flex items-center gap-2 rounded-2xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 py-2.5 shadow-xs">
+          <input
+            type="date"
+            value={inspectDate}
+            onChange={(e) => setInspectDate(e.target.value)}
+            className="bg-transparent text-xs font-semibold text-[var(--fg)] focus:outline-none cursor-pointer"
+          />
+          <Calendar className="size-4 text-[var(--muted)]" />
+        </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        <Card>
-          <CardContent>
-            <ProgressRing percentage={pct} label={day?.label ?? "Day"} />
-          </CardContent>
-        </Card>
-        <Card className="md:col-span-3">
-          <CardContent className="flex h-full flex-col justify-center gap-2">
-            <p className="text-xs font-medium tracking-wide text-muted uppercase">Day progress</p>
-            <p className="font-display text-3xl tabular-nums">
-              {day?.completed ?? 0} / {day?.expected ?? 0}
-            </p>
-            <p className="text-sm text-subtle">
-              Scheduled habits on {day?.label ?? iso}. Pick any day to inspect it.
-            </p>
-          </CardContent>
-        </Card>
+      {/* KPI Cards Row (Progress Gauge & Day Progress Counter) */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        {/* Circular Progress Gauge */}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex items-center justify-center">
+          <div className="relative flex size-28 items-center justify-center">
+            <svg className="size-full -rotate-90" viewBox="0 0 80 80">
+              <circle
+                cx="40"
+                cy="40"
+                r="32"
+                className="stroke-[var(--surface-pill)]"
+                strokeWidth="6"
+                fill="none"
+              />
+              <circle
+                cx="40"
+                cy="40"
+                r="32"
+                className="stroke-[var(--primary)] transition-all duration-500"
+                strokeWidth="6"
+                strokeDasharray={2 * Math.PI * 32}
+                strokeDashoffset={2 * Math.PI * 32 * (1 - score / 100)}
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center text-center">
+              <span className="font-serif-title text-2xl font-bold text-[var(--fg)] leading-none">
+                {score}%
+              </span>
+              <span className="text-[9px] font-semibold text-[var(--muted)] uppercase tracking-wider mt-1">
+                DAY
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Day Progress Numbers */}
+        <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-7 shadow-lg flex flex-col justify-center">
+          <span className="text-[10px] font-semibold tracking-wider text-[var(--muted)] uppercase">
+            DAY PROGRESS
+          </span>
+          <p className="mt-2 font-serif-title text-4xl font-normal text-[var(--fg)]">
+            {completedCount} / {totalCount}
+          </p>
+          <p className="mt-1.5 text-xs text-[var(--muted)]">
+            Scheduled habits on this day. Pick any day to inspect it.
+          </p>
+        </div>
       </div>
 
-      <section>
-        <h3 className="mb-2 text-sm font-medium text-fg">Scheduled</h3>
-        {scheduled.length === 0 ? (
-          <p className="text-sm text-muted">No habits are scheduled for this day.</p>
+      {/* Scheduled Habits List (Cards Stack matching Image 4) */}
+      <div className="space-y-3">
+        <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase block px-1">
+          Scheduled
+        </span>
+
+        {scheduledHabits.length === 0 ? (
+          <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-center text-xs text-[var(--muted)]">
+            No habits scheduled for this day.
+          </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {scheduled.map(({ habit, entry, status }) => (
+          scheduledHabits.map((habit) => {
+            const isDone = Boolean(completions[completionKey(habit.id, inspectDate)]);
+            return (
               <div
                 key={habit.id}
-                className="flex flex-col gap-2 rounded-lg bg-surface px-4 py-3 shadow-[var(--shadow-border)] transition-transform duration-150 hover:translate-x-1"
+                className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xs hover:border-[var(--muted)] transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <Badge
-                    variant={
-                      status === "done" ? "done" : status === "miss" ? "miss" : "pending"
-                    }
+                  <span
+                    className={cn(
+                      "rounded-lg px-2.5 py-1 text-[10px] font-mono font-semibold uppercase",
+                      isDone
+                        ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                        : "bg-[var(--surface-elevated)] text-[var(--muted)] border border-[var(--border)]"
+                    )}
                   >
-                    {status === "done"
-                      ? "Completed"
-                      : status === "miss"
-                        ? "Missed"
-                        : status === "upcoming"
-                          ? "Upcoming"
-                          : "Pending"}
-                  </Badge>
-                  <span className="min-w-0 flex-1 truncate text-sm text-fg">{habit.name}</span>
-                  <span className="text-xs tabular-nums text-muted">
-                    {entry ? format(parseISO(entry.at), "HH:mm") : "--:--"}
+                    {isDone ? "DONE" : "PENDING"}
                   </span>
-                  <Button
+                  <span className={cn("text-xs font-medium text-[var(--fg)]", isDone && "line-through opacity-70")}>
+                    {habit.name}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <button
                     type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setRestDay(habit.id, iso, true);
-                      toast(`${habit.name} is resting on ${day?.label ?? iso}.`);
-                    }}
+                    onClick={() => setRestDay(habit.id, inspectDate, true)}
+                    className="text-xs text-[var(--muted)] hover:text-[var(--primary)] underline cursor-pointer"
                   >
                     Rest this day
-                  </Button>
+                  </button>
                 </div>
-                {status === "done" && (
-                  <div>
-                    {editing === habit.id ? (
-                      <Textarea
-                        autoFocus
-                        defaultValue={entry?.note ?? ""}
-                        placeholder="Add a note"
-                        onBlur={(e) => {
-                          setNote(habit.id, iso, e.target.value);
-                          setEditing(null);
-                        }}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        className="text-left text-xs text-muted hover:text-fg"
-                        onClick={() => setEditing(habit.id)}
-                      >
-                        {entry?.note || "Add a note"}
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
-            ))}
-          </div>
+            );
+          })
         )}
-      </section>
+      </div>
 
-      <section>
-        <h3 className="mb-2 text-sm font-medium text-fg">Rest days</h3>
-        {restDays.length === 0 ? (
-          <p className="text-sm text-muted">No custom rest days for {day?.label ?? iso}.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {restDays.map(({ habit }) => (
-              <div
-                key={habit.id}
-                className="flex flex-col gap-2 rounded-lg bg-surface px-4 py-3 opacity-85 shadow-[var(--shadow-border)]"
-              >
-                <div className="flex items-center gap-3">
-                  <Badge variant="rest">Rest</Badge>
-                  <span className="min-w-0 flex-1 truncate text-sm text-fg">{habit.name}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setRestDay(habit.id, iso, false);
-                      toast(`Rest day removed for ${habit.name}.`);
-                    }}
-                  >
-                    Make scheduled
-                  </Button>
-                </div>
-                <span className="text-xs text-muted">This date is excluded from this habit's completion rate and the day's denominator.</span>
+      {/* Rest Days Section */}
+      {restHabits.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase block px-1">
+            Rest days
+          </span>
+          {restHabits.map((habit) => (
+            <div
+              key={habit.id}
+              className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xs"
+            >
+              <div className="flex items-center gap-3">
+                <span className="rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2.5 py-1 text-[10px] font-mono font-semibold uppercase">
+                  REST
+                </span>
+                <span className="text-xs font-medium text-[var(--muted)]">{habit.name}</span>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h3 className="mb-2 text-sm font-medium text-fg">Not scheduled</h3>
-        {notScheduled.length === 0 ? (
-          <p className="text-sm text-muted">Every tracked habit is scheduled by its normal calendar rule on this day.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {notScheduled.map(({ habit }) => (
-              <div
-                key={habit.id}
-                className="flex items-center gap-3 rounded-lg bg-surface px-4 py-3 opacity-80 shadow-[var(--shadow-border)]"
+              <button
+                type="button"
+                onClick={() => setRestDay(habit.id, inspectDate, false)}
+                className="text-xs text-[var(--primary)] hover:underline cursor-pointer"
               >
-                <Badge variant="rest">Rest</Badge>
-                <span className="min-w-0 flex-1 truncate text-sm text-fg">{habit.name}</span>
-                <span className="text-xs text-muted">Not scheduled</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+                Make scheduled
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
+export default AuditPanel;
