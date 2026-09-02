@@ -172,8 +172,8 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1 text-right">
           <span className="text-[9px] text-[var(--muted)] uppercase block">Readiness</span>
-          {/* الأرقام بخط Playfair */}
-          <span className="text-sm font-['Playfair_Display'] text-[var(--primary)]">{readinessScore}%</span>
+          {/* الأرقام بخط Merriweather */}
+          <span className="text-sm font-['Merriweather'] text-[var(--primary)]">{readinessScore}%</span>
         </div>
       </div>
 
@@ -200,7 +200,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                   className="w-[70%] bg-transparent text-[var(--muted)] outline-none focus:text-[var(--fg)] focus:border-b focus:border-[var(--primary)] transition-colors truncate"
                   title="Click to rename"
                 />
-                <span className="font-['Playfair_Display'] text-[14px] text-[var(--primary)] shrink-0">{block.hours}h</span>
+                <span className="font-['Merriweather'] text-[14px] text-[var(--primary)] shrink-0">{block.hours}h</span>
               </div>
 
               <div className="py-1">
@@ -215,7 +215,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                   className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
                 />
               </div>
-              <div className="flex justify-between text-[8.5px] font-['Playfair_Display'] text-[10px] text-[var(--muted)]/70 px-0.5 select-none">
+              <div className="flex justify-between text-[8.5px] font-['Merriweather'] text-[10px] text-[var(--muted)]/70 px-0.5 select-none">
                 <span>0h</span>
                 <span>12h</span>
                 <span>24h</span>
@@ -237,7 +237,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
 
       <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5 mt-1">
         <span>
-          Net Available: <strong className="text-[var(--fg)] font-['Playfair_Display'] text-[15px]">{availableHours}h</strong>
+          Net Available: <strong className="text-[var(--fg)] font-['Merriweather'] text-[15px]">{availableHours}h</strong>
         </span>
         <button
           type="button"
@@ -263,7 +263,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                   className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1.5 last:border-0 last:pb-0"
                 >
                   <span className="truncate max-w-[140px]">• {habit.name}</span>
-                  <span className="text-[11px] font-['Playfair_Display'] text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded-md border border-[var(--primary)]/20">
+                  <span className="text-[11px] font-['Merriweather'] text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded-md border border-[var(--primary)]/20">
                     {specs.durationLabel}
                   </span>
                 </li>
@@ -295,7 +295,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                 </p>
                 <span className="text-[9.5px] text-[var(--muted)] block mt-0.5">{statusLabel}</span>
               </div>
-              <div className="text-[15px] font-['Playfair_Display'] text-[var(--fg)]">
+              <div className="text-[15px] font-['Merriweather'] text-[var(--fg)]">
                 {isDone ? "✓" : `${chance}%`}
               </div>
             </div>
