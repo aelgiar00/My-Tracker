@@ -218,12 +218,12 @@ export function TrackerApp() {
       <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           
-          {/* اللوجو الثابت بحجم متوسط متناسق */}
-          <div className="flex items-center -ml-2">
+          {/* اللوجو الثابت بتكبير مضاعف (Massive Size) */}
+          <div className="flex items-center -ml-2 sm:-ml-4">
             <img 
               src={`/logo-${theme}.png`} 
               alt="MyTracker Logo" 
-              className="h-16 sm:h-20 w-auto object-contain drop-shadow-sm transition-transform hover:scale-[1.02]"
+              className="h-32 sm:h-40 md:h-48 lg:h-56 w-auto object-contain drop-shadow-xl transition-transform hover:scale-[1.02]"
               onError={(e) => {
                 e.currentTarget.src = "/logo-lavender.png";
               }}
@@ -655,7 +655,7 @@ export function TrackerApp() {
                   todayIso={isoDate(today)}
                 />
                 <div className="rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)]">
-                  <h3 className="text-sm font-bold text-[var(--fg)]">Archived</h3>
+                  <h3 className="text-xl font-bold tracking-tight text-[var(--fg)]">Archived</h3>
                   {archived.length === 0 ? (
                     <p className="mt-2 text-xs text-[var(--muted)]">No archived habits.</p>
                   ) : (
