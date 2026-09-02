@@ -230,12 +230,13 @@ export function HabitMatrix({
                           {habit.name}
                         </span>
                         {isPausedThisMonth && (
-                          <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-mono">
+                          <span className="text-[9px] bg-[var(--muted)]/10 text-[var(--muted)] border border-[var(--border)] px-1.5 py-0.5 rounded font-mono">
                             Paused
                           </span>
                         )}
+                        {/* 🎯 تم ربط الـ Target Met بالثيم (Primary Color) بدل الأخضر */}
                         {isMonthlyTargetReached && !isPausedThisMonth && (
-                          <span className="text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono font-medium">
+                          <span className="text-[9px] bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 px-1.5 py-0.5 rounded font-mono font-medium">
                             Target Met ({monthDoneCount}/{schedule.targetDays})
                           </span>
                         )}
@@ -246,7 +247,7 @@ export function HabitMatrix({
                       <NativeSelect
                         className={cn(
                           "h-8 w-36 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]",
-                          isPausedThisMonth && "border-amber-500/40 text-amber-300"
+                          isPausedThisMonth && "border-[var(--muted)]/40 text-[var(--muted)]"
                         )}
                         value={currentScheduleValue}
                         onChange={(e) => handleScheduleChange(habit, e.target.value)}
@@ -283,13 +284,13 @@ export function HabitMatrix({
                         );
                       }
 
-                      // 2. التحويل التلقائي إلى Rest عند اكتمال التارجت الشهري
+                      // 2. التحويل التلقائي إلى Rest عند اكتمال التارجت الشهري (مربوطة بالثيم)
                       if (isMonthlyTargetReached && !isDone) {
                         return (
                           <td key={iso} className="px-1 text-center">
                             <div
                               title={`Target achieved (${schedule.targetDays}/${schedule.targetDays})! Auto-rest for remainder of month.`}
-                              className="flex size-7 items-center justify-center text-xs font-bold text-emerald-400/60 bg-emerald-500/5 rounded-lg border border-emerald-500/15 select-none cursor-default"
+                              className="flex size-7 items-center justify-center text-xs font-bold text-[var(--primary)]/50 bg-[var(--primary)]/5 rounded-lg border border-[var(--primary)]/10 select-none cursor-default"
                             >
                               —
                             </div>
@@ -297,7 +298,7 @@ export function HabitMatrix({
                         );
                       }
 
-                      // 3. حالة الـ Rest Day اليدوي
+                      // 3. حالة الـ Rest Day اليدوي (بقت هادية ومريحة للعين)
                       if (isRest) {
                         return (
                           <td key={iso} className="px-1 text-center">
@@ -308,7 +309,7 @@ export function HabitMatrix({
                                 toast.info(`Activated "${habit.name}" for ${iso}`);
                               }}
                               title="Rest day (Click to activate)"
-                              className="flex size-7 items-center justify-center rounded-lg text-xs font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 hover:bg-amber-400/20 transition-all cursor-pointer"
+                              className="flex size-7 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted)] bg-[var(--surface-elevated)] border border-[var(--border)] hover:border-[var(--muted)] transition-all cursor-pointer"
                             >
                               —
                             </button>
@@ -316,13 +317,13 @@ export function HabitMatrix({
                         );
                       }
 
-                      // 4. يوم غير مجدول في الأسبوع
+                      // 4. يوم غير مجدول في الأسبوع (مخفي/خافت بوضوح)
                       if (!expected) {
                         return (
                           <td key={iso} className="px-1 text-center">
                             <div
                               title="Unscheduled day"
-                              className="flex size-7 items-center justify-center text-xs text-[var(--muted)]/30 select-none"
+                              className="flex size-7 items-center justify-center text-xs text-[var(--muted)] opacity-30 select-none"
                             >
                               —
                             </div>
@@ -375,7 +376,7 @@ export function HabitMatrix({
                           className={cn(
                             "flex size-7 items-center justify-center rounded-lg border transition-colors cursor-pointer",
                             isPausedThisMonth
-                              ? "border-amber-500/40 text-amber-400 bg-amber-400/10 hover:bg-amber-400/20"
+                              ? "border-[var(--primary)]/30 text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20"
                               : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
                           )}
                         >
@@ -397,7 +398,7 @@ export function HabitMatrix({
                           className={cn(
                             "flex size-7 items-center justify-center rounded-lg border transition-colors cursor-pointer",
                             isTodayRest
-                              ? "border-amber-400/50 text-amber-400 bg-amber-400/15"
+                              ? "border-[var(--primary)]/30 text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20"
                               : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
                           )}
                         >
