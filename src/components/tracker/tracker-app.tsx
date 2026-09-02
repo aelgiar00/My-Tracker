@@ -215,26 +215,34 @@ export function TrackerApp() {
       )}
 
       {/* Header */}
-      <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          {/* Inline SVG Logo تماماً زي الصورة الأصلية */}
-          <div className="flex items-center bg-[var(--surface)] p-2.5 rounded-2xl border border-[var(--border)] shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" className="h-10 sm:h-12 w-auto">
-              {/* Checkbox Icon */}
-              <g transform="translate(10, 45)">
-                <rect x="0" y="0" width="22" height="22" rx="4" fill="none" stroke="#b794f4" stroke-width="3.5"/>
-                <path d="M 5 11 L 9 15 L 17 7" fill="none" stroke="#b794f4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+          
+          {/* كارت اللوجو الفخم والمكبر */}
+          <div className="flex items-center justify-center bg-[var(--surface-elevated)] p-4 sm:p-5 rounded-3xl border border-[var(--border)] shadow-lg shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 120" className="h-12 sm:h-16 w-auto">
+              <defs>
+                <style>
+                  {`@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap');`}
+                </style>
+              </defs>
+              <g transform="translate(10, 15)">
+                {/* Checkbox Icon */}
+                <g transform="translate(0, 38)">
+                  <rect x="0" y="0" width="28" height="28" rx="6" fill="none" stroke="#b794f4" strokeWidth="4"/>
+                  <path d="M 6 14 L 12 20 L 22 8" fill="none" stroke="#b794f4" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+                </g>
+                {/* MyTracker Text */}
+                <text x="36" y="68" style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: "76px", fill: "#b794f4" }}>
+                  My<tspan style={{ fontWeight: 700, fill: "var(--fg)" }}>Tracker</tspan>
+                </text>
+                {/* Accent slash */}
+                <polygon points="385,8 410,-8 422,8 397,24" fill="#b794f4" />
+                {/* Slogan */}
+                <text x="40" y="100" style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: "16px", fill: "var(--muted)", letterSpacing: "1px" }}>
+                  Track it <tspan style={{ fill: "#b794f4", fontWeight: 700 }}>-</tspan> Build it <tspan style={{ fill: "#b794f4", fontWeight: 700 }}>-</tspan> Achieve it
+                </text>
               </g>
-              {/* MyTracker Text */}
-              <text x="42" y="65" style={{ fontFamily: "inherit", fontWeight: 800, fontSize: "64px", fill: "#b794f4" }}>
-                My<tspan style={{ fontWeight: 700, fill: "var(--fg)" }}>Tracker</tspan>
-              </text>
-              {/* Accent slash */}
-              <polygon points="340,15 358,3 365,15 348,27" fill="#b794f4" />
-              {/* Slogan */}
-              <text x="140" y="95" style={{ fontFamily: "inherit", fontWeight: 400, fontSize: "14px", fill: "var(--muted)", letterSpacing: "0.5px" }}>
-                Track it <tspan style={{ fill: "#b794f4", fontWeight: 700 }}>-</tspan> Build it <tspan style={{ fill: "#b794f4", fontWeight: 700 }}>-</tspan> Achieve it
-              </text>
             </svg>
           </div>
 
@@ -242,10 +250,10 @@ export function TrackerApp() {
             <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
               EXECUTION LOG
             </p>
-            <h1 className="font-serif-title mt-0.5 text-3xl sm:text-4xl font-normal tracking-tight text-[var(--fg)]">
+            <h1 className="font-serif-title mt-1 text-4xl sm:text-5xl font-normal tracking-tight text-[var(--fg)]">
               {MONTHS[selectedMonth - 1]} {selectedYear}
             </h1>
-            <p className="text-xs text-[var(--muted)]">
+            <p className="text-xs text-[var(--muted)] mt-1.5">
               Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
               {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
             </p>
@@ -659,7 +667,7 @@ export function TrackerApp() {
             {statsSubTab === "analytics" && <AnalyticsPanel />}
             {statsSubTab === "audit" && <AuditPanel habits={habits} stats={stats} />}
             {statsSubTab === "ml" && <MlPanel habits={habits} completions={completions} />}
-            {statsSubTag === "manage" && (
+            {statsSubTab === "manage" && (
               <div className="flex flex-col gap-6">
                 <BulkUpdatePanel
                   days={activeDays.map((d) => ({ iso: isoDate(d), label: format(d, "EEE d") }))}
