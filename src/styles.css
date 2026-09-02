@@ -37,18 +37,34 @@
 
   /* 3. Paper Theme (Warm Cream / Olive-Brown Accent) */
   :root[data-theme="paper"] {
-    --bg: #F1ECE2; /* لون الورق الدافئ للخلفية */
-    --surface: #FBF9F4; /* لون الكروت (أبيض كريمي) */
-    --surface-elevated: #E4DDCE; /* درجة أغمق للـ Hover */
-    --surface-pill: #D8D0C0; /* للزراير والـ Pills */
-    --fg: #2A2620; /* لون النصوص الأساسي (أسود دافئ) */
-    --muted: #6E6656; /* لون النصوص الفرعية */
-    --border: #D8D0C0; /* لون الحدود */
-    --primary: #4A4032; /* اللون البني/الزيتوني الأساسي */
-    --primary-foreground: #FBF9F4; /* لون النص جوه الزرار الأساسي */
-    --primary-muted: rgba(74, 64, 50, 0.12); /* شفافية من اللون الأساسي */
+    --bg: #F1ECE2; 
+    --surface: #FBF9F4; 
+    --surface-elevated: #E4DDCE; 
+    --surface-pill: #D8D0C0; 
+    --fg: #2A2620; 
+    --muted: #6E6656; 
+    --border: #D8D0C0; 
+    --primary: #4A4032; 
+    --primary-foreground: #FBF9F4; 
+    --primary-muted: rgba(74, 64, 50, 0.12); 
     --glow: rgba(74, 64, 50, 0.20);
     color-scheme: light;
+  }
+
+  /* 4. Obsidian Gold Theme (Near-Black / Amber Gold Accent) */
+  :root[data-theme="obsidian"] {
+    --bg: #0A0A0A; /* أسود عميق */
+    --surface: #161616; /* أفتح درجة بسيطة للكروت */
+    --surface-elevated: #1e1e1e; /* للـ Hover */
+    --surface-pill: #2E2A22; /* للزراير والـ Pills متناسق مع البوردر */
+    --fg: #F2F1EC; /* لون النصوص الأساسي */
+    --muted: #9A968A; /* لون النصوص الفرعية */
+    --border: #2E2A22; /* لون الحدود دافئ */
+    --primary: #C9A24B; /* اللون الذهبي المميز */
+    --primary-foreground: #0A0A0A; /* نص أسود على الزرار الذهبي لتباين أقوى */
+    --primary-muted: rgba(201, 162, 75, 0.16);
+    --glow: rgba(232, 201, 122, 0.25); /* توهج بلون ذهبي أفتح */
+    color-scheme: dark;
   }
 
   * {
@@ -88,7 +104,7 @@
     min-height: 100vh;
   }
 
-  /* خلفية النوافذ المنبثقة بشفافية تناسب أي ثيم (بتشتغل مع الغامق والفاتح) */
+  /* خلفية النوافذ المنبثقة */
   .fixed.inset-0.z-50.bg-black\/80,
   .fixed.inset-0.z-50.bg-background\/80 {
     background-color: rgba(0, 0, 0, 0.45) !important;
