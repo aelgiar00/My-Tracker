@@ -414,7 +414,6 @@ export function TrackerApp() {
                     <span className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em]">
                       {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
                     </span>
-                    {/* تم توحيد الـ Font هنا بحيث الرقم واسم اليوم الاتنين بخط Merriweather */}
                     <h3 className="text-4xl sm:text-5xl tracking-tight text-[var(--fg)] mt-1 flex items-baseline gap-2 justify-center sm:justify-start font-['Merriweather'] font-normal">
                       <span>{format(inspectDateObj, "d")}</span>
                       <span>{format(inspectDateObj, "EEE")}</span>
@@ -426,7 +425,8 @@ export function TrackerApp() {
                     </p>
                   </div>
                   
-                  <div className="relative flex size-36 sm:size-40 items-center justify-center select-none shrink-0">
+                  {/* الدائرة بقت بحجم 44 و 48 بدل 36 و 40 عشان الـ 100% متتزنقش */}
+                  <div className="relative flex size-44 sm:size-48 items-center justify-center select-none shrink-0">
                     <svg className="size-full -rotate-90 p-2" viewBox="0 0 120 120">
                       <circle
                         cx="60"
