@@ -34,7 +34,6 @@ function getHabitSpecs(habit: Habit) {
   };
 }
 
-// الواجهة الخاصة بالأنشطة اليومية المخصصة
 interface TimeBlock {
   id: string;
   name: string;
@@ -44,13 +43,11 @@ interface TimeBlock {
 export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const [showDetails, setShowDetails] = useState(true);
 
-  // نظام السلايدرز الديناميكي (اليوزر بيضيف ويمسح براحته)
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(() => {
     try {
       const saved = localStorage.getItem("personal_ai_blocks");
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    // القيم الافتراضية لأول مرة
     return [
       { id: "1", name: "Sleep", hours: 8 },
       { id: "2", name: "College", hours: 4 },
@@ -58,7 +55,6 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
     ];
   });
 
-  // حفظ الأنشطة فوراً في المتصفح
   useEffect(() => {
     localStorage.setItem("personal_ai_blocks", JSON.stringify(timeBlocks));
   }, [timeBlocks]);
@@ -76,7 +72,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   };
 
   const addBlock = () => {
-    if (timeBlocks.length >= 6) return; // حد أقصى 6 أنشطة عشان الشكل العام
+    if (timeBlocks.length >= 6) return;
     const newId = Date.now().toString();
     setTimeBlocks(prev => [...prev, { id: newId, name: "New Activity", hours: 2 }]);
   };
@@ -90,11 +86,8 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
 
   const readinessScore = useMemo(() => {
     if (availableHours <= 0) return 15;
-    
-    // بندور على أي حاجة اليوزر مسميها "Sleep" أو نوم عشان نحسب جودتها
     const sleepBlock = timeBlocks.find(b => b.name.toLowerCase().includes("sleep"));
-    const sleepHours = sleepBlock ? sleepBlock.hours : 8; // لو مسحها، بنفترض 8 عشان ميبوظش السكور
-    
+    const sleepHours = sleepBlock ? sleepBlock.hours : 8;
     const sleepFactor = sleepHours >= 7 && sleepHours <= 9 ? 1.0 : sleepHours < 6 ? 0.7 : 0.85;
     const loadFactor = Math.min(1.0, availableHours / 12);
     return Math.round(Math.min(100, (loadFactor * 0.65 + sleepFactor * 0.35) * 100));
@@ -165,32 +158,31 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const nonNegotiables = habitPredictions.filter((h) => h.specs.priority === 1);
 
   return (
-    <div className="flex flex-col gap-4 text-left font-sans">
-      {/* Header */}
+    // القاعدة الأساسية لكل النصوص Arial Bold
+    <div className="flex flex-col gap-4 text-left font-['Arial'] font-bold">
       <div className="flex items-center justify-between border-b border-[var(--border)] pb-3.5">
         <div className="flex items-center gap-2.5">
           <span className="size-2.5 rounded-full bg-[var(--primary)] shadow-sm animate-pulse"></span>
           <div>
-            <h2 className="text-xs font-semibold tracking-wider uppercase text-[var(--fg)]">
+            <h2 className="text-xs tracking-wider uppercase text-[var(--fg)]">
               Personal AI
             </h2>
             <p className="text-[10px] text-[var(--muted)]">Execution Coach</p>
           </div>
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1 text-right">
-          <span className="text-[9px] font-medium text-[var(--muted)] uppercase block">Readiness</span>
-          <span className="text-sm font-bold tracking-tight text-[var(--primary)]">{readinessScore}%</span>
+          <span className="text-[9px] text-[var(--muted)] uppercase block">Readiness</span>
+          {/* الأرقام بخط Playfair */}
+          <span className="text-sm font-['Playfair_Display'] text-[var(--primary)]">{readinessScore}%</span>
         </div>
       </div>
 
-      {/* Dynamic Time Allocation Blocks */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         {timeBlocks.map((block) => {
-          const percent = (block.hours / 24) * 100; // نسبة موحدة من 24 ساعة للكل
+          const percent = (block.hours / 24) * 100;
           
           return (
             <div key={block.id} className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between relative group transition-colors hover:border-[var(--muted)]/50">
-              {/* زر مسح السلايدر (أصبح متناسق مع الثيم أو لونه هادي) */}
               <button
                 onClick={() => removeBlock(block.id)}
                 className="absolute -top-1.5 -right-1.5 size-4.5 flex items-center justify-center rounded-full bg-rose-500/90 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm z-10 hover:bg-rose-500"
@@ -199,16 +191,16 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                 <X className="size-3" />
               </button>
 
-              <div className="flex justify-between text-[11px] text-[var(--fg)] font-semibold mb-1 gap-1">
+              <div className="flex justify-between text-[11px] text-[var(--fg)] mb-1 gap-1">
                 <input
                   type="text"
                   value={block.name}
                   onChange={(e) => updateBlockName(block.id, e.target.value)}
                   placeholder="Activity"
-                  className="w-[70%] bg-transparent text-[var(--muted)] font-medium outline-none focus:text-[var(--fg)] focus:border-b focus:border-[var(--primary)] transition-colors truncate"
+                  className="w-[70%] bg-transparent text-[var(--muted)] outline-none focus:text-[var(--fg)] focus:border-b focus:border-[var(--primary)] transition-colors truncate"
                   title="Click to rename"
                 />
-                <span className="font-mono text-[var(--primary)] shrink-0">{block.hours}h</span>
+                <span className="font-['Playfair_Display'] text-[14px] text-[var(--primary)] shrink-0">{block.hours}h</span>
               </div>
 
               <div className="py-1">
@@ -223,7 +215,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                   className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
                 />
               </div>
-              <div className="flex justify-between text-[8.5px] font-mono text-[var(--muted)]/70 px-0.5 select-none">
+              <div className="flex justify-between text-[8.5px] font-['Playfair_Display'] text-[10px] text-[var(--muted)]/70 px-0.5 select-none">
                 <span>0h</span>
                 <span>12h</span>
                 <span>24h</span>
@@ -232,36 +224,33 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
           );
         })}
 
-        {/* زر إضافة نشاط جديد (يختفي لو اليوزر ضاف 6 أنشطة عشان نحافظ على الشكل) */}
         {timeBlocks.length < 6 && (
           <button
             onClick={addBlock}
             className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-elevated)]/30 flex flex-col items-center justify-center text-[var(--muted)] hover:text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all min-h-[72px] cursor-pointer"
           >
             <Plus className="size-4 mb-0.5" />
-            <span className="text-[9px] font-semibold uppercase tracking-wider">Add</span>
+            <span className="text-[9px] uppercase tracking-wider">Add</span>
           </button>
         )}
       </div>
 
-      {/* Available Time Summary */}
       <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5 mt-1">
         <span>
-          Net Available: <strong className="text-[var(--fg)] font-mono text-sm">{availableHours}h</strong>
+          Net Available: <strong className="text-[var(--fg)] font-['Playfair_Display'] text-[15px]">{availableHours}h</strong>
         </span>
         <button
           type="button"
           onClick={() => setShowDetails(!showDetails)}
-          className="text-[11px] font-medium text-[var(--primary)] hover:underline cursor-pointer"
+          className="text-[11px] text-[var(--primary)] hover:underline cursor-pointer"
         >
           {showDetails ? "Hide Focus" : "Show Focus"}
         </button>
       </div>
 
-      {/* Non-Negotiables Focus Card */}
       {showDetails && (
         <div className="rounded-2xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs shadow-xs mt-1">
-          <p className="font-semibold text-[var(--fg)] mb-2 flex items-center gap-1 text-[11px]">
+          <p className="text-[var(--fg)] mb-2 flex items-center gap-1 text-[11px]">
             Important Today:
           </p>
           {nonNegotiables.length === 0 ? (
@@ -273,8 +262,8 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                   key={habit.id}
                   className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1.5 last:border-0 last:pb-0"
                 >
-                  <span className="truncate max-w-[140px] font-medium">• {habit.name}</span>
-                  <span className="text-[9.5px] font-mono text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded-md border border-[var(--primary)]/20 font-semibold">
+                  <span className="truncate max-w-[140px]">• {habit.name}</span>
+                  <span className="text-[11px] font-['Playfair_Display'] text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded-md border border-[var(--primary)]/20">
                     {specs.durationLabel}
                   </span>
                 </li>
@@ -284,7 +273,6 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       )}
 
-      {/* Individual Habit Predictions List */}
       <div className="space-y-1.5 pt-0.5">
         {habitPredictions.length === 0 ? (
           <p className="text-xs text-[var(--muted)] text-center py-4">No habits added yet.</p>
@@ -302,12 +290,12 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
               )}
             >
               <div>
-                <p className={cn("text-xs font-semibold truncate max-w-[140px]", isDone && "line-through opacity-70")}>
+                <p className={cn("text-xs truncate max-w-[140px]", isDone && "line-through opacity-70")}>
                   {habit.name}
                 </p>
                 <span className="text-[9.5px] text-[var(--muted)] block mt-0.5">{statusLabel}</span>
               </div>
-              <div className="text-xs font-bold tracking-tight text-[var(--fg)]">
+              <div className="text-[15px] font-['Playfair_Display'] text-[var(--fg)]">
                 {isDone ? "✓" : `${chance}%`}
               </div>
             </div>
