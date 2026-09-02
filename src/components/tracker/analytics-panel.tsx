@@ -243,7 +243,7 @@ export function AnalyticsPanel() {
                 )}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
-                <span className="text-4xl font-normal text-[var(--fg)] leading-none" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                <span className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] leading-none">
                   {paceScore}%
                 </span>
                 <span className="text-[10px] font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2">PACE</span>
@@ -255,7 +255,7 @@ export function AnalyticsPanel() {
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col">
             <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TO TARGET DATE</span>
             <div className="flex-1 flex items-center justify-center py-6">
-              <p className="text-5xl lg:text-6xl font-normal text-[var(--fg)] leading-none" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <p className="text-5xl lg:text-6xl font-bold tracking-tight text-[var(--fg)] leading-none">
                 {totalCompleted}/{totalExpected}
               </p>
             </div>
@@ -265,7 +265,7 @@ export function AnalyticsPanel() {
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col">
             <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TRACKED HABITS</span>
             <div className="flex-1 flex items-center justify-center py-6">
-              <p className="text-5xl lg:text-6xl font-normal text-[var(--fg)] leading-none" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <p className="text-5xl lg:text-6xl font-bold tracking-tight text-[var(--fg)] leading-none">
                 {habits.length}
               </p>
             </div>
@@ -275,7 +275,7 @@ export function AnalyticsPanel() {
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col">
             <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">PERFECT STREAK</span>
             <div className="flex-1 flex items-center justify-center py-6">
-              <p className="text-5xl lg:text-6xl font-normal text-[var(--fg)] leading-none" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <p className="text-5xl lg:text-6xl font-bold tracking-tight text-[var(--fg)] leading-none">
                 {totalCompleted > 0 ? "1" : "0"}
               </p>
             </div>
@@ -510,7 +510,7 @@ export function AnalyticsPanel() {
               <Grid3X3 className="size-4" />
             </div>
             <div>
-              <h3 className="font-serif-title text-xl text-[var(--fg)]">Confusion & Correlation Matrix</h3>
+              <h3 className="text-xl font-bold tracking-tight text-[var(--fg)]">Confusion & Correlation Matrix</h3>
               <p className="text-xs text-[var(--muted)]">
                 Cross-habit co-occurrence and execution alignment probability.
               </p>
