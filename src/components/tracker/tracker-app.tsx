@@ -214,16 +214,16 @@ export function TrackerApp() {
         />
       )}
 
-      {/* Header */}
-      <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      {/* Header - تم السنترة وتكبير الحجم وضبط المسافات */}
+      <header className="mb-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center">
           
-          {/* اللوجو الثابت بتكبير مضاعف (Massive Size) */}
-          <div className="flex items-center -ml-2 sm:-ml-4">
+          {/* اللوجو الثابت بتكبير ضخم جداً بالعرض (w-500px) */}
+          <div className="flex items-center justify-center lg:justify-start">
             <img 
               src={`/logo-${theme}.png`} 
               alt="MyTracker Logo" 
-              className="h-32 sm:h-40 md:h-48 lg:h-56 w-auto object-contain drop-shadow-xl transition-transform hover:scale-[1.02]"
+              className="w-[280px] sm:w-[380px] md:w-[450px] lg:w-[500px] h-auto object-contain drop-shadow-xl transition-transform hover:scale-[1.02]"
               onError={(e) => {
                 e.currentTarget.src = "/logo-lavender.png";
               }}
@@ -231,15 +231,15 @@ export function TrackerApp() {
           </div>
         </div>
 
-        {/* التكست بحجمه الطبيعي المتناسق */}
-        <div className="text-left lg:text-right">
+        {/* التكست مسنتر مع اللوجو */}
+        <div className="text-center lg:text-right flex flex-col justify-center">
           <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
           </p>
-          <h1 className="mt-1 text-3xl sm:text-4xl font-bold tracking-tight text-[var(--fg)]">
+          <h1 className="mt-1 text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[var(--fg)]">
             {MONTHS[selectedMonth - 1]} {selectedYear}
           </h1>
-          <p className="text-sm text-[var(--muted)] mt-1.5">
+          <p className="text-sm text-[var(--muted)] mt-2">
             Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
             {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
           </p>
