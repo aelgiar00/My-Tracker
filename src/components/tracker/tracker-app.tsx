@@ -234,13 +234,13 @@ export function TrackerApp() {
           <p className="text-[11px] tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
           </p>
-          {/* الشهر والسنة بخط Playfair Display */}
-          <h1 className="mt-0.5 text-4xl sm:text-5xl font-['Playfair_Display'] font-normal tracking-tight text-[var(--fg)] leading-none">
+          {/* الشهر والسنة بخط Merriweather */}
+          <h1 className="mt-0.5 text-4xl sm:text-5xl font-['Merriweather'] font-normal tracking-tight text-[var(--fg)] leading-none">
             {MONTHS[selectedMonth - 1]} {selectedYear}
           </h1>
           <p className="text-sm text-[var(--muted)] mt-1.5">
-            Pace <span className="font-['Playfair_Display'] text-[15px]">{Math.round(stats.paceScore)}%</span> through today · <span className="font-['Playfair_Display'] text-[15px]">{stats.currentStreak}</span> day streak ·{" "}
-            <span className="font-['Playfair_Display'] text-[15px]">{stats.completedThroughToday}/{stats.expectedThroughToday}</span> scheduled
+            Pace <span className="font-['Merriweather'] text-[15px]">{Math.round(stats.paceScore)}%</span> through today · <span className="font-['Merriweather'] text-[15px]">{stats.currentStreak}</span> day streak ·{" "}
+            <span className="font-['Merriweather'] text-[15px]">{stats.completedThroughToday}/{stats.expectedThroughToday}</span> scheduled
           </p>
         </div>
       </header>
@@ -271,7 +271,7 @@ export function TrackerApp() {
             ))}
           </NativeSelect>
           <NativeSelect
-            className="h-8 border-0 bg-transparent text-xs text-[var(--fg)] shadow-none focus:ring-0 font-['Playfair_Display']"
+            className="h-8 border-0 bg-transparent text-xs text-[var(--fg)] shadow-none focus:ring-0 font-['Merriweather']"
             value={selectedYear}
             onChange={(e) => {
               const y = Number(e.target.value);
@@ -402,8 +402,8 @@ export function TrackerApp() {
                         )}
                       >
                         <span className="text-[10px] uppercase tracking-wider">{format(d, "EEE").slice(0, 2)}</span>
-                        {/* الأرقام بخط Playfair */}
-                        <span className="text-lg mt-0.5 font-['Playfair_Display']">{format(d, "d")}</span>
+                        {/* الأرقام بخط Merriweather */}
+                        <span className="text-lg mt-0.5 font-['Merriweather']">{format(d, "d")}</span>
                         {isSelected && (
                           <span className="absolute bottom-1.5 w-5 h-0.5 rounded-full bg-[var(--primary)]" />
                         )}
@@ -418,13 +418,13 @@ export function TrackerApp() {
                       {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
                     </span>
                     <h3 className="text-4xl sm:text-5xl tracking-tight text-[var(--fg)] mt-1 flex items-baseline gap-2 justify-center sm:justify-start">
-                      <span className="font-['Playfair_Display'] font-normal">{format(inspectDateObj, "d")}</span>
+                      <span className="font-['Merriweather'] font-normal">{format(inspectDateObj, "d")}</span>
                       <span>{format(inspectDateObj, "EEE")}</span>
                     </h3>
                     <p className="text-sm text-[var(--muted)] mt-2 max-w-sm">
                       {totalDailyCompleted === totalDailyItems && totalDailyItems > 0
                         ? "All scheduled habits and tasks completed! Outstanding."
-                        : <><span className="font-['Playfair_Display'] text-[16px]">{totalDailyItems - totalDailyCompleted}</span> items remaining to check off.</>}
+                        : <><span className="font-['Merriweather'] text-[16px]">{totalDailyItems - totalDailyCompleted}</span> items remaining to check off.</>}
                     </p>
                   </div>
                   
@@ -455,7 +455,7 @@ export function TrackerApp() {
                       )}
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
-                      <span className="text-4xl sm:text-5xl font-['Playfair_Display'] text-[var(--fg)] leading-none">
+                      <span className="text-4xl sm:text-5xl font-['Merriweather'] text-[var(--fg)] leading-none">
                         {inspectDayScore}%
                       </span>
                       <span className="text-[10px] sm:text-xs tracking-[0.25em] text-[var(--muted)] uppercase mt-2 leading-none">
@@ -578,7 +578,7 @@ export function TrackerApp() {
                       {restingHabitsForDay.map((h) => (
                         <div key={h.id} className="flex justify-between py-1 border-b border-[var(--border)]/40 last:border-0">
                           <span>{h.name}</span>
-                          <span className="font-['Playfair_Display'] text-[11px] capitalize">
+                          <span className="font-['Merriweather'] text-[11px] capitalize">
                             {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
                           </span>
                         </div>
