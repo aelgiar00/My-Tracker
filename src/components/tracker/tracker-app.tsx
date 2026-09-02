@@ -170,7 +170,6 @@ export function TrackerApp() {
       });
   }, [habits, inspectDateObj, restDays, selectedInspectDate]);
 
-  // حساب المهام والعادات معاً لتحديد النسبة الكلية لليوم
   const currentDayTasks = dailyTasks[selectedInspectDate] || [];
   
   const inspectDayDoneCount = activeHabitsForDay.filter(
@@ -182,7 +181,6 @@ export function TrackerApp() {
   const totalDailyItems = activeHabitsForDay.length + currentDayTasks.length;
   const totalDailyCompleted = inspectDayDoneCount + completedTasksCount;
 
-  // النسبة المئوية المجمعة (عادات + مهام فردية)
   const inspectDayScore = totalDailyItems > 0
     ? Math.round((totalDailyCompleted / totalDailyItems) * 100)
     : 0;
@@ -218,17 +216,25 @@ export function TrackerApp() {
 
       {/* Header */}
       <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
-            EXECUTION LOG
-          </p>
-          <h1 className="font-serif-title mt-1 text-4xl font-normal tracking-tight text-[var(--fg)] sm:text-5xl">
-            {MONTHS[selectedMonth - 1]} {selectedYear}
-          </h1>
-          <p className="mt-1.5 text-xs text-[var(--muted)]">
-            Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
-            {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
-          </p>
+        <div className="flex items-center gap-3">
+          {/* هنا تم إضافة اللوجو الفخم SVG الجديد بجانب العنوان */}
+          <img 
+            src="/logo-icon.svg" 
+            alt="MyTracker Logo" 
+            className="size-10 rounded-xl border border-[var(--border)] shadow-md bg-[var(--surface)] p-1 object-contain" 
+          />
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
+              EXECUTION LOG
+            </p>
+            <h1 className="font-serif-title mt-1 text-4xl font-normal tracking-tight text-[var(--fg)] sm:text-5xl">
+              {MONTHS[selectedMonth - 1]} {selectedYear}
+            </h1>
+            <p className="mt-1.5 text-xs text-[var(--muted)]">
+              Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
+              {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
+            </p>
+          </div>
         </div>
 
         {/* Action Controls */}
