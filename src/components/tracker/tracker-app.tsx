@@ -8,6 +8,8 @@ import {
   Plus,
   Settings,
   Undo2,
+  Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AnalyticsPanel } from "@/components/tracker/analytics-panel";
@@ -183,6 +185,15 @@ export function TrackerApp() {
     ? Math.round((totalDailyCompleted / totalDailyItems) * 100)
     : 0;
 
+  // السطرين اللي نسيناهم المرة اللي فاتت ومهمين عشان التطبيق ميضربش
+  const restingHabitsForDay = habits
+    .filter((h) => !h.archived)
+    .filter((h) => {
+      const sched = scheduleForMonth(h, inspectDateObj.getFullYear(), inspectDateObj.getMonth() + 1) || h.schedule;
+      const isRest = restDays[`${h.id}_${selectedInspectDate}`];
+      return (!isDayExpected(sched, inspectDateObj) || isRest);
+    });
+
   if (loadingAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--muted)]">
@@ -205,17 +216,16 @@ export function TrackerApp() {
       )}
 
       {/* Header */}
-      <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+      <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           
-          {/* اللوجو الثابت (Dynamic Static PNG based on Theme) تم تكبيره جداً */}
+          {/* اللوجو الثابت الكبير والمربوط بالثيمات */}
           <div className="flex items-center -ml-2 sm:-ml-4">
             <img 
               src={`/logo-${theme}.png`} 
               alt="MyTracker Logo" 
               className="h-24 sm:h-28 md:h-32 w-auto object-contain drop-shadow-lg transition-transform hover:scale-[1.02]"
               onError={(e) => {
-                // لو الصورة بتاعة الثيم مش موجودة، يعرض الـ Lavender الافتراضي
                 e.currentTarget.src = "/logo-lavender.png";
               }}
             />
