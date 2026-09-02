@@ -131,15 +131,18 @@ export function TrackerApp() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  // تحديث الـ selectedInspectDate بذكاء مع تغيير الشهور
+  const inspectDateObj = parseISO(selectedInspectDate);
+
   const monthDaysList = useMemo(
     () => monthDays(selectedYear, selectedMonth, trackingStart),
     [selectedYear, selectedMonth, trackingStart]
   );
 
   const weekDaysList = useMemo(() => {
-    const start = startOfWeek(today, { weekStartsOn: 1 });
+    const start = startOfWeek(inspectDateObj, { weekStartsOn: 1 });
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  }, [today]);
+  }, [inspectDateObj]);
 
   const activeDays = matrixView === "week" ? weekDaysList : monthDaysList;
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
@@ -154,11 +157,10 @@ export function TrackerApp() {
   function shiftMonth(delta: number) {
     const d = new Date(selectedYear, selectedMonth - 1 + delta, 1);
     setMonth(d.getFullYear(), d.getMonth() + 1);
+    setSelectedInspectDate(format(d, "yyyy-MM-dd"));
   }
 
   const years = Array.from({ length: 8 }, (_, i) => 2025 + i);
-
-  const inspectDateObj = parseISO(selectedInspectDate);
   
   const activeHabitsForDay = useMemo(() => {
     return habits
@@ -202,7 +204,6 @@ export function TrackerApp() {
   }
 
   return (
-    // لزقنا الصفحة في السقف تماماً (pt-0)
     <div className="mx-auto min-h-screen max-w-7xl px-4 pt-0 pb-8 sm:px-6 font-sans">
       {!session && (
         <AuthDialog
@@ -215,16 +216,13 @@ export function TrackerApp() {
         />
       )}
 
-      {/* Header - شلنا المسافات السفلية تماماً (mb-0) عشان التطبيق يترفع */}
-      <header className="mb-0 flex flex-col justify-between lg:flex-row lg:items-center relative z-0">
+      <header className="mb-3 flex flex-col justify-between lg:flex-row lg:items-center relative z-0">
         <div className="flex flex-col sm:flex-row sm:items-center">
-          
-          {/* اللوجو الثابت: صغرناه "سنة بسيطة" (أقصى عرض 400px) وظبطنا المسافات السالبة عشان تسحب الفراغ الشفاف */}
-          <div className="flex items-center justify-center lg:justify-start -my-8 sm:-my-12 lg:-my-16 overflow-visible pointer-events-none">
+          <div className="flex items-center justify-center lg:justify-start -my-12 sm:-my-16 lg:-my-24 overflow-visible pointer-events-none">
             <img 
               src={`/logo-${theme}.png`} 
               alt="MyTracker Logo" 
-              className="w-[240px] sm:w-[320px] md:w-[380px] lg:w-[400px] h-auto object-contain drop-shadow-xl"
+              className="w-[280px] sm:w-[380px] md:w-[450px] lg:w-[480px] h-auto object-contain drop-shadow-xl"
               onError={(e) => {
                 e.currentTarget.src = "/logo-lavender.png";
               }}
@@ -232,12 +230,11 @@ export function TrackerApp() {
           </div>
         </div>
 
-        {/* التكست: صغرناه درجة واحدة (text-3xl لـ 5xl) ومسنتر بشكل نظيف */}
-        <div className="text-center lg:text-right flex flex-col justify-center relative z-10 mt-1 lg:mt-0">
+        <div className="text-center lg:text-right flex flex-col justify-center relative z-10 mt-2 lg:mt-0">
           <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
           </p>
-          <h1 className="mt-0.5 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[var(--fg)] leading-none">
+          <h1 className="mt-0.5 text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] leading-none">
             {MONTHS[selectedMonth - 1]} {selectedYear}
           </h1>
           <p className="text-sm text-[var(--muted)] mt-1.5">
@@ -247,8 +244,7 @@ export function TrackerApp() {
         </div>
       </header>
 
-      {/* Action Controls - قللنا المسافة اللي تحتها لـ (mb-3) */}
-      <div className="flex flex-wrap items-center gap-2.5 mb-3 relative z-10">
+      <div className="flex flex-wrap items-center gap-2.5 mb-4 relative z-10">
         <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
           <Button
             variant="ghost"
@@ -261,7 +257,11 @@ export function TrackerApp() {
           <NativeSelect
             className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
             value={selectedMonth}
-            onChange={(e) => setMonth(selectedYear, Number(e.target.value))}
+            onChange={(e) => {
+              const m = Number(e.target.value);
+              setMonth(selectedYear, m);
+              setSelectedInspectDate(format(new Date(selectedYear, m - 1, 1), "yyyy-MM-dd"));
+            }}
           >
             {MONTHS.map((m, i) => (
               <option key={m} value={i + 1}>
@@ -272,7 +272,11 @@ export function TrackerApp() {
           <NativeSelect
             className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
             value={selectedYear}
-            onChange={(e) => setMonth(Number(e.target.value), selectedMonth)}
+            onChange={(e) => {
+              const y = Number(e.target.value);
+              setMonth(y, selectedMonth);
+              setSelectedInspectDate(format(new Date(y, selectedMonth - 1, 1), "yyyy-MM-dd"));
+            }}
           >
             {years.map((y) => (
               <option key={y} value={y}>
@@ -348,7 +352,6 @@ export function TrackerApp() {
         )}
       </div>
 
-      {/* Main Single Switcher Tab */}
       <div className="mb-4 relative z-10">
         <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
           {(["daily", "matrix", "stats"] as const).map((tab) => (
@@ -369,9 +372,7 @@ export function TrackerApp() {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <main className="relative z-10">
-        {/* Daily View */}
         {mainTab === "daily" && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
             <section className="min-w-0">
@@ -383,7 +384,6 @@ export function TrackerApp() {
             <section className="min-w-0">
               <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl space-y-6">
                 
-                {/* Week Day Header Navigation */}
                 <div className="grid grid-cols-7 gap-2 pb-5 border-b border-[var(--border)]">
                   {weekDaysList.map((d) => {
                     const dIso = format(d, "yyyy-MM-dd");
@@ -462,7 +462,6 @@ export function TrackerApp() {
                   </div>
                 </div>
 
-                {/* Scheduled Habits Cards */}
                 <div className="space-y-2.5">
                   {activeHabitsForDay.length === 0 ? (
                     <p className="text-xs text-[var(--muted)] py-4 text-center">No habits scheduled on this day.</p>
@@ -506,7 +505,6 @@ export function TrackerApp() {
                   )}
                 </div>
 
-                {/* One-off Tasks Section */}
                 <div className="pt-4 border-t border-[var(--border)] space-y-3">
                   <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
                     ONE-OFF TASKS
@@ -543,7 +541,6 @@ export function TrackerApp() {
                     </div>
                   ))}
 
-                  {/* Add Task Input */}
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -572,7 +569,6 @@ export function TrackerApp() {
                     </Button>
                   </div>
 
-                  {/* Rest Section */}
                   {restingHabitsForDay.length > 0 && (
                     <div className="pt-2 space-y-1 text-xs text-[var(--muted)]">
                       <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5">REST</span>
@@ -603,7 +599,6 @@ export function TrackerApp() {
           </div>
         )}
 
-        {/* Matrix View Tab */}
         {mainTab === "matrix" && (
           <div className="rounded-3xl bg-[var(--surface)] p-6 sm:p-8 border border-[var(--border)] shadow-xl">
             <HabitMatrix
@@ -618,7 +613,6 @@ export function TrackerApp() {
           </div>
         )}
 
-        {/* Stats View Tab */}
         {mainTab === "stats" && (
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-2">
