@@ -202,7 +202,8 @@ export function TrackerApp() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 font-sans">
+    // تقليل المسافات العلوية من py-8 لـ pt-2
+    <div className="mx-auto min-h-screen max-w-7xl px-4 pt-2 pb-8 sm:px-6 font-sans">
       {!session && (
         <AuthDialog
           onSuccess={() => {
@@ -214,12 +215,12 @@ export function TrackerApp() {
         />
       )}
 
-      {/* Header - تم السنترة وتكبير الحجم وضبط المسافات */}
-      <header className="mb-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+      {/* Header - تقليل المسافة السفلية mb-2 */}
+      <header className="mb-2 flex flex-col justify-between lg:flex-row lg:items-center relative z-0">
         <div className="flex flex-col sm:flex-row sm:items-center">
           
-          {/* اللوجو الثابت بتكبير ضخم جداً بالعرض (w-500px) */}
-          <div className="flex items-center justify-center lg:justify-start">
+          {/* إعطاء مسافات سالبة (Negative Margins) عشان تشفط المساحات الفاضية في الصورة */}
+          <div className="flex items-center justify-center lg:justify-start -my-6 sm:-my-10 lg:-my-16">
             <img 
               src={`/logo-${theme}.png`} 
               alt="MyTracker Logo" 
@@ -232,7 +233,7 @@ export function TrackerApp() {
         </div>
 
         {/* التكست مسنتر مع اللوجو */}
-        <div className="text-center lg:text-right flex flex-col justify-center">
+        <div className="text-center lg:text-right flex flex-col justify-center relative z-10">
           <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
           </p>
@@ -246,8 +247,8 @@ export function TrackerApp() {
         </div>
       </header>
 
-      {/* Action Controls */}
-      <div className="flex flex-wrap items-center gap-2.5 mb-6">
+      {/* Action Controls - relative z-10 لضمان بقاء الأزرار قابلة للضغط حتى لو الصورة غطت عليها */}
+      <div className="flex flex-wrap items-center gap-2.5 mb-6 relative z-10">
         <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
           <Button
             variant="ghost"
@@ -348,7 +349,7 @@ export function TrackerApp() {
       </div>
 
       {/* Main Single Switcher Tab */}
-      <div className="mb-6">
+      <div className="mb-6 relative z-10">
         <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
           {(["daily", "matrix", "stats"] as const).map((tab) => (
             <button
@@ -369,7 +370,7 @@ export function TrackerApp() {
       </div>
 
       {/* Main Content Area */}
-      <main>
+      <main className="relative z-10">
         {/* Daily View */}
         {mainTab === "daily" && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
