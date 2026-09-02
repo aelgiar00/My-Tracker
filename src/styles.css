@@ -2,9 +2,9 @@
 @import "tailwindcss";
 
 @layer base {
-  /* 1. Main Theme (Based on your custom palette) */
+  /* 1. Lavender Theme (Default / Purple) */
   :root,
-  :root[data-theme="default"] {
+  :root[data-theme="lavender"] {
     --bg: #0A0A0F;
     --surface: #15151C;
     --surface-elevated: #1C1C24;
@@ -14,8 +14,24 @@
     --border: #26262F;
     --primary: #7C6AEF;
     --primary-foreground: #F2F2F5;
-    --primary-muted: rgba(124, 106, 239, 0.16); /* #7C6AEF with 16% opacity */
-    --glow: rgba(156, 141, 255, 0.25); /* #9C8DFF with 25% opacity */
+    --primary-muted: rgba(124, 106, 239, 0.16);
+    --glow: rgba(156, 141, 255, 0.25);
+    color-scheme: dark;
+  }
+
+  /* 2. Slate Theme (Steel-Blue / Teal) */
+  :root[data-theme="slate"] {
+    --bg: #0A0C10;
+    --surface: #12151B;
+    --surface-elevated: #1A1D24;
+    --surface-pill: #2A3038;
+    --fg: #F2F2F5;
+    --muted: #8B92A0;
+    --border: #2A3038;
+    --primary: #6FA9C7;
+    --primary-foreground: #F2F2F5;
+    --primary-muted: rgba(111, 169, 199, 0.16);
+    --glow: rgba(111, 169, 199, 0.25);
     color-scheme: dark;
   }
 
@@ -52,14 +68,14 @@
     background-color: var(--bg);
     color: var(--fg);
     font-family: "Arial", sans-serif;
-    font-weight: bold; /* تطبيق الـ Bold على كل النصوص الأساسية */
+    font-weight: bold;
     min-height: 100vh;
   }
 
-  /* جعل خلفية النوافذ المنبثقة شفافة ومموّهة تتناسب مع لون الخلفية الجديد */
+  /* خلفية النوافذ المنبثقة (Glassmorphism) */
   .fixed.inset-0.z-50.bg-black\/80,
   .fixed.inset-0.z-50.bg-background\/80 {
-    background-color: rgba(10, 10, 15, 0.6) !important; /* مبني على لون #0A0A0F */
+    background-color: rgba(10, 10, 15, 0.6) !important;
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
   }
