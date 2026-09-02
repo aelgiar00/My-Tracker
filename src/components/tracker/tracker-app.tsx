@@ -203,7 +203,6 @@ export function TrackerApp() {
   }
 
   return (
-    // القاعدة الأساسية لكل النصوص Arial Bold
     <div className="mx-auto min-h-screen max-w-7xl px-4 pt-0 pb-8 sm:px-6 font-['Arial'] font-bold">
       {!session && (
         <AuthDialog
@@ -234,7 +233,6 @@ export function TrackerApp() {
           <p className="text-[11px] tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
           </p>
-          {/* الشهر والسنة بخط Merriweather */}
           <h1 className="mt-0.5 text-4xl sm:text-5xl font-['Merriweather'] font-normal tracking-tight text-[var(--fg)] leading-none">
             {MONTHS[selectedMonth - 1]} {selectedYear}
           </h1>
@@ -402,7 +400,6 @@ export function TrackerApp() {
                         )}
                       >
                         <span className="text-[10px] uppercase tracking-wider">{format(d, "EEE").slice(0, 2)}</span>
-                        {/* الأرقام بخط Merriweather */}
                         <span className="text-lg mt-0.5 font-['Merriweather']">{format(d, "d")}</span>
                         {isSelected && (
                           <span className="absolute bottom-1.5 w-5 h-0.5 rounded-full bg-[var(--primary)]" />
@@ -417,8 +414,9 @@ export function TrackerApp() {
                     <span className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em]">
                       {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
                     </span>
-                    <h3 className="text-4xl sm:text-5xl tracking-tight text-[var(--fg)] mt-1 flex items-baseline gap-2 justify-center sm:justify-start">
-                      <span className="font-['Merriweather'] font-normal">{format(inspectDateObj, "d")}</span>
+                    {/* تم توحيد الـ Font هنا بحيث الرقم واسم اليوم الاتنين بخط Merriweather */}
+                    <h3 className="text-4xl sm:text-5xl tracking-tight text-[var(--fg)] mt-1 flex items-baseline gap-2 justify-center sm:justify-start font-['Merriweather'] font-normal">
+                      <span>{format(inspectDateObj, "d")}</span>
                       <span>{format(inspectDateObj, "EEE")}</span>
                     </h3>
                     <p className="text-sm text-[var(--muted)] mt-2 max-w-sm">
