@@ -2,16 +2,16 @@
 @import "tailwindcss";
 
 @layer base {
-  /* 1. Lavender Theme (Default / Purple) */
+  /* 1. Lavender Theme (Default / Purple Tinted) */
   :root,
   :root[data-theme="lavender"] {
-    --bg: #0A0A0F;
-    --surface: #15151C;
-    --surface-elevated: #1C1C24;
-    --surface-pill: #26262F;
+    --bg: #0c0a18; /* أسود مشرّب ببنفسجي غامق جداً */
+    --surface: #141126; /* أفتح درجة بسيطة للكروت */
+    --surface-elevated: #1c1833; /* للـ Hover أو العناصر المرفوعة */
+    --surface-pill: #262044; /* للزراير والـ Pills */
     --fg: #F2F2F5;
     --muted: #9A9AA6;
-    --border: #26262F;
+    --border: #262044; /* البوردر واخد نفس روح الثيم بدل الرمادي الميت */
     --primary: #7C6AEF;
     --primary-foreground: #F2F2F5;
     --primary-muted: rgba(124, 106, 239, 0.16);
@@ -19,15 +19,15 @@
     color-scheme: dark;
   }
 
-  /* 2. Slate Theme (Steel-Blue / Teal) */
+  /* 2. Slate Theme (Steel-Blue / Teal Tinted) */
   :root[data-theme="slate"] {
-    --bg: #0A0C10;
-    --surface: #12151B;
-    --surface-elevated: #1A1D24;
-    --surface-pill: #2A3038;
+    --bg: #0a1116; /* أسود مشرّب بأزرق تيل غامق جداً */
+    --surface: #111c24; 
+    --surface-elevated: #182631;
+    --surface-pill: #203442;
     --fg: #F2F2F5;
     --muted: #8B92A0;
-    --border: #2A3038;
+    --border: #203442;
     --primary: #6FA9C7;
     --primary-foreground: #F2F2F5;
     --primary-muted: rgba(111, 169, 199, 0.16);
@@ -72,10 +72,10 @@
     min-height: 100vh;
   }
 
-  /* خلفية النوافذ المنبثقة (Glassmorphism) */
+  /* خلفية النوافذ المنبثقة بشفافية تناسب أي ثيم */
   .fixed.inset-0.z-50.bg-black\/80,
   .fixed.inset-0.z-50.bg-background\/80 {
-    background-color: rgba(10, 10, 15, 0.6) !important;
+    background-color: rgba(0, 0, 0, 0.45) !important;
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
   }
