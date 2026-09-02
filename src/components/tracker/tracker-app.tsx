@@ -221,10 +221,10 @@ export function TrackerApp() {
           {/* اللوجو الجديد (المربع الموف وعلامة الصح) */}
           <div className="flex items-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="size-12 sm:size-14 drop-shadow-md shrink-0">
-              {/* المربع الموف */}
-              <rect x="16" y="16" width="224" height="224" rx="64" fill="#b794f4"/>
-              {/* علامة الصح الداكنة */}
-              <path d="M 76 132 L 114 170 L 180 94" fill="none" stroke="#171424" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round"/>
+              {/* المربع هياخد لون الثيم أوتوماتيك */}
+              <rect x="16" y="16" width="224" height="224" rx="64" style={{ fill: 'var(--primary)' }} />
+              {/* علامة الصح هتاخد لون خلفية التطبيق عشان تبان مفرغة ونظيفة */}
+              <path d="M 76 132 L 114 170 L 180 94" fill="none" style={{ stroke: 'var(--bg)' }} strokeWidth="32" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             
             {/* كلمة MyTracker مكتوبة كـ Text عادي في الكود عشان متبوظش */}
@@ -243,7 +243,7 @@ export function TrackerApp() {
           <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
           </p>
-          <h1 className="font-serif-title mt-1 text-3xl sm:text-4xl font-normal tracking-tight text-[var(--fg)]">
+          <h1 className="mt-1 text-3xl sm:text-4xl font-bold tracking-tight text-[var(--fg)]">
             {MONTHS[selectedMonth - 1]} {selectedYear}
           </h1>
           <p className="text-xs text-[var(--muted)] mt-1.5">
@@ -483,7 +483,7 @@ export function TrackerApp() {
                           className={cn(
                             "flex items-center justify-between rounded-2xl p-4 border transition-all cursor-pointer",
                             isDone
-                              ? "border-[var(--primary)]/40 bg-[var(--primary-muted)]/20 shadow-xs"
+                              ? "border-[var(--primary)]/40 bg-[var(--primary)]/10 shadow-xs"
                               : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
                           )}
                         >
@@ -663,7 +663,7 @@ export function TrackerApp() {
                   todayIso={isoDate(today)}
                 />
                 <div className="rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)]">
-                  <h3 className="font-serif-title text-xl text-[var(--fg)]">Archived</h3>
+                  <h3 className="text-xl font-bold tracking-tight text-[var(--fg)]">Archived</h3>
                   {archived.length === 0 ? (
                     <p className="mt-2 text-xs text-[var(--muted)]">No archived habits.</p>
                   ) : (
