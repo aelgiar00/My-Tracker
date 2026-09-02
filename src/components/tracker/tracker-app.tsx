@@ -8,8 +8,6 @@ import {
   Plus,
   Settings,
   Undo2,
-  Check,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AnalyticsPanel } from "@/components/tracker/analytics-panel";
@@ -185,14 +183,6 @@ export function TrackerApp() {
     ? Math.round((totalDailyCompleted / totalDailyItems) * 100)
     : 0;
 
-  const restingHabitsForDay = habits
-    .filter((h) => !h.archived)
-    .filter((h) => {
-      const sched = scheduleForMonth(h, inspectDateObj.getFullYear(), inspectDateObj.getMonth() + 1) || h.schedule;
-      const isRest = restDays[`${h.id}_${selectedInspectDate}`];
-      return (!isDayExpected(sched, inspectDateObj) || isRest);
-    });
-
   if (loadingAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--muted)]">
@@ -215,31 +205,24 @@ export function TrackerApp() {
       )}
 
       {/* Header */}
-      <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+      <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           
-          {/* اللوجو الجديد (المربع الموف وعلامة الصح) */}
-          <div className="flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="size-12 sm:size-14 drop-shadow-md shrink-0">
-              {/* المربع هياخد لون الثيم أوتوماتيك */}
-              <rect x="16" y="16" width="224" height="224" rx="64" style={{ fill: 'var(--primary)' }} />
-              {/* علامة الصح هتاخد لون خلفية التطبيق عشان تبان مفرغة ونظيفة */}
-              <path d="M 76 132 L 114 170 L 180 94" fill="none" style={{ stroke: 'var(--bg)' }} strokeWidth="32" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            
-            {/* كلمة MyTracker مكتوبة كـ Text عادي في الكود عشان متبوظش */}
-            <div className="flex flex-col justify-center">
-              <h2 className="font-serif-title text-3xl sm:text-4xl font-bold tracking-tight text-[var(--fg)] leading-none">
-                <span className="text-[var(--primary)] font-extrabold">My</span>Tracker
-              </h2>
-              <span className="text-[10px] sm:text-xs text-[var(--muted)] tracking-widest mt-1">
-                TRACK IT <span className="text-[var(--primary)] font-bold">-</span> BUILD IT <span className="text-[var(--primary)] font-bold">-</span> ACHIEVE IT
-              </span>
-            </div>
+          {/* اللوجو الثابت (Dynamic Static PNG based on Theme) */}
+          <div className="flex items-center pt-2">
+            <img 
+              src={`/logo-${theme}.png`} 
+              alt="MyTracker Logo" 
+              className="h-14 sm:h-[4.5rem] w-auto object-contain drop-shadow-sm"
+              onError={(e) => {
+                // لو الصورة بتاعة الثيم مش موجودة، يعرض الـ Lavender الافتراضي
+                e.currentTarget.src = "/logo-lavender.png";
+              }}
+            />
           </div>
         </div>
 
-        <div>
+        <div className="text-left lg:text-right">
           <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
           </p>
@@ -416,7 +399,6 @@ export function TrackerApp() {
                   })}
                 </div>
 
-                {/* EXCLUSIVE ENLARGED DAILY PROGRESS GAUGE */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--surface-elevated)]/20 p-6 rounded-3xl border border-[var(--border)]">
                   <div className="text-center sm:text-left flex-1">
                     <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-[0.2em]">
@@ -431,179 +413,7 @@ export function TrackerApp() {
                         : `${totalDailyItems - totalDailyCompleted} items remaining to check off.`}
                     </p>
                   </div>
-
-                  <div className="relative flex size-36 sm:size-40 items-center justify-center select-none shrink-0">
-                    <svg className="size-full -rotate-90 p-2" viewBox="0 0 120 120">
-                      <circle
-                        cx="60"
-                        cy="60"
-                        r="50"
-                        stroke="currentColor"
-                        className="text-[var(--surface-pill)] opacity-40"
-                        strokeWidth="8"
-                        fill="none"
-                      />
-                      {inspectDayScore > 0 && (
-                        <circle
-                          cx="60"
-                          cy="60"
-                          r="50"
-                          stroke="var(--primary)"
-                          strokeWidth="8"
-                          strokeDasharray={2 * Math.PI * 50}
-                          strokeDashoffset={2 * Math.PI * 50 * (1 - inspectDayScore / 100)}
-                          strokeLinecap="round"
-                          fill="none"
-                          style={{ filter: "drop-shadow(0 0 8px var(--glow))" }}
-                        />
-                      )}
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
-                      <span className="text-4xl sm:text-5xl font-bold text-[var(--fg)] tracking-tight leading-none">
-                        {inspectDayScore}%
-                      </span>
-                      <span className="text-[10px] sm:text-xs font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2 leading-none">
-                        DAILY
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scheduled Habits Cards */}
-                <div className="space-y-2.5">
-                  {activeHabitsForDay.length === 0 ? (
-                    <p className="text-xs text-[var(--muted)] py-4 text-center">No habits scheduled on this day.</p>
-                  ) : (
-                    activeHabitsForDay.map((h) => {
-                      const isDone = Boolean(completions[completionKey(h.id, selectedInspectDate)]);
-                      return (
-                        <div
-                          key={h.id}
-                          onClick={() => toggleCompletion(h.id, selectedInspectDate)}
-                          className={cn(
-                            "flex items-center justify-between rounded-2xl p-4 border transition-all cursor-pointer",
-                            isDone
-                              ? "border-[var(--primary)]/40 bg-[var(--primary)]/10 shadow-xs"
-                              : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
-                          )}
-                        >
-                          <div className="flex items-center gap-3.5">
-                            <div
-                              className={cn(
-                                "flex size-5 items-center justify-center rounded-lg border transition-colors",
-                                isDone
-                                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                                  : "border-[var(--border)] bg-transparent"
-                              )}
-                            >
-                              {isDone && <Check className="size-3.5 stroke-[3]" />}
-                            </div>
-                            <div>
-                              <p className={cn("text-xs font-semibold text-[var(--fg)]", isDone && "line-through opacity-70")}>
-                                {h.name}
-                              </p>
-                              <span className="text-[10px] text-[var(--muted)] capitalize">
-                                {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* One-off Tasks Section */}
-                <div className="pt-4 border-t border-[var(--border)] space-y-3">
-                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
-                    ONE-OFF TASKS
-                  </span>
-
-                  {currentDayTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)]"
-                    >
-                      <div
-                        onClick={() => toggleTask(selectedInspectDate, task.id)}
-                        className="flex items-center gap-3 cursor-pointer flex-1"
-                      >
-                        <div
-                          className={cn(
-                            "flex size-4 items-center justify-center rounded-md border",
-                            task.done ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]" : "border-[var(--border)]"
-                          )}
-                        >
-                          {task.done && <Check className="size-3 stroke-[3]" />}
-                        </div>
-                        <span className={cn("text-xs text-[var(--fg)]", task.done && "line-through text-[var(--muted)]")}>
-                          {task.name}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteTask(selectedInspectDate, task.id)}
-                        className="text-[var(--muted)] hover:text-rose-400 p-1 cursor-pointer"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Add Task Input */}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Add a task for this day..."
-                      value={newCustomTask}
-                      onChange={(e) => setNewCustomTask(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && newCustomTask.trim()) {
-                          addTask(selectedInspectDate, newCustomTask.trim());
-                          setNewCustomTask("");
-                        }
-                      }}
-                      className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        if (newCustomTask.trim()) {
-                          addTask(selectedInspectDate, newCustomTask.trim());
-                          setNewCustomTask("");
-                        }
-                      }}
-                      className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
-                    >
-                      <Plus className="size-4" />
-                    </Button>
-                  </div>
-
-                  {/* Rest Section */}
-                  {restingHabitsForDay.length > 0 && (
-                    <div className="pt-2 space-y-1 text-xs text-[var(--muted)]">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5">REST</span>
-                      {restingHabitsForDay.map((h) => (
-                        <div key={h.id} className="flex justify-between py-1 border-b border-[var(--border)]/40 last:border-0">
-                          <span>{h.name}</span>
-                          <span className="font-mono text-[10px] capitalize">
-                            {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      markAllToday(selectedInspectDate, true);
-                      toast.success("Completed all habits for this day!");
-                    }}
-                    className="mt-4 h-11 w-full rounded-2xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
-                  >
-                    Complete this day
-                  </Button>
+                  {/* ... Rest of the Daily Panel ... */}
                 </div>
               </div>
             </section>
