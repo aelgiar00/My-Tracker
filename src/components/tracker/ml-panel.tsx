@@ -263,7 +263,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
         </DialogContent>
       </Dialog>
 
-      {/* 2. Interactive Predictions Table - تم استبدال الـ Grid بـ Flexbox للتحكم الدقيق في المسافات */}
+      {/* 2. Interactive Predictions Table */}
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] bg-[var(--surface-elevated)]/50">
           <div className="w-[40%] text-[10px] text-[var(--muted)] uppercase tracking-wider">Habit</div>
@@ -450,7 +450,8 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
               <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }} />
               
               <Bar dataKey="Accuracy" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={50} />
-              <Bar dataKey="F1_Score" name="F1 Score (Scaled)" fill="var(--primary-muted)" radius={[4, 4, 0, 0]} maxBarSize={50} />
+              {/* تعديل لون الـ F1 Score بـ fillOpacity عشان يكون منور ومتناسق مع لون الـ Accuracy */}
+              <Bar dataKey="F1_Score" name="F1 Score (Scaled)" fill="var(--primary)" fillOpacity={0.5} radius={[4, 4, 0, 0]} maxBarSize={50} />
             </BarChart>
           </ResponsiveContainer>
         </div>
