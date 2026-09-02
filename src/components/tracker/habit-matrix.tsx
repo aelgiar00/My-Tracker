@@ -1,697 +1,446 @@
-import { useEffect, useMemo, useState } from "react";
-import { format, startOfWeek, addDays, parseISO } from "date-fns";
+import { useState, useMemo } from "react";
+import { format, isFuture } from "date-fns";
 import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  Plus,
-  Settings,
-  Undo2,
   Check,
   X,
+  GripVertical,
+  Trash2,
+  Archive,
+  CalendarOff,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
-import { toast } from "sonner";
-import { AnalyticsPanel } from "@/components/tracker/analytics-panel";
-import { AuditPanel } from "@/components/tracker/audit-panel";
-import { BulkUpdatePanel, NewHabitDialog, SettingsDialog } from "@/components/tracker/habit-dialogs";
-import { HabitMatrix } from "@/components/tracker/habit-matrix";
-import { TodayPanel } from "@/components/tracker/today-panel";
-import { MlPanel } from "@/components/tracker/ml-panel";
-import { AuthDialog } from "@/components/tracker/auth-dialog";
-import { Button } from "@/components/ui/button";
+import { Habit, Schedule } from "@/lib/tracker/types";
+import { isDayExpected, isRestDay, completionKey, scheduleForMonth } from "@/lib/tracker/schedule";
+import { useTrackerStore } from "@/store/tracker-store";
 import { NativeSelect } from "@/components/tracker/native-select";
-import { isoDate, completionKey, isDayExpected, scheduleForMonth } from "@/lib/tracker/schedule";
-import { computeStats, monthDays } from "@/lib/tracker/stats";
-import { useTrackerStore, exportSnapshot } from "@/store/tracker-store";
-import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+interface HabitMatrixProps {
+  habits: Habit[];
+  days: Date[];
+  todayIso: string;
+  hidePast: boolean;
+  daysInMonth: number;
+  selectedYear: number;
+  selectedMonth: number;
+}
+
+const SCHEDULE_OPTIONS = [
+  { id: "daily", label: "Daily" },
+  { id: "weekdays", label: "Weekdays" },
+  { id: "weekends", label: "Weekends" },
+  { id: "mwf", label: "Mon/Wed/Fri" },
+  { id: "tuth", label: "Tue/Thu" },
+  { id: "mon", label: "Mondays" },
+  { id: "tue", label: "Tuesdays" },
+  { id: "wed", label: "Wednesdays" },
+  { id: "thu", label: "Thursdays" },
+  { id: "fri", label: "Fridays" },
+  { id: "sat", label: "Saturdays" },
+  { id: "sun", label: "Sundays" },
+  { id: "paused", label: "⏸️ Paused (This Month)" },
 ];
 
-type MainTab = "daily" | "matrix" | "stats";
-type StatsSubTab = "analytics" | "audit" | "manage" | "ml";
-
-export function TrackerApp() {
-  const [today] = useState(() => new Date());
-  const [newOpen, setNewOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mainTab, setMainTab] = useState<MainTab>("daily");
-  const [statsSubTab, setStatsSubTab] = useState<StatsSubTab>("analytics");
-  const [session, setSession] = useState<any>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-
-  const [selectedInspectDate, setSelectedInspectDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
-  const [newCustomTask, setNewCustomTask] = useState("");
-
-  const habits = useTrackerStore((s) => s.habits);
+export function HabitMatrix({
+  habits,
+  days,
+  todayIso,
+  hidePast,
+  selectedYear,
+  selectedMonth,
+}: HabitMatrixProps) {
+  const [filterText, setFilterText] = useState("");
   const completions = useTrackerStore((s) => s.completions);
-  const dailyTasks = useTrackerStore((s) => s.dailyTasks);
-  const trackingStart = useTrackerStore((s) => s.trackingStart);
-  const hidePast = useTrackerStore((s) => s.hidePast);
-  const theme = useTrackerStore((s) => s.theme);
-  const matrixView = useTrackerStore((s) => s.matrixView);
-  const selectedYear = useTrackerStore((s) => s.selectedYear);
-  const selectedMonth = useTrackerStore((s) => s.selectedMonth);
-  const setMonth = useTrackerStore((s) => s.setMonth);
-  const undo = useTrackerStore((s) => s.undo);
-  const archiveHabit = useTrackerStore((s) => s.archiveHabit);
-  const undoCount = useTrackerStore((s) => s.undoStack.length);
   const toggleCompletion = useTrackerStore((s) => s.toggleCompletion);
-  const addTask = useTrackerStore((s) => s.addTask);
-  const toggleTask = useTrackerStore((s) => s.toggleTask);
-  const deleteTask = useTrackerStore((s) => s.deleteTask);
-  const markAllToday = useTrackerStore((s) => s.markAllToday);
-  const importSnapshot = useTrackerStore((s) => s.importSnapshot);
-  const resetToSeed = useTrackerStore((s) => s.resetToSeed);
-  const restDays = useTrackerStore((s) => s.restDays || {});
+  const setRestDay = useTrackerStore((s) => s.setRestDay);
+  const setScheduleForMonth = useTrackerStore((s) => s.setScheduleForMonth);
+  const archiveHabit = useTrackerStore((s) => s.archiveHabit);
+  const deleteHabit = useTrackerStore((s) => s.deleteHabit);
+  const matrixView = useTrackerStore((s) => s.matrixView);
+  const setMatrixView = useTrackerStore((s) => s.setMatrixView);
+  const setHidePast = useTrackerStore((s) => s.setHidePast);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoadingAuth(false);
-      if (session) fetchCloudData(session.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchCloudData(session.user.id);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  async function fetchCloudData(userId: string) {
-    try {
-      const { data } = await supabase
-        .from("user_tracker_data")
-        .select("snapshot")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (data && data.snapshot) {
-        importSnapshot(data.snapshot);
-      } else {
-        resetToSeed();
-        const rawJson = JSON.parse(exportSnapshot());
-        await supabase.from("user_tracker_data").upsert({
-          user_id: userId,
-          snapshot: rawJson,
-          updated_at: new Date().toISOString(),
-        });
-      }
-    } catch {
-      resetToSeed();
-    }
-  }
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-    const timer = setTimeout(async () => {
-      try {
-        const rawJson = JSON.parse(exportSnapshot());
-        await supabase.from("user_tracker_data").upsert({
-          user_id: session.user.id,
-          snapshot: rawJson,
-          updated_at: new Date().toISOString(),
-        });
-      } catch {}
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [habits, completions, dailyTasks, session]);
-
-  useEffect(() => {
-    void useTrackerStore.persist.rehydrate();
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
-
-  const monthDaysList = useMemo(
-    () => monthDays(selectedYear, selectedMonth, trackingStart),
-    [selectedYear, selectedMonth, trackingStart]
-  );
-
-  const weekDaysList = useMemo(() => {
-    const start = startOfWeek(today, { weekStartsOn: 1 });
-    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  }, [today]);
-
-  const activeDays = matrixView === "week" ? weekDaysList : monthDaysList;
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-
-  const stats = useMemo(
-    () => computeStats(habits, completions, monthDaysList, today, dailyTasks),
-    [habits, completions, monthDaysList, today, dailyTasks]
-  );
-
-  const archived = habits.filter((h) => h.archived);
-
-  function shiftMonth(delta: number) {
-    const d = new Date(selectedYear, selectedMonth - 1 + delta, 1);
-    setMonth(d.getFullYear(), d.getMonth() + 1);
-  }
-
-  const years = Array.from({ length: 8 }, (_, i) => 2025 + i);
-
-  const inspectDateObj = parseISO(selectedInspectDate);
-  
-  const activeHabitsForDay = useMemo(() => {
+  const activeHabits = useMemo(() => {
     return habits
       .filter((h) => !h.archived)
-      .filter((h) => {
-        const sched = scheduleForMonth(h, inspectDateObj.getFullYear(), inspectDateObj.getMonth() + 1) || h.schedule;
-        const isRest = restDays[`${h.id}_${selectedInspectDate}`];
-        return isDayExpected(sched, inspectDateObj) && !isRest;
-      });
-  }, [habits, inspectDateObj, restDays, selectedInspectDate]);
+      .filter((h) => h.name.toLowerCase().includes(filterText.toLowerCase()));
+  }, [habits, filterText]);
 
-  const currentDayTasks = dailyTasks[selectedInspectDate] || [];
-  
-  const inspectDayDoneCount = activeHabitsForDay.filter(
-    (h) => Boolean(completions[completionKey(h.id, selectedInspectDate)])
-  ).length;
-  
-  const completedTasksCount = currentDayTasks.filter((t) => t.done).length;
+  const visibleDays = useMemo(() => {
+    if (!hidePast) return days;
+    return days.filter((d) => !isFuture(d) || format(d, "yyyy-MM-dd") >= todayIso);
+  }, [days, hidePast, todayIso]);
 
-  const totalDailyItems = activeHabitsForDay.length + currentDayTasks.length;
-  const totalDailyCompleted = inspectDayDoneCount + completedTasksCount;
+  const handleScheduleChange = (habit: Habit, value: string) => {
+    if (value === "paused") {
+      setScheduleForMonth(habit.id, selectedYear, selectedMonth, null);
+      toast.info(`Paused "${habit.name}" for this month`);
+      return;
+    }
 
-  const inspectDayScore = totalDailyItems > 0
-    ? Math.round((totalDailyCompleted / totalDailyItems) * 100)
-    : 0;
+    let newSchedule: Schedule;
+    const dayMap: Record<string, number> = {
+      mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 0,
+    };
 
-  const restingHabitsForDay = habits
-    .filter((h) => !h.archived)
-    .filter((h) => {
-      const sched = scheduleForMonth(h, inspectDateObj.getFullYear(), inspectDateObj.getMonth() + 1) || h.schedule;
-      const isRest = restDays[`${h.id}_${selectedInspectDate}`];
-      return (!isDayExpected(sched, inspectDateObj) || isRest);
-    });
+    if (dayMap[value] !== undefined) {
+      newSchedule = { type: "weekly", days: [dayMap[value]] };
+    } else {
+      newSchedule = { type: "preset", id: value as any };
+    }
 
-  if (loadingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--muted)]">
-        Loading Tracker...
-      </div>
-    );
-  }
+    setScheduleForMonth(habit.id, selectedYear, selectedMonth, newSchedule);
+    toast.success("Schedule updated for this month");
+  };
+
+  const getSelectedScheduleValue = (schedule: Schedule | null) => {
+    if (schedule === null) return "paused";
+    if (schedule.type === "preset") return schedule.id;
+    if (schedule.type === "weekly" && schedule.days && schedule.days.length === 1) {
+      const revMap: Record<number, string> = {
+        1: "mon", 2: "tue", 3: "wed", 4: "thu", 5: "fri", 6: "sat", 0: "sun",
+      };
+      return revMap[schedule.days[0]] || "daily";
+    }
+    return "daily";
+  };
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 font-sans">
-      {!session && (
-        <AuthDialog
-          onSuccess={() => {
-            supabase.auth.getSession().then(({ data: { session } }) => {
-              setSession(session);
-              if (session) fetchCloudData(session.user.id);
-            });
-          }}
-        />
-      )}
-
-      {/* Header */}
-      <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          
-          {/* اللوجو المربوط بالثيم (Primary & Bg) */}
-          <div className="flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="size-12 sm:size-14 drop-shadow-md shrink-0 text-[var(--primary)]">
-              <rect x="16" y="16" width="224" height="224" rx="64" fill="currentColor"/>
-              <path d="M 76 132 L 114 170 L 180 94" fill="none" stroke="var(--bg)" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            
-            <div className="flex flex-col justify-center">
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--fg)] leading-none">
-                <span className="text-[var(--primary)] font-extrabold">My</span>Tracker
-              </h2>
-              <span className="text-[10px] sm:text-xs text-[var(--muted)] tracking-widest mt-1">
-                TRACK IT <span className="text-[var(--primary)] font-bold">-</span> BUILD IT <span className="text-[var(--primary)] font-bold">-</span> ACHIEVE IT
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
-            EXECUTION LOG
-          </p>
-          <h1 className="mt-1 text-3xl sm:text-4xl font-bold tracking-tight text-[var(--fg)]">
-            {MONTHS[selectedMonth - 1]} {selectedYear}
-          </h1>
-          <p className="text-xs text-[var(--muted)] mt-1.5">
-            Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
-            {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
-          </p>
-        </div>
-      </header>
-
-      {/* Action Controls */}
-      <div className="flex flex-wrap items-center gap-2.5 mb-6">
-        <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => shiftMonth(-1)}
-            className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <NativeSelect
-            className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
-            value={selectedMonth}
-            onChange={(e) => setMonth(selectedYear, Number(e.target.value))}
-          >
-            {MONTHS.map((m, i) => (
-              <option key={m} value={i + 1}>
-                {m}
-              </option>
-            ))}
-          </NativeSelect>
-          <NativeSelect
-            className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
-            value={selectedYear}
-            onChange={(e) => setMonth(Number(e.target.value), selectedMonth)}
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </NativeSelect>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => shiftMonth(1)}
-            className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setMonth(today.getFullYear(), today.getMonth() + 1);
-            setSelectedInspectDate(format(today, "yyyy-MM-dd"));
-          }}
-          className="h-10 rounded-xl border border-[var(--primary)]/30 bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
-        >
-          <CalendarDays className="mr-1.5 size-3.5 text-[var(--primary)]" />
-          Today
-        </Button>
-
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => {
-            if (undo()) toast("Undid last change.");
-            else toast("Nothing to undo.");
-          }}
-          disabled={undoCount === 0}
-          className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] cursor-pointer"
-        >
-          <Undo2 className="size-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => setSettingsOpen(true)}
-          className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] cursor-pointer"
-        >
-          <Settings className="size-4" />
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => setNewOpen(true)}
-          className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs font-semibold text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50 cursor-pointer"
-        >
-          <Plus className="mr-1.5 size-4 text-[var(--primary)]" />
-          Habit
-        </Button>
-        {session && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={async () => {
-              await supabase.auth.signOut();
-              resetToSeed();
-              setSession(null);
-              toast("تم تسجيل الخروج");
-            }}
-            className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-rose-400 cursor-pointer"
-          >
-            <LogOut className="size-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* Main Single Switcher Tab */}
+    <div className="w-full">
+      {/* Header & Controls */}
       <div className="mb-6">
-        <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
-          {(["daily", "matrix", "stats"] as const).map((tab) => (
+        <h2 className="font-serif-title text-2xl font-normal tracking-tight text-[var(--fg)]">Matrix</h2>
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Dashes are rest days. When monthly targets are met, remaining days automatically turn into rest.
+        </p>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="flex h-9 items-center rounded-xl bg-[var(--surface-elevated)] p-1 border border-[var(--border)]">
             <button
-              key={tab}
               type="button"
-              onClick={() => setMainTab(tab)}
+              onClick={() => setMatrixView("week")}
               className={cn(
-                "flex items-center justify-center rounded-xl py-2.5 text-xs font-medium capitalize transition-all duration-200 cursor-pointer",
-                mainTab === tab
-                  ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold shadow-sm"
+                "rounded-lg px-3 py-1 text-xs font-medium transition-all cursor-pointer",
+                matrixView === "week"
+                  ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold"
                   : "text-[var(--muted)] hover:text-[var(--fg)]"
               )}
             >
-              {tab}
+              Week
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setMatrixView("month")}
+              className={cn(
+                "rounded-lg px-3 py-1 text-xs font-medium transition-all cursor-pointer",
+                matrixView === "month"
+                  ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold"
+                  : "text-[var(--muted)] hover:text-[var(--fg)]"
+              )}
+            >
+              Month
+            </button>
+          </div>
+
+          <label className="flex items-center gap-2 text-xs text-[var(--muted)] cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={hidePast}
+              onChange={(e) => setHidePast(e.target.checked)}
+              className="size-4 rounded border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--primary)] focus:ring-0"
+            />
+            Hide past days
+          </label>
+
+          <div className="relative flex-1 min-w-[12rem]">
+            <input
+              type="text"
+              placeholder="Filter habits..."
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3.5 text-xs text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <main>
-        {/* Daily View */}
-        {mainTab === "daily" && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
-            <section className="min-w-0">
-              <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-xl">
-                <TodayPanel habits={habits} stats={stats} todayDate={today} />
-              </div>
-            </section>
-
-            <section className="min-w-0">
-              <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl space-y-6">
-                
-                {/* Week Day Header Navigation */}
-                <div className="grid grid-cols-7 gap-2 pb-5 border-b border-[var(--border)]">
-                  {weekDaysList.map((d) => {
-                    const dIso = format(d, "yyyy-MM-dd");
-                    const isSelected = dIso === selectedInspectDate;
-                    return (
-                      <button
-                        key={dIso}
-                        type="button"
-                        onClick={() => setSelectedInspectDate(dIso)}
-                        className={cn(
-                          "flex flex-col items-center justify-center rounded-2xl py-3 border transition-all cursor-pointer relative",
-                          isSelected
-                            ? "border-[var(--primary)] bg-[var(--surface-elevated)] text-[var(--fg)] font-semibold shadow-xs"
-                            : "border-[var(--border)] bg-[var(--surface-elevated)]/50 text-[var(--muted)] hover:text-[var(--fg)]"
-                        )}
-                      >
-                        <span className="text-[10px] uppercase font-mono tracking-wider">{format(d, "EEE").slice(0, 2)}</span>
-                        <span className="text-sm font-bold mt-0.5">{format(d, "d")}</span>
-                        {isSelected && (
-                          <span className="absolute bottom-1.5 w-5 h-0.5 rounded-full bg-[var(--primary)]" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* EXCLUSIVE ENLARGED DAILY PROGRESS GAUGE */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--surface-elevated)]/20 p-6 rounded-3xl border border-[var(--border)]">
-                  <div className="text-center sm:text-left flex-1">
-                    <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-[0.2em]">
-                      {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
-                    </span>
-                    <h3 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] mt-1">
-                      {format(inspectDateObj, "d EEE")}
-                    </h3>
-                    <p className="text-sm text-[var(--muted)] mt-2 max-w-sm">
-                      {totalDailyCompleted === totalDailyItems && totalDailyItems > 0
-                        ? "All scheduled habits and tasks completed! Outstanding."
-                        : `${totalDailyItems - totalDailyCompleted} items remaining to check off.`}
-                    </p>
+      {/* Matrix Table */}
+      <div className="overflow-x-auto pb-4">
+        <table className="w-full min-w-max border-separate border-spacing-y-2.5">
+          <thead>
+            <tr className="text-left text-[11px] font-medium text-[var(--muted)]">
+              <th className="w-8 px-1"></th>
+              <th className="min-w-[150px] px-3 font-normal">Habit</th>
+              <th className="min-w-[140px] px-3 font-normal">Schedule</th>
+              {visibleDays.map((date) => (
+                <th key={date.toISOString()} className="px-1 text-center font-normal">
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="text-[10px] text-[var(--muted)] leading-tight">{format(date, "EEE")}</span>
+                    <span className="text-[12px] font-semibold text-[var(--fg)]">{format(date, "d")}</span>
                   </div>
-
-                  <div className="relative flex size-36 sm:size-40 items-center justify-center select-none shrink-0">
-                    <svg className="size-full -rotate-90 p-2" viewBox="0 0 120 120">
-                      <circle
-                        cx="60"
-                        cy="60"
-                        r="50"
-                        stroke="currentColor"
-                        className="text-[var(--surface-pill)] opacity-40"
-                        strokeWidth="8"
-                        fill="none"
-                      />
-                      {inspectDayScore > 0 && (
-                        <circle
-                          cx="60"
-                          cy="60"
-                          r="50"
-                          stroke="var(--primary)"
-                          strokeWidth="8"
-                          strokeDasharray={2 * Math.PI * 50}
-                          strokeDashoffset={2 * Math.PI * 50 * (1 - inspectDayScore / 100)}
-                          strokeLinecap="round"
-                          fill="none"
-                          style={{ filter: "drop-shadow(0 0 8px var(--glow))" }}
-                        />
-                      )}
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
-                      <span className="text-4xl sm:text-5xl font-bold text-[var(--fg)] tracking-tight leading-none">
-                        {inspectDayScore}%
-                      </span>
-                      <span className="text-[10px] sm:text-xs font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2 leading-none">
-                        DAILY
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scheduled Habits Cards */}
-                <div className="space-y-2.5">
-                  {activeHabitsForDay.length === 0 ? (
-                    <p className="text-xs text-[var(--muted)] py-4 text-center">No habits scheduled on this day.</p>
-                  ) : (
-                    activeHabitsForDay.map((h) => {
-                      const isDone = Boolean(completions[completionKey(h.id, selectedInspectDate)]);
-                      return (
-                        <div
-                          key={h.id}
-                          onClick={() => toggleCompletion(h.id, selectedInspectDate)}
-                          className={cn(
-                            "flex items-center justify-between rounded-2xl p-4 border transition-all cursor-pointer",
-                            isDone
-                              ? "border-[var(--primary)]/40 bg-[var(--primary)]/10 shadow-xs"
-                              : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
-                          )}
-                        >
-                          <div className="flex items-center gap-3.5">
-                            <div
-                              className={cn(
-                                "flex size-5 items-center justify-center rounded-lg border transition-colors",
-                                isDone
-                                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                                  : "border-[var(--border)] bg-transparent"
-                              )}
-                            >
-                              {isDone && <Check className="size-3.5 stroke-[3]" />}
-                            </div>
-                            <div>
-                              <p className={cn("text-xs font-semibold text-[var(--fg)]", isDone && "line-through opacity-70")}>
-                                {h.name}
-                              </p>
-                              <span className="text-[10px] text-[var(--muted)] capitalize">
-                                {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* One-off Tasks Section */}
-                <div className="pt-4 border-t border-[var(--border)] space-y-3">
-                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
-                    ONE-OFF TASKS
-                  </span>
-
-                  {currentDayTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)]"
-                    >
-                      <div
-                        onClick={() => toggleTask(selectedInspectDate, task.id)}
-                        className="flex items-center gap-3 cursor-pointer flex-1"
-                      >
-                        <div
-                          className={cn(
-                            "flex size-4 items-center justify-center rounded-md border",
-                            task.done ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]" : "border-[var(--border)]"
-                          )}
-                        >
-                          {task.done && <Check className="size-3 stroke-[3]" />}
-                        </div>
-                        <span className={cn("text-xs text-[var(--fg)]", task.done && "line-through text-[var(--muted)]")}>
-                          {task.name}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteTask(selectedInspectDate, task.id)}
-                        className="text-[var(--muted)] hover:text-rose-400 p-1 cursor-pointer"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Add Task Input */}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Add a task for this day..."
-                      value={newCustomTask}
-                      onChange={(e) => setNewCustomTask(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && newCustomTask.trim()) {
-                          addTask(selectedInspectDate, newCustomTask.trim());
-                          setNewCustomTask("");
-                        }
-                      }}
-                      className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        if (newCustomTask.trim()) {
-                          addTask(selectedInspectDate, newCustomTask.trim());
-                          setNewCustomTask("");
-                        }
-                      }}
-                      className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
-                    >
-                      <Plus className="size-4" />
-                    </Button>
-                  </div>
-
-                  {/* Rest Section */}
-                  {restingHabitsForDay.length > 0 && (
-                    <div className="pt-2 space-y-1 text-xs text-[var(--muted)]">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5">REST</span>
-                      {restingHabitsForDay.map((h) => (
-                        <div key={h.id} className="flex justify-between py-1 border-b border-[var(--border)]/40 last:border-0">
-                          <span>{h.name}</span>
-                          <span className="font-mono text-[10px] capitalize">
-                            {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      markAllToday(selectedInspectDate, true);
-                      toast.success("Completed all habits for this day!");
-                    }}
-                    className="mt-4 h-11 w-full rounded-2xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
-                  >
-                    Complete this day
-                  </Button>
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* Matrix View Tab */}
-        {mainTab === "matrix" && (
-          <div className="rounded-3xl bg-[var(--surface)] p-6 sm:p-8 border border-[var(--border)] shadow-xl">
-            <HabitMatrix
-              habits={habits}
-              days={activeDays}
-              todayIso={isoDate(today)}
-              hidePast={hidePast}
-              daysInMonth={daysInMonth}
-              selectedYear={selectedYear}
-              selectedMonth={selectedMonth}
-            />
-          </div>
-        )}
-
-        {/* Stats View Tab */}
-        {mainTab === "stats" && (
-          <div className="space-y-6">
-            <div className="flex flex-wrap items-center gap-2">
-              {(
-                [
-                  ["analytics", "Analytics"],
-                  ["audit", "Audit"],
-                  ["manage", "Manage"],
-                  ["ml", "✨ ML"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setStatsSubTab(id)}
-                  className={cn(
-                    "rounded-xl px-4 py-2 text-xs font-medium transition-all duration-150 border cursor-pointer",
-                    statsSubTab === id
-                      ? "border-[var(--primary)] bg-[var(--surface)] text-[var(--fg)] shadow-sm font-semibold ring-1 ring-[var(--primary)]/30"
-                      : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--fg)]"
-                  )}
-                >
-                  {label}
-                </button>
+                </th>
               ))}
-            </div>
+              <th className="min-w-[110px] px-3 text-center font-normal">Actions</th>
+            </tr>
+          </thead>
 
-            {statsSubTab === "analytics" && <AnalyticsPanel />}
-            {statsSubTab === "audit" && <AuditPanel habits={habits} stats={stats} />}
-            {statsSubTab === "ml" && <MlPanel habits={habits} completions={completions} />}
-            {statsSubTab === "manage" && (
-              <div className="flex flex-col gap-6">
-                <BulkUpdatePanel
-                  days={activeDays.map((d) => ({ iso: isoDate(d), label: format(d, "EEE d") }))}
-                  todayIso={isoDate(today)}
-                />
-                <div className="rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)]">
-                  <h3 className="text-xl font-bold tracking-tight text-[var(--fg)]">Archived</h3>
-                  {archived.length === 0 ? (
-                    <p className="mt-2 text-xs text-[var(--muted)]">No archived habits.</p>
-                  ) : (
-                    <ul className="mt-4 flex flex-col gap-2.5">
-                      {archived.map((h) => (
-                        <li key={h.id} className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3.5 border border-[var(--border)]">
-                          <span className="text-sm font-medium text-[var(--fg)]">{h.name}</span>
-                          <Button size="sm" variant="secondary" onClick={() => archiveHabit(h.id, false)}>
-                            Restore
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
+          <tbody>
+            {activeHabits.length === 0 ? (
+              <tr>
+                <td colSpan={visibleDays.length + 4} className="py-12 text-center text-xs text-[var(--muted)]">
+                  No habits found. Click "+ Habit" above to create one.
+                </td>
+              </tr>
+            ) : (
+              activeHabits.map((habit) => {
+                const schedule = scheduleForMonth(habit, selectedYear, selectedMonth);
+                const isPausedThisMonth = schedule === null;
+                const currentScheduleValue = getSelectedScheduleValue(schedule);
+                const isTodayRest = isRestDay(habit, todayIso);
+
+                // حساب عدد المرات المنجزة لهذا الشهر
+                const monthDoneCount = visibleDays.reduce((acc, date) => {
+                  const iso = format(date, "yyyy-MM-dd");
+                  return acc + (completions[completionKey(habit.id, iso)] ? 1 : 0);
+                }, 0);
+
+                // التحقق مما إذا كان المستهدف الشهري قد اكتمل بالكامل
+                const isMonthlyTargetReached =
+                  schedule &&
+                  schedule.type === "monthlyTarget" &&
+                  monthDoneCount >= schedule.targetDays;
+
+                return (
+                  <tr
+                    key={habit.id}
+                    className={cn(
+                      "group transition-colors",
+                      isPausedThisMonth ? "opacity-50 hover:opacity-75" : "hover:bg-[var(--surface-elevated)]/20"
+                    )}
+                  >
+                    <td className="px-1 text-[var(--muted)] opacity-30 group-hover:opacity-100">
+                      <GripVertical className="size-4 cursor-grab" />
+                    </td>
+
+                    <td className="px-3">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("text-sm font-medium", isPausedThisMonth ? "text-[var(--muted)] line-through" : "text-[var(--fg)]")}>
+                          {habit.name}
+                        </span>
+                        {isPausedThisMonth && (
+                          <span className="text-[9px] bg-[var(--muted)]/10 text-[var(--muted)] border border-[var(--border)] px-1.5 py-0.5 rounded font-mono">
+                            Paused
+                          </span>
+                        )}
+                        {/* 🎯 تم ربط الـ Target Met بالثيم (Primary Color) بدل الأخضر */}
+                        {isMonthlyTargetReached && !isPausedThisMonth && (
+                          <span className="text-[9px] bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 px-1.5 py-0.5 rounded font-mono font-medium">
+                            Target Met ({monthDoneCount}/{schedule.targetDays})
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="px-3">
+                      <NativeSelect
+                        className={cn(
+                          "h-8 w-36 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]",
+                          isPausedThisMonth && "border-[var(--muted)]/40 text-[var(--muted)]"
+                        )}
+                        value={currentScheduleValue}
+                        onChange={(e) => handleScheduleChange(habit, e.target.value)}
+                      >
+                        {SCHEDULE_OPTIONS.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </td>
+
+                    {/* Matrix Day Cells */}
+                    {visibleDays.map((date) => {
+                      const iso = format(date, "yyyy-MM-dd");
+                      const key = completionKey(habit.id, iso);
+                      const isDone = Boolean(completions[key]);
+                      const isRest = isRestDay(habit, iso);
+                      const expected = schedule ? isDayExpected(schedule, date) : false;
+                      const isPast = iso < todayIso;
+                      const isCurrentToday = iso === todayIso;
+
+                      // 1. حالة التجميد للشهر
+                      if (isPausedThisMonth) {
+                        return (
+                          <td key={iso} className="px-1 text-center">
+                            <div
+                              title="Paused for this month"
+                              className="flex size-7 items-center justify-center text-xs text-[var(--muted)]/20 select-none"
+                            >
+                              —
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // 2. التحويل التلقائي إلى Rest عند اكتمال التارجت الشهري (مربوطة بالثيم)
+                      if (isMonthlyTargetReached && !isDone) {
+                        return (
+                          <td key={iso} className="px-1 text-center">
+                            <div
+                              title={`Target achieved (${schedule.targetDays}/${schedule.targetDays})! Auto-rest for remainder of month.`}
+                              className="flex size-7 items-center justify-center text-xs font-bold text-[var(--primary)]/50 bg-[var(--primary)]/5 rounded-lg border border-[var(--primary)]/10 select-none cursor-default"
+                            >
+                              —
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // 3. حالة الـ Rest Day اليدوي (بقت هادية ومريحة للعين)
+                      if (isRest) {
+                        return (
+                          <td key={iso} className="px-1 text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRestDay(habit.id, iso, false);
+                                toast.info(`Activated "${habit.name}" for ${iso}`);
+                              }}
+                              title="Rest day (Click to activate)"
+                              className="flex size-7 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted)] bg-[var(--surface-elevated)] border border-[var(--border)] hover:border-[var(--muted)] transition-all cursor-pointer"
+                            >
+                              —
+                            </button>
+                          </td>
+                        );
+                      }
+
+                      // 4. يوم غير مجدول في الأسبوع (مخفي/خافت بوضوح)
+                      if (!expected) {
+                        return (
+                          <td key={iso} className="px-1 text-center">
+                            <div
+                              title="Unscheduled day"
+                              className="flex size-7 items-center justify-center text-xs text-[var(--muted)] opacity-30 select-none"
+                            >
+                              —
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // 5. الخلية التفاعلية العادية
+                      return (
+                        <td key={iso} className="px-1 text-center">
+                          <button
+                            type="button"
+                            onClick={() => toggleCompletion(habit.id, iso)}
+                            className={cn(
+                              "flex size-7 items-center justify-center rounded-lg border transition-all duration-150 cursor-pointer",
+                              isDone
+                                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs font-bold scale-100"
+                                : isPast
+                                ? "border-[var(--border)] bg-[var(--surface-elevated)]/30 text-[var(--muted)] hover:border-[var(--muted)]"
+                                : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]",
+                              isCurrentToday && !isDone && "ring-1 ring-[var(--primary)]"
+                            )}
+                          >
+                            {isDone ? (
+                              <Check className="size-3.5 stroke-[3]" />
+                            ) : isPast ? (
+                              <X className="size-3 stroke-[2] opacity-60" />
+                            ) : null}
+                          </button>
+                        </td>
+                      );
+                    })}
+
+                    {/* 4 Action Buttons on the Right */}
+                    <td className="px-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                        {/* 1. Pause / Resume Month */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isPausedThisMonth) {
+                              setScheduleForMonth(habit.id, selectedYear, selectedMonth, habit.schedule);
+                              toast.success(`Resumed "${habit.name}" for this month`);
+                            } else {
+                              setScheduleForMonth(habit.id, selectedYear, selectedMonth, null);
+                              toast.info(`Paused "${habit.name}" for this month`);
+                            }
+                          }}
+                          title={isPausedThisMonth ? "Resume for this month" : "Pause for this month"}
+                          className={cn(
+                            "flex size-7 items-center justify-center rounded-lg border transition-colors cursor-pointer",
+                            isPausedThisMonth
+                              ? "border-[var(--primary)]/30 text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20"
+                              : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
+                          )}
+                        >
+                          {isPausedThisMonth ? <PlayCircle className="size-3.5" /> : <PauseCircle className="size-3.5" />}
+                        </button>
+
+                        {/* 2. Toggle Rest Day for Today */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRestDay(habit.id, todayIso, !isTodayRest);
+                            if (isTodayRest) {
+                              toast.info(`Activated "${habit.name}" for today`);
+                            } else {
+                              toast.success(`Set rest day for "${habit.name}" today`);
+                            }
+                          }}
+                          title={isTodayRest ? "Cancel Today's Rest" : "Set Rest Today"}
+                          className={cn(
+                            "flex size-7 items-center justify-center rounded-lg border transition-colors cursor-pointer",
+                            isTodayRest
+                              ? "border-[var(--primary)]/30 text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20"
+                              : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] hover:border-[var(--muted)]"
+                          )}
+                        >
+                          <CalendarOff className="size-3.5" />
+                        </button>
+
+                        {/* 3. Archive Habit */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            archiveHabit(habit.id, true);
+                            toast.success(`Archived "${habit.name}"`);
+                          }}
+                          title="Archive Habit"
+                          className="flex size-7 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--fg)] hover:border-[var(--muted)] transition-colors cursor-pointer"
+                        >
+                          <Archive className="size-3.5" />
+                        </button>
+
+                        {/* 4. Delete Habit */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            deleteHabit(habit.id);
+                            toast.error(`Deleted "${habit.name}"`);
+                          }}
+                          title="Delete Habit"
+                          className="flex size-7 items-center justify-center rounded-lg border border-[var(--border)] text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
-          </div>
-        )}
-      </main>
-
-      <NewHabitDialog
-        open={newOpen}
-        onOpenChange={setNewOpen}
-        daysInMonth={daysInMonth}
-        selectedYear={selectedYear}
-        selectedMonth={selectedMonth}
-      />
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-export default TrackerApp;
+export default HabitMatrix;
