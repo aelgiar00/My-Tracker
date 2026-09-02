@@ -158,40 +158,43 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
   const nonNegotiables = habitPredictions.filter((h) => h.specs.priority === 1);
 
   return (
-    // القاعدة الأساسية لكل النصوص Arial Bold
-    <div className="flex flex-col gap-4 text-left font-['Arial'] font-bold">
-      <div className="flex items-center justify-between border-b border-[var(--border)] pb-3.5">
-        <div className="flex items-center gap-2.5">
-          <span className="size-2.5 rounded-full bg-[var(--primary)] shadow-sm animate-pulse"></span>
+    // زودنا مسافات الجاب عشان ندي تنفس للبانل (gap-6 بدل 4)
+    <div className="flex flex-col gap-6 text-left font-['Arial'] font-bold">
+      
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
+        <div className="flex items-center gap-3">
+          <span className="size-3 rounded-full bg-[var(--primary)] shadow-sm animate-pulse"></span>
           <div>
-            <h2 className="text-xs tracking-wider uppercase text-[var(--fg)]">
+            <h2 className="text-sm tracking-wider uppercase text-[var(--fg)]">
               Personal AI
             </h2>
-            <p className="text-[10px] text-[var(--muted)]">Execution Coach</p>
+            <p className="text-xs text-[var(--muted)] mt-0.5">Execution Coach</p>
           </div>
         </div>
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1 text-right">
-          <span className="text-[9px] text-[var(--muted)] uppercase block">Readiness</span>
-          {/* الأرقام بخط Merriweather */}
-          <span className="text-sm font-['Merriweather'] text-[var(--primary)]">{readinessScore}%</span>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-2 text-right">
+          <span className="text-[10px] text-[var(--muted)] uppercase block mb-1">Readiness</span>
+          {/* كبرنا نسبة الاستعداد (text-xl) */}
+          <span className="text-xl font-['Merriweather'] text-[var(--primary)] leading-none">{readinessScore}%</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+      {/* Time Allocation Blocks */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {timeBlocks.map((block) => {
           const percent = (block.hours / 24) * 100;
           
           return (
-            <div key={block.id} className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between relative group transition-colors hover:border-[var(--muted)]/50">
+            <div key={block.id} className="rounded-2xl bg-[var(--surface-elevated)] p-3.5 border border-[var(--border)] shadow-xs flex flex-col justify-between relative group transition-colors hover:border-[var(--muted)]/50">
               <button
                 onClick={() => removeBlock(block.id)}
-                className="absolute -top-1.5 -right-1.5 size-4.5 flex items-center justify-center rounded-full bg-rose-500/90 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm z-10 hover:bg-rose-500"
+                className="absolute -top-2 -right-2 size-5 flex items-center justify-center rounded-full bg-rose-500/90 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm z-10 hover:bg-rose-500"
                 title="Remove activity"
               >
-                <X className="size-3" />
+                <X className="size-3.5" />
               </button>
 
-              <div className="flex justify-between text-[11px] text-[var(--fg)] mb-1 gap-1">
+              <div className="flex justify-between text-xs text-[var(--fg)] mb-2 gap-2">
                 <input
                   type="text"
                   value={block.name}
@@ -200,10 +203,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                   className="w-[70%] bg-transparent text-[var(--muted)] outline-none focus:text-[var(--fg)] focus:border-b focus:border-[var(--primary)] transition-colors truncate"
                   title="Click to rename"
                 />
-                <span className="font-['Merriweather'] text-[14px] text-[var(--primary)] shrink-0">{block.hours}h</span>
+                <span className="font-['Merriweather'] text-base text-[var(--primary)] shrink-0">{block.hours}h</span>
               </div>
 
-              <div className="py-1">
+              <div className="py-1.5">
                 <input
                   type="range"
                   min="0"
@@ -212,10 +215,10 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                   value={block.hours}
                   onChange={(e) => updateBlockHours(block.id, Number(e.target.value))}
                   style={{ background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${percent}%, var(--surface-pill) ${percent}%, var(--surface-pill) 100%)` }}
-                  className="h-1.5 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
+                  className="h-2 w-full appearance-none rounded-lg border border-[var(--border)] accent-[var(--primary)] cursor-pointer"
                 />
               </div>
-              <div className="flex justify-between text-[8.5px] font-['Merriweather'] text-[10px] text-[var(--muted)]/70 px-0.5 select-none">
+              <div className="flex justify-between font-['Merriweather'] text-[11px] text-[var(--muted)]/80 px-0.5 mt-1 select-none">
                 <span>0h</span>
                 <span>12h</span>
                 <span>24h</span>
@@ -227,43 +230,45 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         {timeBlocks.length < 6 && (
           <button
             onClick={addBlock}
-            className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-elevated)]/30 flex flex-col items-center justify-center text-[var(--muted)] hover:text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all min-h-[72px] cursor-pointer"
+            className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-elevated)]/30 flex flex-col items-center justify-center text-[var(--muted)] hover:text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all min-h-[85px] cursor-pointer"
           >
-            <Plus className="size-4 mb-0.5" />
-            <span className="text-[9px] uppercase tracking-wider">Add</span>
+            <Plus className="size-5 mb-1" />
+            <span className="text-[10px] uppercase tracking-wider">Add</span>
           </button>
         )}
       </div>
 
-      <div className="flex items-center justify-between text-xs text-[var(--muted)] px-0.5 mt-1">
+      {/* Available Time Summary */}
+      <div className="flex items-center justify-between text-sm text-[var(--muted)] px-1 mt-2">
         <span>
-          Net Available: <strong className="text-[var(--fg)] font-['Merriweather'] text-[15px]">{availableHours}h</strong>
+          Net Available: <strong className="text-[var(--fg)] font-['Merriweather'] text-lg">{availableHours}h</strong>
         </span>
         <button
           type="button"
           onClick={() => setShowDetails(!showDetails)}
-          className="text-[11px] text-[var(--primary)] hover:underline cursor-pointer"
+          className="text-xs text-[var(--primary)] hover:underline cursor-pointer"
         >
           {showDetails ? "Hide Focus" : "Show Focus"}
         </button>
       </div>
 
+      {/* Non-Negotiables Focus Card */}
       {showDetails && (
-        <div className="rounded-2xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs shadow-xs mt-1">
-          <p className="text-[var(--fg)] mb-2 flex items-center gap-1 text-[11px]">
+        <div className="rounded-2xl bg-[var(--surface-elevated)] p-4 border border-[var(--border)] text-sm shadow-xs mt-1">
+          <p className="text-[var(--fg)] mb-3 flex items-center gap-1.5 text-xs uppercase tracking-wide">
             Important Today:
           </p>
           {nonNegotiables.length === 0 ? (
-            <p className="text-[10px] text-[var(--muted)]">No important habits scheduled today.</p>
+            <p className="text-xs text-[var(--muted)]">No important habits scheduled today.</p>
           ) : (
-            <ul className="space-y-1.5 text-[11px] text-[var(--fg)]">
+            <ul className="space-y-2.5 text-xs text-[var(--fg)]">
               {nonNegotiables.map(({ habit, specs }) => (
                 <li
                   key={habit.id}
-                  className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-1.5 last:border-0 last:pb-0"
+                  className="flex justify-between items-center pr-1 border-b border-[var(--border)] pb-2.5 last:border-0 last:pb-0"
                 >
-                  <span className="truncate max-w-[140px]">• {habit.name}</span>
-                  <span className="text-[11px] font-['Merriweather'] text-[var(--primary)] bg-[var(--primary-muted)] px-1.5 py-0.5 rounded-md border border-[var(--primary)]/20">
+                  <span className="truncate max-w-[160px] text-[13px]">• {habit.name}</span>
+                  <span className="text-xs font-['Merriweather'] text-[var(--primary)] bg-[var(--primary-muted)] px-2 py-1 rounded-md border border-[var(--primary)]/20">
                     {specs.durationLabel}
                   </span>
                 </li>
@@ -273,15 +278,16 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
       )}
 
-      <div className="space-y-1.5 pt-0.5">
+      {/* Individual Habit Predictions List */}
+      <div className="space-y-2.5 pt-1">
         {habitPredictions.length === 0 ? (
-          <p className="text-xs text-[var(--muted)] text-center py-4">No habits added yet.</p>
+          <p className="text-sm text-[var(--muted)] text-center py-6">No habits added yet.</p>
         ) : (
           habitPredictions.map(({ habit, chance, isDone, feasible, statusLabel }) => (
             <div
               key={habit.id}
               className={cn(
-                "flex items-center justify-between rounded-2xl px-3.5 py-2.5 border transition-all duration-150",
+                "flex items-center justify-between rounded-2xl px-4 py-3.5 border transition-all duration-150",
                 isDone
                   ? "bg-[var(--primary-muted)]/25 border-[var(--primary)]/40 text-[var(--primary)] shadow-xs"
                   : feasible
@@ -289,13 +295,13 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                   : "bg-[var(--surface-elevated)]/50 border-[var(--border)] text-[var(--muted)] opacity-60"
               )}
             >
-              <div>
-                <p className={cn("text-xs truncate max-w-[140px]", isDone && "line-through opacity-70")}>
+              <div className="flex flex-col gap-1">
+                <p className={cn("text-sm truncate max-w-[160px]", isDone && "line-through opacity-70")}>
                   {habit.name}
                 </p>
-                <span className="text-[9.5px] text-[var(--muted)] block mt-0.5">{statusLabel}</span>
+                <span className="text-[11px] text-[var(--muted)]">{statusLabel}</span>
               </div>
-              <div className="text-[15px] font-['Merriweather'] text-[var(--fg)]">
+              <div className="text-lg font-['Merriweather'] text-[var(--fg)]">
                 {isDone ? "✓" : `${chance}%`}
               </div>
             </div>
