@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format, isFuture } from "date-fns";
 import {
   Check,
@@ -62,16 +62,35 @@ export function HabitMatrix({
   const setMatrixView = useTrackerStore((s) => s.setMatrixView);
   const setHidePast = useTrackerStore((s) => s.setHidePast);
 
+  // تخزين الترتيب في المتصفح عشان ميروحش مع الرفريش
+  const [customOrder, setCustomOrder] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('habit_order') || '[]'); }
+    catch { return []; }
+  });
+  
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('habit_order', JSON.stringify(customOrder));
+  }, [customOrder]);
+
   const activeHabits = useMemo(() => {
-    return habits
+    const filtered = habits
       .filter((h) => !h.archived)
       .filter((h) => h.name.toLowerCase().includes(filterText.toLowerCase()));
-  }, [habits, filterText]);
 
-  const visibleDays = useMemo(() => {
-    if (!hidePast) return days;
-    return days.filter((d) => !isFuture(d) || format(d, "yyyy-MM-dd") >= todayIso);
-  }, [days, hidePast, todayIso]);
+    if (customOrder.length > 0) {
+      filtered.sort((a, b) => {
+        const indexA = customOrder.indexOf(a.id);
+        const indexB = customOrder.indexOf(b.id);
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+    }
+    return filtered;
+  }, [habits, filterText, customOrder]);
 
   const handleScheduleChange = (habit: Habit, value: string) => {
     if (value === "paused") {
@@ -107,13 +126,55 @@ export function HabitMatrix({
     return "daily";
   };
 
+  const visibleDays = useMemo(() => {
+    if (!hidePast) return days;
+    return days.filter((d) => !isFuture(d) || format(d, "yyyy-MM-dd") >= todayIso);
+  }, [days, hidePast, todayIso]);
+
+  // دوال السحب والإفلات
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLTableRowElement>, targetId: string) => {
+    e.preventDefault();
+    const draggedId = e.dataTransfer.getData('text/plain');
+    if (draggedId === targetId || !draggedId) return;
+
+    const currentOrder = activeHabits.map(h => h.id);
+    const baseOrder = customOrder.length > 0 ? customOrder : currentOrder;
+    const uniqueOrder = Array.from(new Set([...baseOrder, ...currentOrder]));
+
+    const oldIndex = uniqueOrder.indexOf(draggedId);
+    const newIndex = uniqueOrder.indexOf(targetId);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newOrder = [...uniqueOrder];
+      newOrder.splice(oldIndex, 1);
+      newOrder.splice(newIndex, 0, draggedId);
+      setCustomOrder(newOrder);
+    }
+    setDraggingId(null);
+  };
+
   return (
     <div className="w-full">
       {/* Header & Controls */}
       <div className="mb-6">
-        <h2 className="font-serif-title text-2xl font-normal tracking-tight text-[var(--fg)]">Matrix</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-[var(--fg)]">Matrix</h2>
         <p className="mt-1 text-xs text-[var(--muted)]">
-          Dashes are rest days. When monthly targets are met, remaining days automatically turn into rest.
+          Dashes are rest days. When monthly targets are met, remaining days automatically turn into rest. You can drag and drop habits to reorder them.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -200,13 +261,11 @@ export function HabitMatrix({
                 const currentScheduleValue = getSelectedScheduleValue(schedule);
                 const isTodayRest = isRestDay(habit, todayIso);
 
-                // حساب عدد المرات المنجزة لهذا الشهر
                 const monthDoneCount = visibleDays.reduce((acc, date) => {
                   const iso = format(date, "yyyy-MM-dd");
                   return acc + (completions[completionKey(habit.id, iso)] ? 1 : 0);
                 }, 0);
 
-                // التحقق مما إذا كان المستهدف الشهري قد اكتمل بالكامل
                 const isMonthlyTargetReached =
                   schedule &&
                   schedule.type === "monthlyTarget" &&
@@ -215,13 +274,19 @@ export function HabitMatrix({
                 return (
                   <tr
                     key={habit.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, habit.id)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, habit.id)}
                     className={cn(
-                      "group transition-colors",
+                      "group transition-all cursor-move",
+                      draggingId === habit.id ? "opacity-30 bg-[var(--surface-elevated)] scale-[0.98]" : "",
                       isPausedThisMonth ? "opacity-50 hover:opacity-75" : "hover:bg-[var(--surface-elevated)]/20"
                     )}
                   >
                     <td className="px-1 text-[var(--muted)] opacity-30 group-hover:opacity-100">
-                      <GripVertical className="size-4 cursor-grab" />
+                      <GripVertical className="size-4" />
                     </td>
 
                     <td className="px-3">
@@ -234,7 +299,6 @@ export function HabitMatrix({
                             Paused
                           </span>
                         )}
-                        {/* 🎯 تم ربط الـ Target Met بالثيم (Primary Color) بدل الأخضر */}
                         {isMonthlyTargetReached && !isPausedThisMonth && (
                           <span className="text-[9px] bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 px-1.5 py-0.5 rounded font-mono font-medium">
                             Target Met ({monthDoneCount}/{schedule.targetDays})
@@ -270,7 +334,6 @@ export function HabitMatrix({
                       const isPast = iso < todayIso;
                       const isCurrentToday = iso === todayIso;
 
-                      // 1. حالة التجميد للشهر
                       if (isPausedThisMonth) {
                         return (
                           <td key={iso} className="px-1 text-center">
@@ -284,7 +347,6 @@ export function HabitMatrix({
                         );
                       }
 
-                      // 2. التحويل التلقائي إلى Rest عند اكتمال التارجت الشهري (مربوطة بالثيم)
                       if (isMonthlyTargetReached && !isDone) {
                         return (
                           <td key={iso} className="px-1 text-center">
@@ -298,7 +360,6 @@ export function HabitMatrix({
                         );
                       }
 
-                      // 3. حالة الـ Rest Day اليدوي (بقت هادية ومريحة للعين)
                       if (isRest) {
                         return (
                           <td key={iso} className="px-1 text-center">
@@ -317,7 +378,6 @@ export function HabitMatrix({
                         );
                       }
 
-                      // 4. يوم غير مجدول في الأسبوع (مخفي/خافت بوضوح)
                       if (!expected) {
                         return (
                           <td key={iso} className="px-1 text-center">
@@ -331,7 +391,6 @@ export function HabitMatrix({
                         );
                       }
 
-                      // 5. الخلية التفاعلية العادية
                       return (
                         <td key={iso} className="px-1 text-center">
                           <button
@@ -360,7 +419,6 @@ export function HabitMatrix({
                     {/* 4 Action Buttons on the Right */}
                     <td className="px-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                        {/* 1. Pause / Resume Month */}
                         <button
                           type="button"
                           onClick={() => {
@@ -383,7 +441,6 @@ export function HabitMatrix({
                           {isPausedThisMonth ? <PlayCircle className="size-3.5" /> : <PauseCircle className="size-3.5" />}
                         </button>
 
-                        {/* 2. Toggle Rest Day for Today */}
                         <button
                           type="button"
                           onClick={() => {
@@ -405,7 +462,6 @@ export function HabitMatrix({
                           <CalendarOff className="size-3.5" />
                         </button>
 
-                        {/* 3. Archive Habit */}
                         <button
                           type="button"
                           onClick={() => {
@@ -418,7 +474,6 @@ export function HabitMatrix({
                           <Archive className="size-3.5" />
                         </button>
 
-                        {/* 4. Delete Habit */}
                         <button
                           type="button"
                           onClick={() => {
