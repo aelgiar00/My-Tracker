@@ -4,7 +4,7 @@ import { useTrackerStore } from "@/store/tracker-store";
 import { scheduleForMonth } from "@/lib/tracker/schedule";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "./native-select";
-import { Brain, Sparkles, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Brain, Sparkles, ChevronDown, ChevronUp, RefreshCw, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +55,8 @@ export function MlPanel({ habits }: MLPanelProps) {
         }
       });
 
-      const res = await fetch("http://127.0.0.1:8080/api/ml-insights", {
+      // تم تعديل اللينك هنا عشان يشتغل على Vercel
+      const res = await fetch("/api/ml-insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -70,11 +71,13 @@ export function MlPanel({ habits }: MLPanelProps) {
       const json = await res.json();
       if (json.status === "success") {
         setData(json);
+        toast.success("ML Predictions updated successfully!");
       } else {
         toast.error(json.message || "Failed to fetch ML insights");
       }
     } catch (err) {
-      toast.error("Could not connect to ML backend server (Port 8080).");
+      // لو انت شغال Local على جهازك مش Vercel، ممكن تحتاج ترجع اللينك لـ 127.0.0.1
+      toast.error("Could not connect to ML backend server.");
     } finally {
       setLoading(false);
     }
@@ -143,18 +146,20 @@ export function MlPanel({ habits }: MLPanelProps) {
         <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-[var(--primary)]" />
-            <h4 className="text-sm text-[var(--fg)]">Target Date Predictions</h4>
+            <h4 className="text-sm text-[var(--fg)]">Target Date Predictions: <span className="font-['Merriweather'] font-normal">{todayStr}</span></h4>
           </div>
+          <span className="text-[11px] text-[var(--muted)]">Evaluated against active schedule</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[var(--border)] text-[11px] text-[var(--muted)] bg-[var(--surface-elevated)]/40">
-                <th className="py-3.5 px-6 font-normal w-[45%]">HABIT</th>
+                <th className="py-3.5 px-6 font-normal w-[40%]">HABIT</th>
                 <th className="py-3.5 px-4 font-normal text-center w-[20%]">PREDICTION</th>
-                <th className="py-3.5 px-4 font-normal text-right w-[20%]">PROBABILITY</th>
-                <th className="py-3.5 px-6 font-normal text-center w-[15%]">DETAILS</th>
+                <th className="py-3.5 px-4 font-normal text-center w-[20%]">PROBABILITY</th>
+                {/* رجعنا عمود الـ ACTUAL زي الصورة القديمة */}
+                <th className="py-3.5 px-6 font-normal text-right w-[20%]">ACTUAL</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
@@ -168,33 +173,90 @@ export function MlPanel({ habits }: MLPanelProps) {
                 data.predictions.map((item: any, idx: number) => {
                   const isExpanded = expandedRow === item.habitName;
                   const isHigh = item.probability >= threshold;
+                  
+                  // جلب حالة إتمام العادة لليوم من الـ store
+                  const habitObj = habits.find(h => h.name === item.habitName);
+                  const isDone = habitObj ? Boolean(completions[`${habitObj.id}_${todayStr}`]) : false;
 
                   return (
-                    <tr key={idx} className="hover:bg-[var(--surface-elevated)]/20 transition-colors">
-                      <td className="py-4 px-6 text-sm text-[var(--fg)] font-medium">
-                        {item.habitName}
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className={cn(
-                          "inline-flex items-center px-3 py-1 rounded-lg text-[10px] tracking-wider border",
-                          isHigh ? "bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/30" : "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                        )}>
-                          {isHigh ? "HIGH" : "LOW"}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-right font-['Merriweather'] font-normal text-sm text-[var(--fg)]">
-                        {item.probability}%
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedRow(isExpanded ? null : item.habitName)}
-                          className="inline-flex items-center justify-center size-8 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
-                        >
-                          {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-                        </button>
-                      </td>
-                    </tr>
+                    <>
+                      <tr key={idx} className="hover:bg-[var(--surface-elevated)]/20 transition-colors">
+                        <td className="py-4 px-6 text-sm text-[var(--fg)] font-medium">
+                          {item.habitName}
+                        </td>
+                        
+                        <td className="py-4 px-4 text-center">
+                          {item.reason.includes("Rest day") ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] bg-[var(--surface-elevated)] text-[var(--muted)] border border-[var(--border)] uppercase">
+                              Rest
+                            </span>
+                          ) : (
+                            <span className={cn(
+                              "inline-flex items-center px-3 py-1 rounded-lg text-[10px] tracking-wider border uppercase",
+                              isHigh
+                                ? "bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/30"
+                                : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                            )}>
+                              {isHigh ? "HIGH" : "LOW"}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-4 px-4 text-center font-['Merriweather'] font-normal text-sm text-[var(--fg)]">
+                          {item.probability}%
+                        </td>
+
+                        <td className="py-4 px-6">
+                          <div className="flex items-center justify-end gap-5">
+                            {/* الـ Checkbox الخاص بحالة الـ Actual */}
+                            <div className={cn(
+                              "flex size-5 items-center justify-center rounded-md border transition-colors",
+                              isDone
+                                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                                : "border-[var(--border)] bg-[var(--surface-elevated)]"
+                            )}>
+                              {isDone && <Check className="size-3.5 stroke-[3]" />}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setExpandedRow(isExpanded ? null : item.habitName)}
+                              className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors cursor-pointer"
+                            >
+                              {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {isExpanded && (
+                        <tr className="bg-[var(--surface-elevated)]/10">
+                          <td colSpan={4} className="px-6 py-4">
+                            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/50 p-4 text-xs space-y-2">
+                              <p className="text-[var(--fg)] font-medium">Model Analysis & Reason:</p>
+                              <p className="text-[var(--muted)]">{item.reason}</p>
+
+                              {item.importances && (
+                                <div className="mt-3 pt-3 border-t border-[var(--border)] grid grid-cols-3 gap-4 text-center">
+                                  <div className="p-2 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
+                                    <span className="text-[10px] text-[var(--muted)] block">Day Weight</span>
+                                    <span className="font-['Merriweather'] text-sm text-[var(--primary)]">{item.importances.Day?.toFixed(2)}</span>
+                                  </div>
+                                  <div className="p-2 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
+                                    <span className="text-[10px] text-[var(--muted)] block">Yesterday</span>
+                                    <span className="font-['Merriweather'] text-sm text-[var(--primary)]">{item.importances.Yest?.toFixed(2)}</span>
+                                  </div>
+                                  <div className="p-2 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
+                                    <span className="text-[10px] text-[var(--muted)] block">Momentum</span>
+                                    <span className="font-['Merriweather'] text-sm text-[var(--primary)]">{item.importances.Mom?.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   );
                 })
               )}
