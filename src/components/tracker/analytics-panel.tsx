@@ -182,7 +182,6 @@ export function AnalyticsPanel() {
   }, [daysBreakdown, fullScreen]);
 
   return (
-    // القاعدة الأساسية لكل النصوص Arial Bold
     <div
       className={cn(
         "space-y-6 transition-all duration-300 font-['Arial'] font-bold",
@@ -213,7 +212,9 @@ export function AnalyticsPanel() {
           
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col items-center justify-center text-center">
             <span className="text-[11px] tracking-wider text-[var(--muted)] uppercase mb-4 block w-full text-left">Pace</span>
-            <div className="relative flex size-36 sm:size-40 items-center justify-center select-none my-auto">
+            
+            {/* الدائرة بقت بحجم 44 و 48 بدل 36 و 40 */}
+            <div className="relative flex size-44 sm:size-48 items-center justify-center select-none my-auto">
               <svg className="size-full -rotate-90 p-1" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="50" className="stroke-[var(--surface-pill)] opacity-40" strokeWidth="8" fill="none" />
                 {paceScore > 0 && (
@@ -232,13 +233,13 @@ export function AnalyticsPanel() {
                 )}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
-                {/* الأرقام بخط Merriweather */}
                 <span className="text-4xl sm:text-5xl font-['Merriweather'] font-normal text-[var(--fg)] leading-none">
                   {paceScore}%
                 </span>
                 <span className="text-[10px] font-['Arial'] font-bold tracking-[0.25em] text-[var(--muted)] uppercase mt-2">PACE</span>
               </div>
             </div>
+            
             <p className="mt-4 text-xs text-[var(--muted)] block w-full text-left">Current monthly velocity</p>
           </div>
 
