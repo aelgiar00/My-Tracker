@@ -179,7 +179,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1 text-right">
           <span className="text-[9px] font-medium text-[var(--muted)] uppercase block">Readiness</span>
-          <span className="text-sm font-bold text-[var(--primary)] font-serif-title">{readinessScore}%</span>
+          <span className="text-sm font-bold tracking-tight text-[var(--primary)]">{readinessScore}%</span>
         </div>
       </div>
 
@@ -190,7 +190,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
           
           return (
             <div key={block.id} className="rounded-2xl bg-[var(--surface-elevated)] p-2.5 border border-[var(--border)] shadow-xs flex flex-col justify-between relative group transition-colors hover:border-[var(--muted)]/50">
-              {/* زر مسح السلايدر */}
+              {/* زر مسح السلايدر (أصبح متناسق مع الثيم أو لونه هادي) */}
               <button
                 onClick={() => removeBlock(block.id)}
                 className="absolute -top-1.5 -right-1.5 size-4.5 flex items-center justify-center rounded-full bg-rose-500/90 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm z-10 hover:bg-rose-500"
@@ -236,7 +236,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         {timeBlocks.length < 6 && (
           <button
             onClick={addBlock}
-            className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-elevated)]/30 flex flex-col items-center justify-center text-[var(--muted)] hover:text-[var(--fg)] hover:border-[var(--primary)] hover:bg-[var(--surface-elevated)] transition-all min-h-[72px] cursor-pointer"
+            className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-elevated)]/30 flex flex-col items-center justify-center text-[var(--muted)] hover:text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all min-h-[72px] cursor-pointer"
           >
             <Plus className="size-4 mb-0.5" />
             <span className="text-[9px] font-semibold uppercase tracking-wider">Add</span>
@@ -258,7 +258,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
         </button>
       </div>
 
-      {/* Non-Negotiables Focus Card (Removed Emoji) */}
+      {/* Non-Negotiables Focus Card */}
       {showDetails && (
         <div className="rounded-2xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)] text-xs shadow-xs mt-1">
           <p className="font-semibold text-[var(--fg)] mb-2 flex items-center gap-1 text-[11px]">
@@ -307,7 +307,7 @@ export function TodayPanel({ habits, todayDate }: TodayPanelProps) {
                 </p>
                 <span className="text-[9.5px] text-[var(--muted)] block mt-0.5">{statusLabel}</span>
               </div>
-              <div className="font-serif-title text-xs font-bold text-[var(--fg)]">
+              <div className="text-xs font-bold tracking-tight text-[var(--fg)]">
                 {isDone ? "✓" : `${chance}%`}
               </div>
             </div>
