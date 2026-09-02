@@ -55,8 +55,8 @@ export function MlPanel({ habits }: MLPanelProps) {
         }
       });
 
-      // تم تعديل اللينك هنا عشان يشتغل على Vercel
-      const res = await fetch("/api/ml-insights", {
+      // رجعنا اللينك Local زي ما كان عشان يشتغل مع الـ Python سكريبت بتاعك
+      const res = await fetch("http://127.0.0.1:8080/api/ml-insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,8 +76,7 @@ export function MlPanel({ habits }: MLPanelProps) {
         toast.error(json.message || "Failed to fetch ML insights");
       }
     } catch (err) {
-      // لو انت شغال Local على جهازك مش Vercel، ممكن تحتاج ترجع اللينك لـ 127.0.0.1
-      toast.error("Could not connect to ML backend server.");
+      toast.error("Could not connect to ML backend server (Port 8080).");
     } finally {
       setLoading(false);
     }
@@ -89,6 +88,7 @@ export function MlPanel({ habits }: MLPanelProps) {
 
   return (
     <div className="space-y-6 text-left font-['Arial'] font-bold">
+      {/* Header Controls */}
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="flex size-10 items-center justify-center rounded-2xl bg-[var(--primary-muted)] text-[var(--primary)] shadow-sm">
@@ -142,6 +142,21 @@ export function MlPanel({ habits }: MLPanelProps) {
         </div>
       </div>
 
+      {/* رجعنا الجزء الخاص بإحصائيات الموديل (Stats Overview) */}
+      {data?.stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-md">
+            <span className="text-[10px] text-[var(--muted)] uppercase tracking-widest block mb-1">Validation Accuracy</span>
+            <p className="text-sm text-[var(--fg)]">{data.stats.accuracy_text}</p>
+          </div>
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-md">
+            <span className="text-[10px] text-[var(--muted)] uppercase tracking-widest block mb-1">Decision Logic</span>
+            <p className="text-sm text-[var(--fg)]">{data.stats.why_this_model}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Table Section */}
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden shadow-xl">
         <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -158,7 +173,6 @@ export function MlPanel({ habits }: MLPanelProps) {
                 <th className="py-3.5 px-6 font-normal w-[40%]">HABIT</th>
                 <th className="py-3.5 px-4 font-normal text-center w-[20%]">PREDICTION</th>
                 <th className="py-3.5 px-4 font-normal text-center w-[20%]">PROBABILITY</th>
-                {/* رجعنا عمود الـ ACTUAL زي الصورة القديمة */}
                 <th className="py-3.5 px-6 font-normal text-right w-[20%]">ACTUAL</th>
               </tr>
             </thead>
@@ -174,7 +188,6 @@ export function MlPanel({ habits }: MLPanelProps) {
                   const isExpanded = expandedRow === item.habitName;
                   const isHigh = item.probability >= threshold;
                   
-                  // جلب حالة إتمام العادة لليوم من الـ store
                   const habitObj = habits.find(h => h.name === item.habitName);
                   const isDone = habitObj ? Boolean(completions[`${habitObj.id}_${todayStr}`]) : false;
 
@@ -208,7 +221,6 @@ export function MlPanel({ habits }: MLPanelProps) {
 
                         <td className="py-4 px-6">
                           <div className="flex items-center justify-end gap-5">
-                            {/* الـ Checkbox الخاص بحالة الـ Actual */}
                             <div className={cn(
                               "flex size-5 items-center justify-center rounded-md border transition-colors",
                               isDone
