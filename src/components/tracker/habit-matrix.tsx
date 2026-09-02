@@ -62,7 +62,6 @@ export function HabitMatrix({
   const setMatrixView = useTrackerStore((s) => s.setMatrixView);
   const setHidePast = useTrackerStore((s) => s.setHidePast);
 
-  // تخزين الترتيب في المتصفح عشان ميروحش مع الرفريش
   const [customOrder, setCustomOrder] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('habit_order') || '[]'); }
     catch { return []; }
@@ -131,7 +130,6 @@ export function HabitMatrix({
     return days.filter((d) => !isFuture(d) || format(d, "yyyy-MM-dd") >= todayIso);
   }, [days, hidePast, todayIso]);
 
-  // دوال السحب والإفلات
   const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, id: string) => {
     e.dataTransfer.setData('text/plain', id);
     e.dataTransfer.effectAllowed = 'move';
@@ -169,10 +167,10 @@ export function HabitMatrix({
   };
 
   return (
-    <div className="w-full">
-      {/* Header & Controls */}
+    // القاعدة الأساسية لكل النصوص Arial Bold
+    <div className="w-full font-['Arial'] font-bold">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight text-[var(--fg)]">Matrix</h2>
+        <h2 className="text-2xl text-[var(--fg)]">Matrix</h2>
         <p className="mt-1 text-xs text-[var(--muted)]">
           Dashes are rest days. When monthly targets are met, remaining days automatically turn into rest. You can drag and drop habits to reorder them.
         </p>
@@ -183,9 +181,9 @@ export function HabitMatrix({
               type="button"
               onClick={() => setMatrixView("week")}
               className={cn(
-                "rounded-lg px-3 py-1 text-xs font-medium transition-all cursor-pointer",
+                "rounded-lg px-3 py-1 text-xs transition-all cursor-pointer",
                 matrixView === "week"
-                  ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold"
+                  ? "bg-[var(--surface-pill)] text-[var(--fg)]"
                   : "text-[var(--muted)] hover:text-[var(--fg)]"
               )}
             >
@@ -195,9 +193,9 @@ export function HabitMatrix({
               type="button"
               onClick={() => setMatrixView("month")}
               className={cn(
-                "rounded-lg px-3 py-1 text-xs font-medium transition-all cursor-pointer",
+                "rounded-lg px-3 py-1 text-xs transition-all cursor-pointer",
                 matrixView === "month"
-                  ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold"
+                  ? "bg-[var(--surface-pill)] text-[var(--fg)]"
                   : "text-[var(--muted)] hover:text-[var(--fg)]"
               )}
             >
@@ -221,29 +219,29 @@ export function HabitMatrix({
               placeholder="Filter habits..."
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3.5 text-xs text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3.5 text-xs text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] font-['Arial'] font-bold"
             />
           </div>
         </div>
       </div>
 
-      {/* Matrix Table */}
       <div className="overflow-x-auto pb-4">
         <table className="w-full min-w-max border-separate border-spacing-y-2.5">
           <thead>
-            <tr className="text-left text-[11px] font-medium text-[var(--muted)]">
+            <tr className="text-left text-[11px] text-[var(--muted)]">
               <th className="w-8 px-1"></th>
-              <th className="min-w-[150px] px-3 font-normal">Habit</th>
-              <th className="min-w-[140px] px-3 font-normal">Schedule</th>
+              <th className="min-w-[150px] px-3">Habit</th>
+              <th className="min-w-[140px] px-3">Schedule</th>
               {visibleDays.map((date) => (
-                <th key={date.toISOString()} className="px-1 text-center font-normal">
+                <th key={date.toISOString()} className="px-1 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <span className="text-[10px] text-[var(--muted)] leading-tight">{format(date, "EEE")}</span>
-                    <span className="text-[12px] font-semibold text-[var(--fg)]">{format(date, "d")}</span>
+                    {/* أرقام الأيام بخط Merriweather */}
+                    <span className="text-[14px] font-['Merriweather'] font-normal text-[var(--fg)]">{format(date, "d")}</span>
                   </div>
                 </th>
               ))}
-              <th className="min-w-[110px] px-3 text-center font-normal">Actions</th>
+              <th className="min-w-[110px] px-3 text-center">Actions</th>
             </tr>
           </thead>
 
@@ -291,17 +289,17 @@ export function HabitMatrix({
 
                     <td className="px-3">
                       <div className="flex items-center gap-2">
-                        <span className={cn("text-sm font-medium", isPausedThisMonth ? "text-[var(--muted)] line-through" : "text-[var(--fg)]")}>
+                        <span className={cn("text-sm", isPausedThisMonth ? "text-[var(--muted)] line-through" : "text-[var(--fg)]")}>
                           {habit.name}
                         </span>
                         {isPausedThisMonth && (
-                          <span className="text-[9px] bg-[var(--muted)]/10 text-[var(--muted)] border border-[var(--border)] px-1.5 py-0.5 rounded font-mono">
+                          <span className="text-[9px] bg-[var(--muted)]/10 text-[var(--muted)] border border-[var(--border)] px-1.5 py-0.5 rounded">
                             Paused
                           </span>
                         )}
                         {isMonthlyTargetReached && !isPausedThisMonth && (
-                          <span className="text-[9px] bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 px-1.5 py-0.5 rounded font-mono font-medium">
-                            Target Met ({monthDoneCount}/{schedule.targetDays})
+                          <span className="text-[10px] bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 px-1.5 py-0.5 rounded">
+                            Target Met <span className="font-['Merriweather'] font-normal">({monthDoneCount}/{schedule.targetDays})</span>
                           </span>
                         )}
                       </div>
@@ -310,7 +308,7 @@ export function HabitMatrix({
                     <td className="px-3">
                       <NativeSelect
                         className={cn(
-                          "h-8 w-36 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]",
+                          "h-8 w-36 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-2 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)] font-['Arial'] font-bold",
                           isPausedThisMonth && "border-[var(--muted)]/40 text-[var(--muted)]"
                         )}
                         value={currentScheduleValue}
@@ -324,7 +322,6 @@ export function HabitMatrix({
                       </NativeSelect>
                     </td>
 
-                    {/* Matrix Day Cells */}
                     {visibleDays.map((date) => {
                       const iso = format(date, "yyyy-MM-dd");
                       const key = completionKey(habit.id, iso);
@@ -352,7 +349,7 @@ export function HabitMatrix({
                           <td key={iso} className="px-1 text-center">
                             <div
                               title={`Target achieved (${schedule.targetDays}/${schedule.targetDays})! Auto-rest for remainder of month.`}
-                              className="flex size-7 items-center justify-center text-xs font-bold text-[var(--primary)]/50 bg-[var(--primary)]/5 rounded-lg border border-[var(--primary)]/10 select-none cursor-default"
+                              className="flex size-7 items-center justify-center text-xs text-[var(--primary)]/50 bg-[var(--primary)]/5 rounded-lg border border-[var(--primary)]/10 select-none cursor-default"
                             >
                               —
                             </div>
@@ -370,7 +367,7 @@ export function HabitMatrix({
                                 toast.info(`Activated "${habit.name}" for ${iso}`);
                               }}
                               title="Rest day (Click to activate)"
-                              className="flex size-7 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted)] bg-[var(--surface-elevated)] border border-[var(--border)] hover:border-[var(--muted)] transition-all cursor-pointer"
+                              className="flex size-7 items-center justify-center rounded-lg text-xs text-[var(--muted)] bg-[var(--surface-elevated)] border border-[var(--border)] hover:border-[var(--muted)] transition-all cursor-pointer"
                             >
                               —
                             </button>
@@ -399,7 +396,7 @@ export function HabitMatrix({
                             className={cn(
                               "flex size-7 items-center justify-center rounded-lg border transition-all duration-150 cursor-pointer",
                               isDone
-                                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs font-bold scale-100"
+                                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs scale-100"
                                 : isPast
                                 ? "border-[var(--border)] bg-[var(--surface-elevated)]/30 text-[var(--muted)] hover:border-[var(--muted)]"
                                 : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]",
@@ -416,7 +413,6 @@ export function HabitMatrix({
                       );
                     })}
 
-                    {/* 4 Action Buttons on the Right */}
                     <td className="px-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                         <button
