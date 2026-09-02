@@ -21,7 +21,6 @@ export function AnalyticsPanel() {
     [selectedYear, selectedMonth, trackingStart]
   );
 
-  // حساب نسب الإنجاز لكل عادة
   const habitsBreakdown = useMemo(() => {
     return habits.map((habit) => {
       let expected = 0;
@@ -51,7 +50,6 @@ export function AnalyticsPanel() {
     });
   }, [habits, completions, allMonthDays, selectedYear, selectedMonth, restDays]);
 
-  // حساب الأيام لعرض المخطط الشريطي (Bar Chart) و الـ Heatmap
   const daysBreakdown = useMemo(() => {
     return allMonthDays.map((date) => {
       const iso = format(date, "yyyy-MM-dd");
@@ -75,12 +73,8 @@ export function AnalyticsPanel() {
   const totalExpected = habitsBreakdown.reduce((sum, h) => sum + h.expected, 0);
   const paceScore = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
 
-  /* =========================================================================
-     RADAR CHART ALGORITHM (Dynamic 2D Shape Mapping)
-     ========================================================================= */
   const radarData = useMemo(() => {
     const list = habitsBreakdown.slice(0, 10);
-    // إجبار الرادار على تكوين 3 محاور كحد أدنى لتكوين شكل 2D حتى لو العادات أقل من 3
     const totalAxes = Math.max(3, list.length);
     const viewBoxSize = fullScreen ? 480 : 340;
     const center = viewBoxSize / 2;
@@ -94,7 +88,6 @@ export function AnalyticsPanel() {
       const name = item ? item.habit.name : "";
       const rate = item ? Math.round(item.rate) : 0;
       
-      // إعطاء قيمة صغيرة جداً للمحاور الفارغة ليظل المضلع متصلاً بالمركز
       const score = item ? Math.max(0.05, Math.min(1, item.rate / 100)) : 0.05;
 
       const x = center + maxRadius * Math.cos(angle);
@@ -139,9 +132,6 @@ export function AnalyticsPanel() {
     };
   }, [habitsBreakdown, fullScreen]);
 
-  /* =========================================================================
-     CORRELATION MATRIX ALGORITHM
-     ========================================================================= */
   const correlationMatrix = useMemo(() => {
     const topHabits = habits.slice(0, 8);
     const size = topHabits.length;
@@ -192,17 +182,17 @@ export function AnalyticsPanel() {
   }, [daysBreakdown, fullScreen]);
 
   return (
+    // القاعدة الأساسية لكل النصوص Arial Bold
     <div
       className={cn(
-        "space-y-6 transition-all duration-300 font-sans",
+        "space-y-6 transition-all duration-300 font-['Arial'] font-bold",
         fullScreen &&
           "fixed inset-0 z-50 overflow-y-auto bg-[var(--bg)] p-6 md:p-10 shadow-2xl border-t border-[var(--border)]"
       )}
     >
-      {/* Top Header Bar */}
       <div className="flex items-center justify-between rounded-2xl bg-[var(--surface)] p-4 border border-[var(--border)]">
         <div>
-          <h3 className="text-xs font-semibold text-[var(--fg)]">Chart view</h3>
+          <h3 className="text-xs text-[var(--fg)]">Chart view</h3>
           <p className="text-[11px] text-[var(--muted)]">
             Performance analytics, correlation matrix, and trajectory tracking.
           </p>
@@ -218,12 +208,11 @@ export function AnalyticsPanel() {
         </Button>
       </div>
 
-      {/* 4 KPI Cards (Huge numbers & perfectly centered space) */}
       {!fullScreen && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col items-center justify-center text-center">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase mb-4 block w-full text-left">Pace</span>
+            <span className="text-[11px] tracking-wider text-[var(--muted)] uppercase mb-4 block w-full text-left">Pace</span>
             <div className="relative flex size-36 sm:size-40 items-center justify-center select-none my-auto">
               <svg className="size-full -rotate-90 p-1" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="50" className="stroke-[var(--surface-pill)] opacity-40" strokeWidth="8" fill="none" />
@@ -243,19 +232,20 @@ export function AnalyticsPanel() {
                 )}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
-                <span className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] leading-none">
+                {/* الأرقام بخط Merriweather */}
+                <span className="text-4xl sm:text-5xl font-['Merriweather'] font-normal text-[var(--fg)] leading-none">
                   {paceScore}%
                 </span>
-                <span className="text-[10px] font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2">PACE</span>
+                <span className="text-[10px] font-['Arial'] font-bold tracking-[0.25em] text-[var(--muted)] uppercase mt-2">PACE</span>
               </div>
             </div>
             <p className="mt-4 text-xs text-[var(--muted)] block w-full text-left">Current monthly velocity</p>
           </div>
 
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TO TARGET DATE</span>
+            <span className="text-[11px] tracking-wider text-[var(--muted)] uppercase">TO TARGET DATE</span>
             <div className="flex-1 flex items-center justify-center py-6">
-              <p className="text-5xl lg:text-6xl font-bold tracking-tight text-[var(--fg)] leading-none">
+              <p className="text-5xl lg:text-6xl font-['Merriweather'] font-normal text-[var(--fg)] leading-none">
                 {totalCompleted}/{totalExpected}
               </p>
             </div>
@@ -263,9 +253,9 @@ export function AnalyticsPanel() {
           </div>
 
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">TRACKED HABITS</span>
+            <span className="text-[11px] tracking-wider text-[var(--muted)] uppercase">TRACKED HABITS</span>
             <div className="flex-1 flex items-center justify-center py-6">
-              <p className="text-5xl lg:text-6xl font-bold tracking-tight text-[var(--fg)] leading-none">
+              <p className="text-5xl lg:text-6xl font-['Merriweather'] font-normal text-[var(--fg)] leading-none">
                 {habits.length}
               </p>
             </div>
@@ -273,9 +263,9 @@ export function AnalyticsPanel() {
           </div>
 
           <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col">
-            <span className="text-[11px] font-semibold tracking-wider text-[var(--muted)] uppercase">PERFECT STREAK</span>
+            <span className="text-[11px] tracking-wider text-[var(--muted)] uppercase">PERFECT STREAK</span>
             <div className="flex-1 flex items-center justify-center py-6">
-              <p className="text-5xl lg:text-6xl font-bold tracking-tight text-[var(--fg)] leading-none">
+              <p className="text-5xl lg:text-6xl font-['Merriweather'] font-normal text-[var(--fg)] leading-none">
                 {totalCompleted > 0 ? "1" : "0"}
               </p>
             </div>
@@ -285,15 +275,13 @@ export function AnalyticsPanel() {
         </div>
       )}
 
-      {/* 2x2 Core Visualizations Grid */}
       <div className={cn("grid gap-6 transition-all duration-300", fullScreen ? "grid-cols-1" : "lg:grid-cols-2")}>
         
-        {/* 1. Daily Execution Bar Chart */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
-          <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Daily execution</h3>
+          <h3 className={cn("text-xs text-[var(--fg)]", fullScreen && "text-sm")}>Daily execution</h3>
 
           <div className={cn("mt-6 flex h-48 gap-2", fullScreen && "h-[45vh] gap-4")}>
-            <div className={cn("flex flex-col justify-between text-[9px] font-mono text-[var(--muted)] pr-1 select-none text-right", fullScreen && "text-xs pr-3")}>
+            <div className={cn("flex flex-col justify-between text-[9px] font-['Merriweather'] font-normal text-[var(--muted)] pr-1 select-none text-right", fullScreen && "text-xs pr-3")}>
               <span>100%</span>
               <span>80%</span>
               <span>60%</span>
@@ -332,7 +320,7 @@ export function AnalyticsPanel() {
 
               <div className="flex justify-between gap-1 pt-1 z-10">
                 {displayDays.map((d) => (
-                  <span key={d.iso} className={cn("flex-1 text-center text-[9px] font-mono text-[var(--muted)]", fullScreen && "text-[11px]")}>
+                  <span key={d.iso} className={cn("flex-1 text-center text-[9px] font-['Merriweather'] font-normal text-[var(--muted)]", fullScreen && "text-[11px]")}>
                     {d.iso.slice(8)}
                   </span>
                 ))}
@@ -341,9 +329,8 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 2. Habit Completion List */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col", fullScreen && "p-8 md:p-10")}>
-          <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm mb-4")}>Habit completion</h3>
+          <h3 className={cn("text-xs text-[var(--fg)]", fullScreen && "text-sm mb-4")}>Habit completion</h3>
           <div className={cn("mt-5 space-y-3 max-h-48 overflow-y-auto pr-1", fullScreen && "max-h-none space-y-4 mt-0")}>
             {habitsBreakdown.length === 0 ? (
               <p className="text-xs text-[var(--muted)] py-8 text-center">No habits added yet.</p>
@@ -353,8 +340,8 @@ export function AnalyticsPanel() {
                 return (
                   <div key={item.habit.id} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-[var(--fg)] font-medium truncate max-w-[140px]">{item.habit.name}</span>
-                      <span className="text-[var(--muted)] font-mono">{pct}%</span>
+                      <span className="text-[var(--fg)] truncate max-w-[140px]">{item.habit.name}</span>
+                      <span className="text-[var(--muted)] font-['Merriweather'] font-normal">{pct}%</span>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-elevated)]">
                       <div
@@ -369,17 +356,14 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 3. Mastery Radar (Custom 2D SVG Engine - Always displays full axes) */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <div className="flex items-center justify-between mb-2">
-            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
+            <h3 className={cn("text-xs text-[var(--fg)]", fullScreen && "text-sm")}>Mastery radar</h3>
             <span className="text-[10px] text-[var(--muted)]">Coverage</span>
           </div>
 
           <div className={cn("relative my-auto flex items-center justify-center py-2", fullScreen && "h-[45vh]")}>
             <svg viewBox={`0 0 ${radarData.viewBoxSize} ${radarData.viewBoxSize}`} className="w-full max-w-[340px] aspect-square overflow-visible">
-              
-              {/* الدوائر الشبكية المتراكزة (Concentric Circles) */}
               {radarData.circles.map((rPct, idx) => (
                 <circle
                   key={`circle-${idx}`}
@@ -392,7 +376,6 @@ export function AnalyticsPanel() {
                 />
               ))}
 
-              {/* المحاور الإشعاعية الخارجة من المركز إلى كل العادات */}
               {radarData.axes.map((axis, idx) => (
                 <line
                   key={`axis-${idx}`}
@@ -405,7 +388,6 @@ export function AnalyticsPanel() {
                 />
               ))}
 
-              {/* المضلع الذي يمثل منطقة التغطية (Filled 2D Area) */}
               {radarData.hasData && (
                 <polygon
                   points={radarData.polygonPoints}
@@ -417,7 +399,6 @@ export function AnalyticsPanel() {
                 />
               )}
 
-              {/* نقاط التقاطع التي توضح القيمة الفعلية لكل محور */}
               {radarData.axes.filter(a => a.hasHabit).map((axis, idx) => (
                 <circle
                   key={`point-${idx}`}
@@ -431,7 +412,6 @@ export function AnalyticsPanel() {
                 />
               ))}
 
-              {/* أسماء العادات */}
               {radarData.axes.filter(a => a.name).map((axis, idx) => (
                 <text
                   key={`label-${idx}`}
@@ -440,8 +420,8 @@ export function AnalyticsPanel() {
                   textAnchor={axis.textAnchor}
                   dominantBaseline="central"
                   className={cn(
-                    "fill-[var(--fg)] font-medium select-none transition-all duration-300",
-                    fullScreen ? "text-[13px] font-semibold" : "text-[10px]"
+                    "fill-[var(--fg)] select-none transition-all duration-300 font-['Arial'] font-bold",
+                    fullScreen ? "text-[13px]" : "text-[10px]"
                   )}
                 >
                   {axis.name.length > 13 ? `${axis.name.slice(0, 11)}..` : axis.name}
@@ -451,10 +431,9 @@ export function AnalyticsPanel() {
           </div>
         </div>
 
-        {/* 4. Month Heatmap */}
         <div className={cn("rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg flex flex-col justify-between", fullScreen && "p-8 md:p-10")}>
           <div className="flex items-center justify-between">
-            <h3 className={cn("text-xs font-semibold text-[var(--fg)]", fullScreen && "text-sm")}>Month heatmap</h3>
+            <h3 className={cn("text-xs text-[var(--fg)]", fullScreen && "text-sm")}>Month heatmap</h3>
             <div className="flex items-center gap-1.5 text-[9px] text-[var(--muted)]">
               <span>Less</span>
               <div className="size-2 rounded-xs bg-[var(--surface-elevated)] border border-[var(--border)]"></div>
@@ -465,7 +444,7 @@ export function AnalyticsPanel() {
           </div>
 
           <div className="my-auto pt-3">
-            <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-mono font-medium text-[var(--muted)] uppercase mb-2">
+            <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] text-[var(--muted)] uppercase mb-2">
               <span>Mon</span>
               <span>Tue</span>
               <span>Wed</span>
@@ -483,9 +462,9 @@ export function AnalyticsPanel() {
                     key={d.iso}
                     title={`${d.iso}: ${Math.round(pct * 100)}%`}
                     className={cn(
-                      "aspect-square rounded-xl flex items-center justify-center text-[10px] font-mono transition-all duration-150 cursor-pointer select-none",
+                      "aspect-square rounded-xl flex items-center justify-center text-[11px] font-['Merriweather'] font-normal transition-all duration-150 cursor-pointer select-none",
                       pct >= 0.8
-                        ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-bold shadow-xs scale-[0.98]"
+                        ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs scale-[0.98]"
                         : pct >= 0.4
                         ? "bg-[var(--primary-muted)] text-[var(--fg)] border border-[var(--primary)]/30"
                         : pct > 0
@@ -502,7 +481,6 @@ export function AnalyticsPanel() {
         </div>
       </div>
 
-      {/* 5. Habit Correlation Matrix */}
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 border-b border-[var(--border)] pb-4">
           <div className="flex items-center gap-2.5">
@@ -510,8 +488,8 @@ export function AnalyticsPanel() {
               <Grid3X3 className="size-4" />
             </div>
             <div>
-              <h3 className="text-xl font-bold tracking-tight text-[var(--fg)]">Confusion & Correlation Matrix</h3>
-              <p className="text-xs text-[var(--muted)]">
+              <h3 className="text-xl text-[var(--fg)]">Confusion & Correlation Matrix</h3>
+              <p className="text-xs text-[var(--muted)] font-['Arial'] font-bold">
                 Cross-habit co-occurrence and execution alignment probability.
               </p>
             </div>
@@ -532,13 +510,13 @@ export function AnalyticsPanel() {
             <table className="min-w-full border-separate border-spacing-1.5">
               <thead>
                 <tr>
-                  <th className="p-2 text-left text-[11px] font-medium text-[var(--muted)] max-w-[120px] truncate">
+                  <th className="p-2 text-left text-[11px] text-[var(--muted)] max-w-[120px] truncate">
                     Habit
                   </th>
                   {correlationMatrix.habits.map((h) => (
                     <th
                       key={h.id}
-                      className="p-2 text-center text-[10px] font-mono text-[var(--muted)] max-w-[90px] truncate"
+                      className="p-2 text-center text-[10px] text-[var(--muted)] max-w-[90px] truncate"
                       title={h.name}
                     >
                       {h.name.length > 8 ? `${h.name.slice(0, 7)}..` : h.name}
@@ -550,7 +528,7 @@ export function AnalyticsPanel() {
                 {correlationMatrix.matrix.map((row, i) => (
                   <tr key={i}>
                     <td
-                      className="p-2 text-xs font-medium text-[var(--fg)] max-w-[120px] truncate"
+                      className="p-2 text-xs text-[var(--fg)] max-w-[120px] truncate"
                       title={correlationMatrix.habits[i].name}
                     >
                       {correlationMatrix.habits[i].name}
@@ -563,11 +541,11 @@ export function AnalyticsPanel() {
                           <div
                             title={`${cell.h1} ↔ ${cell.h2}: ${Math.round(val * 100)}% Co-occurrence`}
                             className={cn(
-                              "size-10 sm:size-11 mx-auto rounded-xl flex items-center justify-center text-[10.5px] font-mono transition-all select-none border",
+                              "size-10 sm:size-11 mx-auto rounded-xl flex items-center justify-center text-[12px] font-['Merriweather'] font-normal transition-all select-none border",
                               isDiagonal
-                                ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-bold border-[var(--primary)] shadow-xs"
+                                ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-xs"
                                 : val >= 0.75
-                                ? "bg-[var(--primary-muted)] text-[var(--fg)] font-semibold border-[var(--primary)]/40"
+                                ? "bg-[var(--primary-muted)] text-[var(--fg)] border-[var(--primary)]/40"
                                 : val >= 0.4
                                 ? "bg-[var(--primary-muted)]/40 text-[var(--fg)] border-[var(--border)]"
                                 : val > 0
