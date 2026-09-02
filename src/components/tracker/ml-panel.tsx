@@ -28,6 +28,9 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null);
   
   const restDays = useTrackerStore((s) => s.restDays || {});
+  
+  // سحبنا دالة التعديل من الـ Store
+  const toggleCompletion = useTrackerStore((s) => s.toggleCompletion);
 
   const getDayStatus = (habitId: string, dateIso: string, habit: Habit) => {
     const isDone = Boolean(completions[`${habitId}_${dateIso}`] || completions[`${habitId}|${dateIso}`]);
@@ -301,12 +304,22 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                   </div>
 
                   <div className="w-[15%] flex justify-center">
-                    <div className={cn(
-                      "flex size-5 items-center justify-center rounded-md border",
-                      p.actual ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]" : "border-[var(--border)] bg-transparent text-transparent"
-                    )}>
+                    {/* هنا خليناه button وشغلنا الـ toggleCompletion */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCompletion(p.habit.id, testDate);
+                      }}
+                      className={cn(
+                        "flex size-5 items-center justify-center rounded-md border transition-colors cursor-pointer",
+                        p.actual 
+                          ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]" 
+                          : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
+                      )}
+                    >
                       {p.actual && <Check className="size-3.5 stroke-[3]" />}
-                    </div>
+                    </button>
                   </div>
 
                   <div className="w-[5%] flex justify-end text-[var(--muted)]">
@@ -450,7 +463,6 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
               <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }} />
               
               <Bar dataKey="Accuracy" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={50} />
-              {/* تعديل لون الـ F1 Score بـ fillOpacity عشان يكون منور ومتناسق مع لون الـ Accuracy */}
               <Bar dataKey="F1_Score" name="F1 Score (Scaled)" fill="var(--primary)" fillOpacity={0.5} radius={[4, 4, 0, 0]} maxBarSize={50} />
             </BarChart>
           </ResponsiveContainer>
