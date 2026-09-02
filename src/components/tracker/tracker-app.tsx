@@ -131,7 +131,6 @@ export function TrackerApp() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  // تحديث الـ selectedInspectDate بذكاء مع تغيير الشهور
   const inspectDateObj = parseISO(selectedInspectDate);
 
   const monthDaysList = useMemo(
@@ -197,14 +196,15 @@ export function TrackerApp() {
 
   if (loadingAuth) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--muted)]">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] text-[var(--muted)] font-['Arial'] font-bold">
         Loading Tracker...
       </div>
     );
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl px-4 pt-0 pb-8 sm:px-6 font-sans">
+    // القاعدة الأساسية لكل النصوص Arial Bold
+    <div className="mx-auto min-h-screen max-w-7xl px-4 pt-0 pb-8 sm:px-6 font-['Arial'] font-bold">
       {!session && (
         <AuthDialog
           onSuccess={() => {
@@ -231,15 +231,16 @@ export function TrackerApp() {
         </div>
 
         <div className="text-center lg:text-right flex flex-col justify-center relative z-10 mt-2 lg:mt-0">
-          <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
+          <p className="text-[11px] tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
           </p>
-          <h1 className="mt-0.5 text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] leading-none">
+          {/* الشهر والسنة بخط Playfair Display */}
+          <h1 className="mt-0.5 text-4xl sm:text-5xl font-['Playfair_Display'] font-normal tracking-tight text-[var(--fg)] leading-none">
             {MONTHS[selectedMonth - 1]} {selectedYear}
           </h1>
           <p className="text-sm text-[var(--muted)] mt-1.5">
-            Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
-            {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
+            Pace <span className="font-['Playfair_Display'] text-[15px]">{Math.round(stats.paceScore)}%</span> through today · <span className="font-['Playfair_Display'] text-[15px]">{stats.currentStreak}</span> day streak ·{" "}
+            <span className="font-['Playfair_Display'] text-[15px]">{stats.completedThroughToday}/{stats.expectedThroughToday}</span> scheduled
           </p>
         </div>
       </header>
@@ -255,7 +256,7 @@ export function TrackerApp() {
             <ChevronLeft className="size-4" />
           </Button>
           <NativeSelect
-            className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
+            className="h-8 border-0 bg-transparent text-xs text-[var(--fg)] shadow-none focus:ring-0 font-['Arial'] font-bold"
             value={selectedMonth}
             onChange={(e) => {
               const m = Number(e.target.value);
@@ -270,7 +271,7 @@ export function TrackerApp() {
             ))}
           </NativeSelect>
           <NativeSelect
-            className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
+            className="h-8 border-0 bg-transparent text-xs text-[var(--fg)] shadow-none focus:ring-0 font-['Playfair_Display']"
             value={selectedYear}
             onChange={(e) => {
               const y = Number(e.target.value);
@@ -330,7 +331,7 @@ export function TrackerApp() {
         <Button
           size="sm"
           onClick={() => setNewOpen(true)}
-          className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs font-semibold text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50 cursor-pointer"
+          className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50 cursor-pointer"
         >
           <Plus className="mr-1.5 size-4 text-[var(--primary)]" />
           Habit
@@ -360,9 +361,9 @@ export function TrackerApp() {
               type="button"
               onClick={() => setMainTab(tab)}
               className={cn(
-                "flex items-center justify-center rounded-xl py-2.5 text-xs font-medium capitalize transition-all duration-200 cursor-pointer",
+                "flex items-center justify-center rounded-xl py-2.5 text-xs capitalize transition-all duration-200 cursor-pointer",
                 mainTab === tab
-                  ? "bg-[var(--surface-pill)] text-[var(--fg)] font-semibold shadow-sm"
+                  ? "bg-[var(--surface-pill)] text-[var(--fg)] shadow-sm"
                   : "text-[var(--muted)] hover:text-[var(--fg)]"
               )}
             >
@@ -396,12 +397,13 @@ export function TrackerApp() {
                         className={cn(
                           "flex flex-col items-center justify-center rounded-2xl py-3 border transition-all cursor-pointer relative",
                           isSelected
-                            ? "border-[var(--primary)] bg-[var(--surface-elevated)] text-[var(--fg)] font-semibold shadow-xs"
+                            ? "border-[var(--primary)] bg-[var(--surface-elevated)] text-[var(--fg)] shadow-xs"
                             : "border-[var(--border)] bg-[var(--surface-elevated)]/50 text-[var(--muted)] hover:text-[var(--fg)]"
                         )}
                       >
-                        <span className="text-[10px] uppercase font-mono tracking-wider">{format(d, "EEE").slice(0, 2)}</span>
-                        <span className="text-sm font-bold mt-0.5">{format(d, "d")}</span>
+                        <span className="text-[10px] uppercase tracking-wider">{format(d, "EEE").slice(0, 2)}</span>
+                        {/* الأرقام بخط Playfair */}
+                        <span className="text-lg mt-0.5 font-['Playfair_Display']">{format(d, "d")}</span>
                         {isSelected && (
                           <span className="absolute bottom-1.5 w-5 h-0.5 rounded-full bg-[var(--primary)]" />
                         )}
@@ -412,16 +414,17 @@ export function TrackerApp() {
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--surface-elevated)]/20 p-6 rounded-3xl border border-[var(--border)]">
                   <div className="text-center sm:text-left flex-1">
-                    <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-[0.2em]">
+                    <span className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em]">
                       {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
                     </span>
-                    <h3 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] mt-1">
-                      {format(inspectDateObj, "d EEE")}
+                    <h3 className="text-4xl sm:text-5xl tracking-tight text-[var(--fg)] mt-1 flex items-baseline gap-2 justify-center sm:justify-start">
+                      <span className="font-['Playfair_Display'] font-normal">{format(inspectDateObj, "d")}</span>
+                      <span>{format(inspectDateObj, "EEE")}</span>
                     </h3>
                     <p className="text-sm text-[var(--muted)] mt-2 max-w-sm">
                       {totalDailyCompleted === totalDailyItems && totalDailyItems > 0
                         ? "All scheduled habits and tasks completed! Outstanding."
-                        : `${totalDailyItems - totalDailyCompleted} items remaining to check off.`}
+                        : <><span className="font-['Playfair_Display'] text-[16px]">{totalDailyItems - totalDailyCompleted}</span> items remaining to check off.</>}
                     </p>
                   </div>
                   
@@ -452,10 +455,10 @@ export function TrackerApp() {
                       )}
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
-                      <span className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] leading-none">
+                      <span className="text-4xl sm:text-5xl font-['Playfair_Display'] text-[var(--fg)] leading-none">
                         {inspectDayScore}%
                       </span>
-                      <span className="text-[10px] sm:text-xs font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2 leading-none">
+                      <span className="text-[10px] sm:text-xs tracking-[0.25em] text-[var(--muted)] uppercase mt-2 leading-none">
                         DAILY
                       </span>
                     </div>
@@ -491,7 +494,7 @@ export function TrackerApp() {
                               {isDone && <Check className="size-3.5 stroke-[3]" />}
                             </div>
                             <div>
-                              <p className={cn("text-xs font-semibold text-[var(--fg)]", isDone && "line-through opacity-70")}>
+                              <p className={cn("text-xs text-[var(--fg)]", isDone && "line-through opacity-70")}>
                                 {h.name}
                               </p>
                               <span className="text-[10px] text-[var(--muted)] capitalize">
@@ -506,7 +509,7 @@ export function TrackerApp() {
                 </div>
 
                 <div className="pt-4 border-t border-[var(--border)] space-y-3">
-                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
+                  <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider block">
                     ONE-OFF TASKS
                   </span>
 
@@ -563,7 +566,7 @@ export function TrackerApp() {
                           setNewCustomTask("");
                         }
                       }}
-                      className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
+                      className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
                     >
                       <Plus className="size-4" />
                     </Button>
@@ -571,11 +574,11 @@ export function TrackerApp() {
 
                   {restingHabitsForDay.length > 0 && (
                     <div className="pt-2 space-y-1 text-xs text-[var(--muted)]">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5">REST</span>
+                      <span className="text-[10px] uppercase tracking-wider block mb-1.5">REST</span>
                       {restingHabitsForDay.map((h) => (
                         <div key={h.id} className="flex justify-between py-1 border-b border-[var(--border)]/40 last:border-0">
                           <span>{h.name}</span>
-                          <span className="font-mono text-[10px] capitalize">
+                          <span className="font-['Playfair_Display'] text-[11px] capitalize">
                             {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
                           </span>
                         </div>
@@ -589,7 +592,7 @@ export function TrackerApp() {
                       markAllToday(selectedInspectDate, true);
                       toast.success("Completed all habits for this day!");
                     }}
-                    className="mt-4 h-11 w-full rounded-2xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
+                    className="mt-4 h-11 w-full rounded-2xl bg-[var(--primary)] text-xs text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
                   >
                     Complete this day
                   </Button>
@@ -629,9 +632,9 @@ export function TrackerApp() {
                   type="button"
                   onClick={() => setStatsSubTab(id)}
                   className={cn(
-                    "rounded-xl px-4 py-2 text-xs font-medium transition-all duration-150 border cursor-pointer",
+                    "rounded-xl px-4 py-2 text-xs transition-all duration-150 border cursor-pointer",
                     statsSubTab === id
-                      ? "border-[var(--primary)] bg-[var(--surface)] text-[var(--fg)] shadow-sm font-semibold ring-1 ring-[var(--primary)]/30"
+                      ? "border-[var(--primary)] bg-[var(--surface)] text-[var(--fg)] shadow-sm ring-1 ring-[var(--primary)]/30"
                       : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--fg)]"
                   )}
                 >
@@ -650,14 +653,14 @@ export function TrackerApp() {
                   todayIso={isoDate(today)}
                 />
                 <div className="rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)]">
-                  <h3 className="text-xl font-bold tracking-tight text-[var(--fg)]">Archived</h3>
+                  <h3 className="text-xl text-[var(--fg)]">Archived</h3>
                   {archived.length === 0 ? (
                     <p className="mt-2 text-xs text-[var(--muted)]">No archived habits.</p>
                   ) : (
                     <ul className="mt-4 flex flex-col gap-2.5">
                       {archived.map((h) => (
                         <li key={h.id} className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3.5 border border-[var(--border)]">
-                          <span className="text-sm font-medium text-[var(--fg)]">{h.name}</span>
+                          <span className="text-sm text-[var(--fg)]">{h.name}</span>
                           <Button size="sm" variant="secondary" onClick={() => archiveHabit(h.id, false)}>
                             Restore
                           </Button>
