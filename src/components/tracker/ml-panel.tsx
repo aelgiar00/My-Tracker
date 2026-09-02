@@ -21,7 +21,6 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
   const [testDate, setTestDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [engine, setEngine] = useState<EngineType>("gb");
   
-  // إعدادات الـ Prediction Classes (High/Medium/Low)
   const [showConfSettings, setShowConfSettings] = useState(false);
   const [mediumStart, setMediumStart] = useState<number>(60);
   const [highStart, setHighStart] = useState<number>(80);
@@ -141,16 +140,13 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
     });
   }, [habits, completions, restDays, testDate, engine]);
 
-  // دالة رسم بادجات التوقع مربوطة بالثيم الأساسي
   const renderPredictionBadge = (prob: number) => {
     if (prob >= highStart) {
       return <span className="bg-[var(--primary)]/15 text-[var(--primary)] border border-[var(--primary)]/30 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase">High</span>;
     }
     if (prob >= mediumStart) {
-      // بنخلي الـ Medium نفس لون الثيم بس بشفافية أعلى وشكل أهدى عشان نفرقه عن الـ High
       return <span className="bg-[var(--primary-muted)]/20 text-[var(--primary)]/80 border border-[var(--primary)]/20 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase">Medium</span>;
     }
-    // الـ Low خليته بدرجة روز خفيفة عشان يدي إيحاء بالتنبيه بغض النظر عن الثيم (تقدر تغيره لـ primary لو حابب كله لون واحد)
     return <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-md text-[10px] font-bold tracking-wider uppercase">Low</span>;
   };
 
@@ -161,7 +157,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
   ];
 
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-8 font-['Arial'] font-bold">
       
       {/* 1. Header & Controls */}
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 md:p-8 shadow-xl">
@@ -170,7 +166,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
             <BrainCircuit className="size-5" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-[var(--fg)]">ML Prediction Matrix</h2>
+            <h2 className="text-2xl tracking-tight text-[var(--fg)]">ML Prediction Matrix</h2>
             <p className="text-xs text-[var(--muted)] mt-1">
               Evaluates historical patterns using chosen regression/ensemble trees to predict execution probability.
             </p>
@@ -179,21 +175,21 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
 
         <div className="flex flex-wrap items-end gap-4 rounded-2xl bg-[var(--surface-elevated)] p-4 border border-[var(--border)]">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">Test Date</label>
+            <label className="text-[10px] text-[var(--muted)] uppercase tracking-wider">Test Date</label>
             <input
               type="date"
               value={testDate}
               onChange={(e) => setTestDate(e.target.value)}
-              className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs text-[var(--fg)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] font-['Merriweather'] font-normal"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">Engine</label>
+            <label className="text-[10px] text-[var(--muted)] uppercase tracking-wider">Engine</label>
             <NativeSelect
               value={engine}
               onChange={(e) => setEngine(e.target.value as EngineType)}
-              className="h-10 min-w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="h-10 min-w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-xs text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)] font-['Arial'] font-bold"
             >
               <option value="gb">Gradient Boosting</option>
               <option value="rf">Random Forest</option>
@@ -204,7 +200,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
           <Button
             variant="outline"
             onClick={() => setShowConfSettings(true)}
-            className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)] hover:bg-[var(--surface-elevated)] cursor-pointer"
+            className="h-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 text-xs text-[var(--fg)] hover:border-[var(--primary)] hover:bg-[var(--surface-elevated)] cursor-pointer font-['Arial'] font-bold"
           >
             <SlidersHorizontal className="mr-2 size-4 text-[var(--primary)]" />
             Prediction Ranges
@@ -214,9 +210,9 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
 
       {/* Settings Dialog for Prediction Classes */}
       <Dialog open={showConfSettings} onOpenChange={setShowConfSettings}>
-        <DialogContent className="max-w-sm rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--fg)] shadow-2xl">
+        <DialogContent className="max-w-sm rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--fg)] shadow-2xl font-['Arial'] font-bold">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold tracking-tight text-[var(--fg)]">Prediction Ranges</DialogTitle>
+            <DialogTitle className="text-xl tracking-tight text-[var(--fg)]">Prediction Ranges</DialogTitle>
             <DialogDescription className="text-xs text-[var(--muted)]">
               Define the probability boundaries for the Low, Medium, and High prediction classes.
             </DialogDescription>
@@ -224,9 +220,9 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
 
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-[var(--fg)] flex justify-between">
+              <label className="text-xs text-[var(--fg)] flex justify-between">
                 <span>Medium Class Starts At (%)</span>
-                <span className="text-[var(--primary)] font-mono">{mediumStart}%</span>
+                <span className="text-[var(--primary)] font-['Merriweather'] font-normal">{mediumStart}%</span>
               </label>
               <input
                 type="range"
@@ -235,15 +231,15 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                 step={5}
                 value={mediumStart}
                 onChange={(e) => setMediumStart(Number(e.target.value))}
-                className="w-full accent-[var(--primary)]"
+                className="w-full accent-[var(--primary)] cursor-pointer"
               />
-              <p className="text-[10px] text-[var(--muted)]">Values below {mediumStart}% will be marked as LOW.</p>
+              <p className="text-[10px] text-[var(--muted)]">Values below <span className="font-['Merriweather'] font-normal">{mediumStart}%</span> will be marked as LOW.</p>
             </div>
 
             <div className="space-y-2 pt-2 border-t border-[var(--border)]">
-              <label className="text-xs font-semibold text-[var(--fg)] flex justify-between">
+              <label className="text-xs text-[var(--fg)] flex justify-between">
                 <span>High Class Starts At (%)</span>
-                <span className="text-[var(--primary)] font-mono">{highStart}%</span>
+                <span className="text-[var(--primary)] font-['Merriweather'] font-normal">{highStart}%</span>
               </label>
               <input
                 type="range"
@@ -252,14 +248,14 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                 step={5}
                 value={highStart}
                 onChange={(e) => setHighStart(Number(e.target.value))}
-                className="w-full accent-[var(--primary)]"
+                className="w-full accent-[var(--primary)] cursor-pointer"
               />
-              <p className="text-[10px] text-[var(--muted)]">Values from {mediumStart}% to {highStart - 1}% will be MEDIUM.</p>
+              <p className="text-[10px] text-[var(--muted)]">Values from <span className="font-['Merriweather'] font-normal">{mediumStart}%</span> to <span className="font-['Merriweather'] font-normal">{highStart - 1}%</span> will be MEDIUM.</p>
             </div>
 
             <Button
               onClick={() => setShowConfSettings(false)}
-              className="mt-4 w-full h-10 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] font-bold text-xs"
+              className="mt-4 w-full h-10 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs cursor-pointer font-['Arial'] font-bold"
             >
               Apply Changes
             </Button>
@@ -267,14 +263,14 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
         </DialogContent>
       </Dialog>
 
-      {/* 2. Interactive Predictions Table */}
+      {/* 2. Interactive Predictions Table - تم استبدال الـ Grid بـ Flexbox للتحكم الدقيق في المسافات */}
       <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] shadow-xl overflow-hidden">
-        <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-[var(--border)] bg-[var(--surface-elevated)]/50">
-          <div className="col-span-5 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Habit</div>
-          <div className="col-span-3 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider text-center">Prediction</div>
-          <div className="col-span-2 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider text-center">Probability</div>
-          <div className="col-span-1 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider text-center">Actual</div>
-          <div className="col-span-1"></div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] bg-[var(--surface-elevated)]/50">
+          <div className="w-[40%] text-[10px] text-[var(--muted)] uppercase tracking-wider">Habit</div>
+          <div className="w-[20%] text-[10px] text-[var(--muted)] uppercase tracking-wider text-center">Prediction</div>
+          <div className="w-[20%] text-[10px] text-[var(--muted)] uppercase tracking-wider text-center">Probability</div>
+          <div className="w-[15%] text-[10px] text-[var(--muted)] uppercase tracking-wider text-center">Actual</div>
+          <div className="w-[5%]"></div>
         </div>
 
         <div className="divide-y divide-[var(--border)]">
@@ -286,25 +282,25 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                 {/* Main Row */}
                 <div 
                   onClick={() => setExpandedHabitId(isExpanded ? null : p.habit.id)}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 items-center cursor-pointer"
+                  className="flex items-center justify-between px-5 py-4 cursor-pointer"
                 >
-                  <div className="col-span-5 font-semibold text-xs text-[var(--fg)] truncate pr-2">
+                  <div className="w-[40%] text-xs text-[var(--fg)] truncate pr-2">
                     {p.habit.name}
                   </div>
                   
-                  <div className="col-span-3 flex justify-center items-center">
+                  <div className="w-[20%] flex justify-center items-center">
                     {p.isRest ? (
-                      <span className="text-[11px] font-medium text-[var(--muted)] px-3 py-1.5 rounded-md bg-[var(--surface-pill)] border border-[var(--border)]">Rest</span>
+                      <span className="text-[11px] text-[var(--muted)] px-3 py-1.5 rounded-md bg-[var(--surface-pill)] border border-[var(--border)]">Rest</span>
                     ) : (
                       renderPredictionBadge(p.probability)
                     )}
                   </div>
 
-                  <div className="col-span-2 text-center font-mono text-[11px] font-bold text-[var(--fg)]">
+                  <div className="w-[20%] text-center font-['Merriweather'] font-normal text-[13px] text-[var(--fg)]">
                     {p.isRest ? "0%" : `${p.probability}%`}
                   </div>
 
-                  <div className="col-span-1 flex justify-center">
+                  <div className="w-[15%] flex justify-center">
                     <div className={cn(
                       "flex size-5 items-center justify-center rounded-md border",
                       p.actual ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]" : "border-[var(--border)] bg-transparent text-transparent"
@@ -313,25 +309,25 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                     </div>
                   </div>
 
-                  <div className="col-span-1 flex justify-end text-[var(--muted)]">
+                  <div className="w-[5%] flex justify-end text-[var(--muted)]">
                     {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                   </div>
                 </div>
 
                 {/* Expanded Content Area */}
                 {isExpanded && (
-                  <div className="px-6 pb-6 pt-2 bg-[var(--surface-elevated)]/20 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-5 pb-5 pt-1 bg-[var(--surface-elevated)]/20 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
                       
                       {/* Left: Trend Sparkline */}
                       <div className="flex flex-col">
-                        <h4 className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                        <h4 className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-3 flex items-center gap-1.5">
                           <Activity className="size-3 text-[var(--primary)]" />
                           14-Day Probability Trend
                         </h4>
                         <div className="flex-1 flex items-end gap-1.5 bg-[var(--surface-elevated)] p-4 rounded-xl border border-[var(--border)] min-h-[120px]">
                           {p.isRest ? (
-                            <div className="w-full h-full flex items-center justify-center text-xs text-[var(--muted)] font-mono">
+                            <div className="w-full h-full flex items-center justify-center text-xs text-[var(--muted)] font-['Arial'] font-bold">
                               [ Data Not Applicable for Rest Days ]
                             </div>
                           ) : (
@@ -341,7 +337,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                                   className="w-full bg-[var(--primary)] rounded-sm opacity-80 group-hover:opacity-100 transition-all"
                                   style={{ height: `${val}%` }}
                                 ></div>
-                                <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[var(--surface-pill)] text-[var(--fg)] text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity font-mono border border-[var(--border)] shadow-xl z-10">
+                                <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[var(--surface-pill)] text-[var(--fg)] text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity font-['Merriweather'] font-normal border border-[var(--border)] shadow-xl z-10">
                                   {Math.round(val)}%
                                 </span>
                               </div>
@@ -353,7 +349,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                       {/* Right: History & Reason */}
                       <div className="space-y-5">
                         <div>
-                          <h4 className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                          <h4 className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-3 flex items-center gap-1.5">
                             <CalendarDays className="size-3 text-[var(--primary)]" />
                             Recent 7-Day Context
                           </h4>
@@ -371,18 +367,18 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
                               >
                                 {day.status === "done" && <Check className="size-4 text-[var(--primary-foreground)] stroke-[3]" />}
                                 {day.status === "missed" && <X className="size-4 stroke-[3]" />}
-                                {day.status === "rest" && <span className="text-[9px] font-bold uppercase">R</span>}
+                                {day.status === "rest" && <span className="text-[9px] uppercase">R</span>}
                               </div>
                             ))}
                           </div>
                         </div>
 
                         <div>
-                          <h4 className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <h4 className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                             <BrainCircuit className="size-3 text-[var(--primary)]" />
                             Model Reasoning
                           </h4>
-                          <p className="text-[11px] font-medium text-[var(--fg)] leading-relaxed bg-[var(--surface-elevated)] p-3 rounded-xl border border-[var(--border)]">
+                          <p className="text-[11px] text-[var(--fg)] leading-relaxed bg-[var(--surface-elevated)] p-3 rounded-xl border border-[var(--border)]">
                             {p.reason}
                           </p>
                         </div>
@@ -403,7 +399,7 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
           <div className="flex items-center gap-3">
             <Network className="size-5 text-[var(--primary)]" />
             <div>
-              <h2 className="text-xl font-bold tracking-tight text-[var(--fg)]">Model Performance Comparison</h2>
+              <h2 className="text-xl tracking-tight text-[var(--fg)]">Model Performance Comparison</h2>
               <p className="text-[11px] text-[var(--muted)] mt-1">Accuracy vs F1 Score across different training approaches.</p>
             </div>
           </div>
@@ -412,30 +408,30 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className={cn("rounded-2xl p-5 border transition-all", engine === "gb" ? "bg-[var(--primary-muted)]/30 border-[var(--primary)] shadow-sm" : "bg-[var(--surface-elevated)] border-[var(--border)]")}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-[var(--fg)] text-sm">Gradient Boosting</h3>
-              {engine === "gb" && <span className="text-[9px] bg-[var(--primary)] text-[var(--primary-foreground)] px-2 py-0.5 rounded-full font-bold uppercase">Active</span>}
+              <h3 className="text-[var(--fg)] text-sm">Gradient Boosting</h3>
+              {engine === "gb" && <span className="text-[9px] bg-[var(--primary)] text-[var(--primary-foreground)] px-2 py-0.5 rounded-full uppercase">Active</span>}
             </div>
-            <p className="text-[10.5px] text-[var(--muted)] leading-relaxed font-medium">
+            <p className="text-[10.5px] text-[var(--muted)] leading-relaxed">
               Best overall performance. Extremely sensitive to recent misses and corrects prediction errors iteratively. Ideal for strict habit builders.
             </p>
           </div>
 
           <div className={cn("rounded-2xl p-5 border transition-all", engine === "rf" ? "bg-[var(--primary-muted)]/30 border-[var(--primary)] shadow-sm" : "bg-[var(--surface-elevated)] border-[var(--border)]")}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-[var(--fg)] text-sm">Random Forest</h3>
-              {engine === "rf" && <span className="text-[9px] bg-[var(--primary)] text-[var(--primary-foreground)] px-2 py-0.5 rounded-full font-bold uppercase">Active</span>}
+              <h3 className="text-[var(--fg)] text-sm">Random Forest</h3>
+              {engine === "rf" && <span className="text-[9px] bg-[var(--primary)] text-[var(--primary-foreground)] px-2 py-0.5 rounded-full uppercase">Active</span>}
             </div>
-            <p className="text-[10.5px] text-[var(--muted)] leading-relaxed font-medium">
+            <p className="text-[10.5px] text-[var(--muted)] leading-relaxed">
               Excellent at capturing non-linear relationships, like sudden bursts of momentum. Highly rewards consistent active streaks.
             </p>
           </div>
 
           <div className={cn("rounded-2xl p-5 border transition-all", engine === "lr" ? "bg-[var(--primary-muted)]/30 border-[var(--primary)] shadow-sm" : "bg-[var(--surface-elevated)] border-[var(--border)]")}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-[var(--fg)] text-sm">Logistic Regression</h3>
-              {engine === "lr" && <span className="text-[9px] bg-[var(--primary)] text-[var(--primary-foreground)] px-2 py-0.5 rounded-full font-bold uppercase">Active</span>}
+              <h3 className="text-[var(--fg)] text-sm">Logistic Regression</h3>
+              {engine === "lr" && <span className="text-[9px] bg-[var(--primary)] text-[var(--primary-foreground)] px-2 py-0.5 rounded-full uppercase">Active</span>}
             </div>
-            <p className="text-[10.5px] text-[var(--muted)] leading-relaxed font-medium">
+            <p className="text-[10.5px] text-[var(--muted)] leading-relaxed">
               Provides a steady, reliable linear baseline. Fast execution but might miss complex day-to-day psychological momentum shifts.
             </p>
           </div>
@@ -446,10 +442,10 @@ export function MlPanel({ habits, completions }: MlPanelProps) {
             <BarChart data={modelPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="name" stroke="var(--muted)" fontSize={11} tickLine={false} axisLine={false} dy={10} fontWeight={600} />
-              <YAxis stroke="var(--muted)" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(val) => `${val}%`} fontWeight={600} />
+              <YAxis stroke="var(--muted)" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={(val) => `${val}%`} fontWeight={600} tick={{ fontFamily: 'Merriweather', fontWeight: 'normal' }} />
               <RechartsTooltip
                 cursor={{ fill: 'var(--surface-pill)', opacity: 0.4 }}
-                contentStyle={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border)", borderRadius: "12px", color: "var(--fg)", fontSize: "12px", fontWeight: "bold" }}
+                contentStyle={{ backgroundColor: "var(--surface-elevated)", borderColor: "var(--border)", borderRadius: "12px", color: "var(--fg)", fontSize: "12px", fontWeight: "bold", fontFamily: "Arial" }}
               />
               <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }} />
               
