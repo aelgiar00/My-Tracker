@@ -202,8 +202,8 @@ export function TrackerApp() {
   }
 
   return (
-    // رجعنا الـ py-8 عشان المسافات من فوق وتحت تتظبط
-    <div className="mx-auto min-h-screen max-w-7xl px-4 py-8 sm:px-6 font-sans">
+    // مسافات عادية جداً للصفحة من فوق
+    <div className="mx-auto min-h-screen max-w-7xl px-4 pt-6 pb-8 sm:px-6 font-sans">
       {!session && (
         <AuthDialog
           onSuccess={() => {
@@ -215,16 +215,14 @@ export function TrackerApp() {
         />
       )}
 
-      {/* Header - مظبوط ومسنتر */}
-      <header className="mb-8 flex flex-col justify-between gap-6 lg:flex-row lg:items-center relative z-10">
+      {/* Header - شلنا المسافات السالبة ورجعنا المحاذاة الطبيعية */}
+      <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
         <div className="flex flex-col sm:flex-row sm:items-center">
-          
-          {/* اللوجو: حجم متوسط ممتاز + Scale عشان يكبر للعين بس مياخدش مساحة يبوظ بيها الشاشة */}
-          <div className="flex items-center justify-center lg:justify-start -my-2 sm:-my-4">
+          <div className="flex items-center justify-center lg:justify-start">
             <img 
               src={`/logo-${theme}.png`} 
               alt="MyTracker Logo" 
-              className="w-[240px] sm:w-[280px] md:w-[320px] h-auto object-contain drop-shadow-xl scale-110 transition-transform hover:scale-[1.15] origin-left"
+              className="w-[280px] sm:w-[320px] md:w-[380px] lg:w-[420px] h-auto object-contain drop-shadow-xl transition-transform hover:scale-[1.02]"
               onError={(e) => {
                 e.currentTarget.src = "/logo-lavender.png";
               }}
@@ -232,7 +230,7 @@ export function TrackerApp() {
           </div>
         </div>
 
-        {/* التكست مسنتر مع اللوجو */}
+        {/* التكست مسنتر بشكل نظيف */}
         <div className="text-center lg:text-right flex flex-col justify-center">
           <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
             EXECUTION LOG
@@ -240,7 +238,7 @@ export function TrackerApp() {
           <h1 className="mt-1 text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)]">
             {MONTHS[selectedMonth - 1]} {selectedYear}
           </h1>
-          <p className="text-sm text-[var(--muted)] mt-2">
+          <p className="text-sm text-[var(--muted)] mt-1.5">
             Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
             {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
           </p>
@@ -248,7 +246,7 @@ export function TrackerApp() {
       </header>
 
       {/* Action Controls */}
-      <div className="flex flex-wrap items-center gap-2.5 mb-6 relative z-20">
+      <div className="flex flex-wrap items-center gap-2.5 mb-6">
         <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
           <Button
             variant="ghost"
@@ -349,7 +347,7 @@ export function TrackerApp() {
       </div>
 
       {/* Main Single Switcher Tab */}
-      <div className="mb-6 relative z-20">
+      <div className="mb-6">
         <div className="grid grid-cols-3 rounded-2xl bg-[var(--surface)] p-1.5 border border-[var(--border)]">
           {(["daily", "matrix", "stats"] as const).map((tab) => (
             <button
@@ -370,7 +368,7 @@ export function TrackerApp() {
       </div>
 
       {/* Main Content Area */}
-      <main className="relative z-20">
+      <main>
         {/* Daily View */}
         {mainTab === "daily" && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
