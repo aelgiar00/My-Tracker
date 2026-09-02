@@ -425,7 +425,6 @@ export function TrackerApp() {
                     </p>
                   </div>
                   
-                  {/* الدائرة بقت بحجم 44 و 48 بدل 36 و 40 عشان الـ 100% متتزنقش */}
                   <div className="relative flex size-44 sm:size-48 items-center justify-center select-none shrink-0">
                     <svg className="size-full -rotate-90 p-2" viewBox="0 0 120 120">
                       <circle
@@ -622,7 +621,7 @@ export function TrackerApp() {
                   ["analytics", "Analytics"],
                   ["audit", "Audit"],
                   ["manage", "Manage"],
-                  ["ml", "✨ ML"],
+                  ["ml", "ML"],
                 ] as const
               ).map(([id, label]) => (
                 <button
