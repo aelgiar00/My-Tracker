@@ -501,7 +501,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* النافذة الخاصة بالإعدادات مطابقة تماماً لفخامة الـ New Habit */}
       <DialogContent className="max-w-md w-full rounded-[2rem] border border-[var(--border)] bg-[var(--surface)]/70 backdrop-blur-3xl p-6 sm:p-8 text-[var(--fg)] shadow-2xl shadow-black/40 transition-all duration-300">
         <DialogHeader className="mb-2">
           <DialogTitle className="font-serif-title text-3xl font-normal tracking-tight text-[var(--fg)]">Settings</DialogTitle>
@@ -518,8 +517,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               onChange={(e) => setTheme(e.target.value as ThemeId)}
               className="h-12 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)]/40 px-4 text-sm font-medium text-[var(--fg)] shadow-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface-elevated)]/60 transition-colors cursor-pointer"
             >
-              <option value="obsidian">✨ Obsidian Gold</option>
-              <option value="ink">Ink</option>
+              <option value="obsidian">Obsidian Gold</option>
               <option value="paper">Paper</option>
               <option value="slate">Slate</option>
               <option value="lavender">Lavender</option>
