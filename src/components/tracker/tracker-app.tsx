@@ -216,21 +216,36 @@ export function TrackerApp() {
 
       {/* Header */}
       <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-        <div className="flex items-center gap-3">
-          {/* هنا تم إضافة اللوجو الفخم SVG الجديد بجانب العنوان */}
-          <img 
-            src="/logo-icon.svg" 
-            alt="MyTracker Logo" 
-            className="size-10 rounded-xl border border-[var(--border)] shadow-md bg-[var(--surface)] p-1 object-contain" 
-          />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Inline SVG Logo تماماً زي الصورة الأصلية */}
+          <div className="flex items-center bg-[var(--surface)] p-2.5 rounded-2xl border border-[var(--border)] shadow-md">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" className="h-10 sm:h-12 w-auto">
+              {/* Checkbox Icon */}
+              <g transform="translate(10, 45)">
+                <rect x="0" y="0" width="22" height="22" rx="4" fill="none" stroke="#b794f4" stroke-width="3.5"/>
+                <path d="M 5 11 L 9 15 L 17 7" fill="none" stroke="#b794f4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+              {/* MyTracker Text */}
+              <text x="42" y="65" style={{ fontFamily: "inherit", fontWeight: 800, fontSize: "64px", fill: "#b794f4" }}>
+                My<tspan style={{ fontWeight: 700, fill: "var(--fg)" }}>Tracker</tspan>
+              </text>
+              {/* Accent slash */}
+              <polygon points="340,15 358,3 365,15 348,27" fill="#b794f4" />
+              {/* Slogan */}
+              <text x="140" y="95" style={{ fontFamily: "inherit", fontWeight: 400, fontSize: "14px", fill: "var(--muted)", letterSpacing: "0.5px" }}>
+                Track it <tspan style={{ fill: "#b794f4", fontWeight: 700 }}>-</tspan> Build it <tspan style={{ fill: "#b794f4", fontWeight: 700 }}>-</tspan> Achieve it
+              </text>
+            </svg>
+          </div>
+
           <div>
             <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
               EXECUTION LOG
             </p>
-            <h1 className="font-serif-title mt-1 text-4xl font-normal tracking-tight text-[var(--fg)] sm:text-5xl">
+            <h1 className="font-serif-title mt-0.5 text-3xl sm:text-4xl font-normal tracking-tight text-[var(--fg)]">
               {MONTHS[selectedMonth - 1]} {selectedYear}
             </h1>
-            <p className="mt-1.5 text-xs text-[var(--muted)]">
+            <p className="text-xs text-[var(--muted)]">
               Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
               {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
             </p>
@@ -644,7 +659,7 @@ export function TrackerApp() {
             {statsSubTab === "analytics" && <AnalyticsPanel />}
             {statsSubTab === "audit" && <AuditPanel habits={habits} stats={stats} />}
             {statsSubTab === "ml" && <MlPanel habits={habits} completions={completions} />}
-            {statsSubTab === "manage" && (
+            {statsSubTag === "manage" && (
               <div className="flex flex-col gap-6">
                 <BulkUpdatePanel
                   days={activeDays.map((d) => ({ iso: isoDate(d), label: format(d, "EEE d") }))}
