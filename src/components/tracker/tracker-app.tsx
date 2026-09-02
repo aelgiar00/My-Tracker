@@ -218,7 +218,7 @@ export function TrackerApp() {
       <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           
-          {/* اللوجو الثابت (Dynamic Static PNG) بحجم متناسق */}
+          {/* اللوجو الثابت بحجم متوسط متناسق */}
           <div className="flex items-center -ml-2">
             <img 
               src={`/logo-${theme}.png`} 
@@ -400,4 +400,293 @@ export function TrackerApp() {
                         )}
                       >
                         <span className="text-[10px] uppercase font-mono tracking-wider">{format(d, "EEE").slice(0, 2)}</span>
-                        <span className="text-sm
+                        <span className="text-sm font-bold mt-0.5">{format(d, "d")}</span>
+                        {isSelected && (
+                          <span className="absolute bottom-1.5 w-5 h-0.5 rounded-full bg-[var(--primary)]" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-[var(--surface-elevated)]/20 p-6 rounded-3xl border border-[var(--border)]">
+                  <div className="text-center sm:text-left flex-1">
+                    <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-[0.2em]">
+                      {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
+                    </span>
+                    <h3 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] mt-1">
+                      {format(inspectDateObj, "d EEE")}
+                    </h3>
+                    <p className="text-sm text-[var(--muted)] mt-2 max-w-sm">
+                      {totalDailyCompleted === totalDailyItems && totalDailyItems > 0
+                        ? "All scheduled habits and tasks completed! Outstanding."
+                        : `${totalDailyItems - totalDailyCompleted} items remaining to check off.`}
+                    </p>
+                  </div>
+                  
+                  <div className="relative flex size-36 sm:size-40 items-center justify-center select-none shrink-0">
+                    <svg className="size-full -rotate-90 p-2" viewBox="0 0 120 120">
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r="50"
+                        stroke="currentColor"
+                        className="text-[var(--surface-pill)] opacity-40"
+                        strokeWidth="8"
+                        fill="none"
+                      />
+                      {inspectDayScore > 0 && (
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="50"
+                          stroke="var(--primary)"
+                          strokeWidth="8"
+                          strokeDasharray={2 * Math.PI * 50}
+                          strokeDashoffset={2 * Math.PI * 50 * (1 - inspectDayScore / 100)}
+                          strokeLinecap="round"
+                          fill="none"
+                          style={{ filter: "drop-shadow(0 0 8px var(--glow))" }}
+                        />
+                      )}
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
+                      <span className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] leading-none">
+                        {inspectDayScore}%
+                      </span>
+                      <span className="text-[10px] sm:text-xs font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2 leading-none">
+                        DAILY
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scheduled Habits Cards */}
+                <div className="space-y-2.5">
+                  {activeHabitsForDay.length === 0 ? (
+                    <p className="text-xs text-[var(--muted)] py-4 text-center">No habits scheduled on this day.</p>
+                  ) : (
+                    activeHabitsForDay.map((h) => {
+                      const isDone = Boolean(completions[completionKey(h.id, selectedInspectDate)]);
+                      return (
+                        <div
+                          key={h.id}
+                          onClick={() => toggleCompletion(h.id, selectedInspectDate)}
+                          className={cn(
+                            "flex items-center justify-between rounded-2xl p-4 border transition-all cursor-pointer",
+                            isDone
+                              ? "border-[var(--primary)]/40 bg-[var(--primary)]/10 shadow-xs"
+                              : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--muted)]"
+                          )}
+                        >
+                          <div className="flex items-center gap-3.5">
+                            <div
+                              className={cn(
+                                "flex size-5 items-center justify-center rounded-lg border transition-colors",
+                                isDone
+                                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                                  : "border-[var(--border)] bg-transparent"
+                              )}
+                            >
+                              {isDone && <Check className="size-3.5 stroke-[3]" />}
+                            </div>
+                            <div>
+                              <p className={cn("text-xs font-semibold text-[var(--fg)]", isDone && "line-through opacity-70")}>
+                                {h.name}
+                              </p>
+                              <span className="text-[10px] text-[var(--muted)] capitalize">
+                                {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* One-off Tasks Section */}
+                <div className="pt-4 border-t border-[var(--border)] space-y-3">
+                  <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider block">
+                    ONE-OFF TASKS
+                  </span>
+
+                  {currentDayTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3 border border-[var(--border)]"
+                    >
+                      <div
+                        onClick={() => toggleTask(selectedInspectDate, task.id)}
+                        className="flex items-center gap-3 cursor-pointer flex-1"
+                      >
+                        <div
+                          className={cn(
+                            "flex size-4 items-center justify-center rounded-md border",
+                            task.done ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]" : "border-[var(--border)]"
+                          )}
+                        >
+                          {task.done && <Check className="size-3 stroke-[3]" />}
+                        </div>
+                        <span className={cn("text-xs text-[var(--fg)]", task.done && "line-through text-[var(--muted)]")}>
+                          {task.name}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteTask(selectedInspectDate, task.id)}
+                        className="text-[var(--muted)] hover:text-rose-400 p-1 cursor-pointer"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Add Task Input */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Add a task for this day..."
+                      value={newCustomTask}
+                      onChange={(e) => setNewCustomTask(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && newCustomTask.trim()) {
+                          addTask(selectedInspectDate, newCustomTask.trim());
+                          setNewCustomTask("");
+                        }
+                      }}
+                      className="h-10 flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--fg)] placeholder:text-[var(--muted)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (newCustomTask.trim()) {
+                          addTask(selectedInspectDate, newCustomTask.trim());
+                          setNewCustomTask("");
+                        }
+                      }}
+                      className="h-10 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] px-4 text-xs font-semibold text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
+                    >
+                      <Plus className="size-4" />
+                    </Button>
+                  </div>
+
+                  {/* Rest Section */}
+                  {restingHabitsForDay.length > 0 && (
+                    <div className="pt-2 space-y-1 text-xs text-[var(--muted)]">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5">REST</span>
+                      {restingHabitsForDay.map((h) => (
+                        <div key={h.id} className="flex justify-between py-1 border-b border-[var(--border)]/40 last:border-0">
+                          <span>{h.name}</span>
+                          <span className="font-mono text-[10px] capitalize">
+                            {h.schedule.type === "preset" ? h.schedule.id : "Scheduled"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      markAllToday(selectedInspectDate, true);
+                      toast.success("Completed all habits for this day!");
+                    }}
+                    className="mt-4 h-11 w-full rounded-2xl bg-[var(--primary)] text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
+                  >
+                    Complete this day
+                  </Button>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* Matrix View Tab */}
+        {mainTab === "matrix" && (
+          <div className="rounded-3xl bg-[var(--surface)] p-6 sm:p-8 border border-[var(--border)] shadow-xl">
+            <HabitMatrix
+              habits={habits}
+              days={activeDays}
+              todayIso={isoDate(today)}
+              hidePast={hidePast}
+              daysInMonth={daysInMonth}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+            />
+          </div>
+        )}
+
+        {/* Stats View Tab */}
+        {mainTab === "stats" && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center gap-2">
+              {(
+                [
+                  ["analytics", "Analytics"],
+                  ["audit", "Audit"],
+                  ["manage", "Manage"],
+                  ["ml", "✨ ML"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setStatsSubTab(id)}
+                  className={cn(
+                    "rounded-xl px-4 py-2 text-xs font-medium transition-all duration-150 border cursor-pointer",
+                    statsSubTab === id
+                      ? "border-[var(--primary)] bg-[var(--surface)] text-[var(--fg)] shadow-sm font-semibold ring-1 ring-[var(--primary)]/30"
+                      : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--fg)]"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {statsSubTab === "analytics" && <AnalyticsPanel />}
+            {statsSubTab === "audit" && <AuditPanel habits={habits} stats={stats} />}
+            {statsSubTab === "ml" && <MlPanel habits={habits} completions={completions} />}
+            {statsSubTab === "manage" && (
+              <div className="flex flex-col gap-6">
+                <BulkUpdatePanel
+                  days={activeDays.map((d) => ({ iso: isoDate(d), label: format(d, "EEE d") }))}
+                  todayIso={isoDate(today)}
+                />
+                <div className="rounded-3xl bg-[var(--surface)] p-6 border border-[var(--border)]">
+                  <h3 className="text-sm font-bold text-[var(--fg)]">Archived</h3>
+                  {archived.length === 0 ? (
+                    <p className="mt-2 text-xs text-[var(--muted)]">No archived habits.</p>
+                  ) : (
+                    <ul className="mt-4 flex flex-col gap-2.5">
+                      {archived.map((h) => (
+                        <li key={h.id} className="flex items-center justify-between rounded-xl bg-[var(--surface-elevated)] p-3.5 border border-[var(--border)]">
+                          <span className="text-sm font-medium text-[var(--fg)]">{h.name}</span>
+                          <Button size="sm" variant="secondary" onClick={() => archiveHabit(h.id, false)}>
+                            Restore
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      <NewHabitDialog
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        daysInMonth={daysInMonth}
+        selectedYear={selectedYear}
+        selectedMonth={selectedMonth}
+      />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </div>
+  );
+}
+
+export default TrackerApp;
