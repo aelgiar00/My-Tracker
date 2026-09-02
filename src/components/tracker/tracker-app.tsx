@@ -216,151 +216,143 @@ export function TrackerApp() {
 
       {/* Header */}
       <header className="mb-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           
-          {/* كارت اللوجو الفخم والمكبر */}
-          <div className="flex items-center justify-center bg-[var(--surface-elevated)] p-4 sm:p-5 rounded-3xl border border-[var(--border)] shadow-lg shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 120" className="h-12 sm:h-16 w-auto">
-              <defs>
-                <style>
-                  {`@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap');`}
-                </style>
-              </defs>
-              <g transform="translate(10, 15)">
-                {/* Checkbox Icon */}
-                <g transform="translate(0, 38)">
-                  <rect x="0" y="0" width="28" height="28" rx="6" fill="none" stroke="#b794f4" strokeWidth="4"/>
-                  <path d="M 6 14 L 12 20 L 22 8" fill="none" stroke="#b794f4" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-                </g>
-                {/* MyTracker Text */}
-                <text x="36" y="68" style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: "76px", fill: "#b794f4" }}>
-                  My<tspan style={{ fontWeight: 700, fill: "var(--fg)" }}>Tracker</tspan>
-                </text>
-                {/* Accent slash */}
-                <polygon points="385,8 410,-8 422,8 397,24" fill="#b794f4" />
-                {/* Slogan */}
-                <text x="40" y="100" style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 400, fontSize: "16px", fill: "var(--muted)", letterSpacing: "1px" }}>
-                  Track it <tspan style={{ fill: "#b794f4", fontWeight: 700 }}>-</tspan> Build it <tspan style={{ fill: "#b794f4", fontWeight: 700 }}>-</tspan> Achieve it
-                </text>
-              </g>
+          {/* اللوجو الجديد (المربع الموف وعلامة الصح) */}
+          <div className="flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="size-12 sm:size-14 drop-shadow-md shrink-0">
+              {/* المربع الموف */}
+              <rect x="16" y="16" width="224" height="224" rx="64" fill="#b794f4"/>
+              {/* علامة الصح الداكنة */}
+              <path d="M 76 132 L 114 170 L 180 94" fill="none" stroke="#171424" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-          </div>
-
-          <div>
-            <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
-              EXECUTION LOG
-            </p>
-            <h1 className="font-serif-title mt-1 text-4xl sm:text-5xl font-normal tracking-tight text-[var(--fg)]">
-              {MONTHS[selectedMonth - 1]} {selectedYear}
-            </h1>
-            <p className="text-xs text-[var(--muted)] mt-1.5">
-              Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
-              {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
-            </p>
+            
+            {/* كلمة MyTracker مكتوبة كـ Text عادي في الكود عشان متبوظش */}
+            <div className="flex flex-col justify-center">
+              <h2 className="font-serif-title text-3xl sm:text-4xl font-bold tracking-tight text-[var(--fg)] leading-none">
+                <span className="text-[var(--primary)] font-extrabold">My</span>Tracker
+              </h2>
+              <span className="text-[10px] sm:text-xs text-[var(--muted)] tracking-widest mt-1">
+                TRACK IT <span className="text-[var(--primary)] font-bold">-</span> BUILD IT <span className="text-[var(--primary)] font-bold">-</span> ACHIEVE IT
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => shiftMonth(-1)}
-              className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <NativeSelect
-              className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
-              value={selectedMonth}
-              onChange={(e) => setMonth(selectedYear, Number(e.target.value))}
-            >
-              {MONTHS.map((m, i) => (
-                <option key={m} value={i + 1}>
-                  {m}
-                </option>
-              ))}
-            </NativeSelect>
-            <NativeSelect
-              className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
-              value={selectedYear}
-              onChange={(e) => setMonth(Number(e.target.value), selectedMonth)}
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </NativeSelect>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => shiftMonth(1)}
-              className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setMonth(today.getFullYear(), today.getMonth() + 1);
-              setSelectedInspectDate(format(today, "yyyy-MM-dd"));
-            }}
-            className="h-10 rounded-xl border border-[var(--primary)]/30 bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
-          >
-            <CalendarDays className="mr-1.5 size-3.5 text-[var(--primary)]" />
-            Today
-          </Button>
-
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={() => {
-              if (undo()) toast("Undid last change.");
-              else toast("Nothing to undo.");
-            }}
-            disabled={undoCount === 0}
-            className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] cursor-pointer"
-          >
-            <Undo2 className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={() => setSettingsOpen(true)}
-            className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] cursor-pointer"
-          >
-            <Settings className="size-4" />
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => setNewOpen(true)}
-            className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs font-semibold text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50 cursor-pointer"
-          >
-            <Plus className="mr-1.5 size-4 text-[var(--primary)]" />
-            Habit
-          </Button>
-          {session && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                resetToSeed();
-                setSession(null);
-                toast("تم تسجيل الخروج");
-              }}
-              className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-rose-400 cursor-pointer"
-            >
-              <LogOut className="size-4" />
-            </Button>
-          )}
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.25em] text-[var(--muted)] uppercase">
+            EXECUTION LOG
+          </p>
+          <h1 className="font-serif-title mt-1 text-3xl sm:text-4xl font-normal tracking-tight text-[var(--fg)]">
+            {MONTHS[selectedMonth - 1]} {selectedYear}
+          </h1>
+          <p className="text-xs text-[var(--muted)] mt-1.5">
+            Pace {Math.round(stats.paceScore)}% through today · {stats.currentStreak} day streak ·{" "}
+            {stats.completedThroughToday}/{stats.expectedThroughToday} scheduled
+          </p>
         </div>
       </header>
+
+      {/* Action Controls */}
+      <div className="flex flex-wrap items-center gap-2.5 mb-6">
+        <div className="flex h-10 items-center rounded-xl bg-[var(--surface)] p-1 border border-[var(--border)]">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => shiftMonth(-1)}
+            className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+          <NativeSelect
+            className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
+            value={selectedMonth}
+            onChange={(e) => setMonth(selectedYear, Number(e.target.value))}
+          >
+            {MONTHS.map((m, i) => (
+              <option key={m} value={i + 1}>
+                {m}
+              </option>
+            ))}
+          </NativeSelect>
+          <NativeSelect
+            className="h-8 border-0 bg-transparent text-xs font-medium text-[var(--fg)] shadow-none focus:ring-0"
+            value={selectedYear}
+            onChange={(e) => setMonth(Number(e.target.value), selectedMonth)}
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </NativeSelect>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => shiftMonth(1)}
+            className="h-8 w-8 text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer"
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setMonth(today.getFullYear(), today.getMonth() + 1);
+            setSelectedInspectDate(format(today, "yyyy-MM-dd"));
+          }}
+          className="h-10 rounded-xl border border-[var(--primary)]/30 bg-[var(--surface)] px-3.5 text-xs text-[var(--fg)] hover:border-[var(--primary)] cursor-pointer"
+        >
+          <CalendarDays className="mr-1.5 size-3.5 text-[var(--primary)]" />
+          Today
+        </Button>
+
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => {
+            if (undo()) toast("Undid last change.");
+            else toast("Nothing to undo.");
+          }}
+          disabled={undoCount === 0}
+          className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] cursor-pointer"
+        >
+          <Undo2 className="size-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => setSettingsOpen(true)}
+          className="h-10 w-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] cursor-pointer"
+        >
+          <Settings className="size-4" />
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => setNewOpen(true)}
+          className="h-10 rounded-xl bg-[var(--surface-elevated)] px-4 text-xs font-semibold text-[var(--fg)] border border-[var(--border)] hover:border-[var(--primary)]/50 cursor-pointer"
+        >
+          <Plus className="mr-1.5 size-4 text-[var(--primary)]" />
+          Habit
+        </Button>
+        {session && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              resetToSeed();
+              setSession(null);
+              toast("تم تسجيل الخروج");
+            }}
+            className="h-10 w-10 rounded-xl hover:bg-rose-500/10 text-rose-400 cursor-pointer"
+          >
+            <LogOut className="size-4" />
+          </Button>
+        )}
+      </div>
 
       {/* Main Single Switcher Tab */}
       <div className="mb-6">
@@ -430,7 +422,7 @@ export function TrackerApp() {
                     <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-[0.2em]">
                       {selectedInspectDate === format(today, "yyyy-MM-dd") ? "TODAY" : "SELECTED DAY"}
                     </span>
-                    <h3 className="font-serif-title text-4xl sm:text-5xl font-normal text-[var(--fg)] mt-1">
+                    <h3 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--fg)] mt-1">
                       {format(inspectDateObj, "d EEE")}
                     </h3>
                     <p className="text-sm text-[var(--muted)] mt-2 max-w-sm">
@@ -467,10 +459,7 @@ export function TrackerApp() {
                       )}
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-1">
-                      <span
-                        className="text-4xl sm:text-5xl font-normal text-[var(--fg)] tracking-tight leading-none"
-                        style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-                      >
+                      <span className="text-4xl sm:text-5xl font-bold text-[var(--fg)] tracking-tight leading-none">
                         {inspectDayScore}%
                       </span>
                       <span className="text-[10px] sm:text-xs font-semibold font-mono tracking-[0.25em] text-[var(--muted)] uppercase mt-2 leading-none">
