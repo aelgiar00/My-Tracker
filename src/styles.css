@@ -5,13 +5,13 @@
   /* 1. Lavender Theme (Default / Purple Tinted) */
   :root,
   :root[data-theme="lavender"] {
-    --bg: #0c0a18; /* أسود مشرّب ببنفسجي غامق جداً */
-    --surface: #141126; /* أفتح درجة بسيطة للكروت */
-    --surface-elevated: #1c1833; /* للـ Hover أو العناصر المرفوعة */
-    --surface-pill: #262044; /* للزراير والـ Pills */
+    --bg: #0c0a18;
+    --surface: #141126;
+    --surface-elevated: #1c1833;
+    --surface-pill: #262044;
     --fg: #F2F2F5;
     --muted: #9A9AA6;
-    --border: #262044; /* البوردر واخد نفس روح الثيم بدل الرمادي الميت */
+    --border: #262044;
     --primary: #7C6AEF;
     --primary-foreground: #F2F2F5;
     --primary-muted: rgba(124, 106, 239, 0.16);
@@ -21,7 +21,7 @@
 
   /* 2. Slate Theme (Steel-Blue / Teal Tinted) */
   :root[data-theme="slate"] {
-    --bg: #0a1116; /* أسود مشرّب بأزرق تيل غامق جداً */
+    --bg: #0a1116;
     --surface: #111c24; 
     --surface-elevated: #182631;
     --surface-pill: #203442;
@@ -33,6 +33,22 @@
     --primary-muted: rgba(111, 169, 199, 0.16);
     --glow: rgba(111, 169, 199, 0.25);
     color-scheme: dark;
+  }
+
+  /* 3. Paper Theme (Warm Cream / Olive-Brown Accent) */
+  :root[data-theme="paper"] {
+    --bg: #F1ECE2; /* لون الورق الدافئ للخلفية */
+    --surface: #FBF9F4; /* لون الكروت (أبيض كريمي) */
+    --surface-elevated: #E4DDCE; /* درجة أغمق للـ Hover */
+    --surface-pill: #D8D0C0; /* للزراير والـ Pills */
+    --fg: #2A2620; /* لون النصوص الأساسي (أسود دافئ) */
+    --muted: #6E6656; /* لون النصوص الفرعية */
+    --border: #D8D0C0; /* لون الحدود */
+    --primary: #4A4032; /* اللون البني/الزيتوني الأساسي */
+    --primary-foreground: #FBF9F4; /* لون النص جوه الزرار الأساسي */
+    --primary-muted: rgba(74, 64, 50, 0.12); /* شفافية من اللون الأساسي */
+    --glow: rgba(74, 64, 50, 0.20);
+    color-scheme: light;
   }
 
   * {
@@ -72,7 +88,7 @@
     min-height: 100vh;
   }
 
-  /* خلفية النوافذ المنبثقة بشفافية تناسب أي ثيم */
+  /* خلفية النوافذ المنبثقة بشفافية تناسب أي ثيم (بتشتغل مع الغامق والفاتح) */
   .fixed.inset-0.z-50.bg-black\/80,
   .fixed.inset-0.z-50.bg-background\/80 {
     background-color: rgba(0, 0, 0, 0.45) !important;
