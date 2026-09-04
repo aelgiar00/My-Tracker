@@ -30,16 +30,18 @@
 **Deployment:**
 *   **Vercel:** The frontend is deployed on Vercel for lightning-fast Edge delivery, continuous CI/CD, and secure environment variable management.
 
+
+
 ## ⚙️ Local Setup for Developers
 
 If you want to clone this repository and run it locally on your own machine, follow these steps:
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/yourusername/my-tracker.git](https://github.com/yourusername/my-tracker.git)
+   git clone https://github.com/yourusername/my-tracker.git
    cd my-tracker
 
-```
+
 
 2. **Install dependencies:**
 ```bash
@@ -61,9 +63,6 @@ VITE_SUPABASE_ANON_KEY=your_own_supabase_anon_key_here
 4. **Run the development server:**
 ```bash
 npm run dev
-
-```
-
 
 
 ## 🚀 Deployment
