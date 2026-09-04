@@ -6,8 +6,6 @@
 🔗 **[Live App: Try MyTracker Here!](https://my-tracker-kappa-nine.vercel.app/)**
 🔗 **[Developer's GitHub: Ahmed El-Giar](https://github.com/aelgiar00/My-Tracker)**
 
-![MyTracker Preview](public/logo-obsidian.png)
-
 ## 🌟 Key Features
 
 *   **Secure User Authentication:** Complete user session management (Sign up, Log in, secure sessions) powered by **Supabase**. Each user's data is isolated and protected via Row Level Security (RLS).
@@ -88,8 +86,5 @@ This application was engineered and developed by:
 
 This project is licensed under the MIT License.
 
-```
-
-كده الفايل بقى بروفيشنال، خفيف، بيعرض شغلك ومجهود التيم، وبيحمي الداتا بتاعتك في نفس الوقت. جاهز للـ Push يا هندسة!
 
 ```
